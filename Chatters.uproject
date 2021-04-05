@@ -7,7 +7,12 @@
 		{
 			"Name": "Chatters",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject",
+				"UMG"
+			]
 		}
 	],
 	"Plugins": [
@@ -158,6 +163,10 @@
 		},
 		{
 			"Name": "GitSourceControl",
+			"Enabled": false
+		},
+		{
+			"Name": "CLionSourceCodeAccess",
 			"Enabled": false
 		}
 	],
