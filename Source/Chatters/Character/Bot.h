@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "BotController.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Bot.generated.h"
 
@@ -37,11 +38,14 @@ public:
 	uint32 MaxHealthPoints;
 
 	bool GetIsAlive();
+
+	ABotController* GetAIController();
 private:
 	bool bAlive = true;
 
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass);
 public:
-	//UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BLueprintReadWrite)
+		USkeletalMeshComponent* Head;
 };

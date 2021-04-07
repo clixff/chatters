@@ -17,4 +17,7 @@ class CHATTERS_API ABotController : public AAIController
 public:
 	ABotController();
 	~ABotController();
+
+public:
+	void MoveToLocation(FVector Location);
 };

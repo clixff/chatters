@@ -3,6 +3,7 @@
 
 #include "Bot.h"
 
+
 // Sets default values
 ABot::ABot()
 {
@@ -13,6 +14,10 @@ ABot::ABot()
 	this->HealthPoints = this->MaxHealthPoints;
 	this->ID = 0;
 	this->DisplayName = FString(TEXT(""));
+
+	this->Head = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Head"));
+
+	this->Head->SetupAttachment(this->GetMesh(), NAME_None);
 }
 
 // Called when the game starts or when spawned
@@ -23,6 +28,7 @@ void ABot::BeginPlay()
 	this->MaxHealthPoints = 100;
 	this->HealthPoints = this->MaxHealthPoints;
 	
+
 }
 
 // Called every frame
@@ -44,9 +50,21 @@ bool ABot::GetIsAlive()
 	return this->bAlive;
 }
 
+ABotController* ABot::GetAIController()
+{
+	auto* BotController = this->GetController();
+
+	if (!BotController)
+	{
+		return nullptr;
+	}
+
+	return Cast<ABotController>(BotController);
+}
+
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass)
 {
-	FVector BotPosition(0, float(IDToSet * 300), 15);
+	FVector BotPosition(0, float(IDToSet * 300), 100);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Name = FName(*FString::Printf(TEXT("Bot_%d"), IDToSet));
 	SpawnParams.bNoFail = true;
@@ -57,8 +75,22 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclas
 		Bot->SpawnDefaultController();
 		Bot->DisplayName = NameToSet;
 		Bot->ID = IDToSet;
+
+		auto* AIController = Bot->GetAIController();
+
+		if (AIController)
+		{
+
+			float XPos = FMath::RandRange(-7400, 7400);
+			float YPos = FMath::RandRange(-7400, 7400);
+
+			FVector LocationToMove(XPos, YPos, 97);
+
+			AIController->MoveToLocation(LocationToMove);
+		}
 	}
 
 	return Bot;
 }
+
 
