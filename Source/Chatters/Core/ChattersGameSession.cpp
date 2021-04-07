@@ -46,3 +46,30 @@ void UChattersGameSession::Destroy()
 		this->ConditionalBeginDestroy();
 	}
 }
+
+void UChattersGameSession::LevelLoaded()
+{
+	UWorld* World = GetWorld();
+
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UChattersGameSession::LevelLoaded] World was nullptr"));
+		return;
+	}
+
+	if (!this->BotSubclass)
+	{
+		this->BotSubclass = ABot::StaticClass();
+	}
+
+	if (this->SessionType == ESessionType::Generated)
+	{
+		for (int32 i = 0; i < this->MaxPlayers; i++)
+		{
+			auto Name = FString::Printf(TEXT("Bot_%d"), i);
+			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass);
+			this->Bots.Add(Bot);
+			this->AliveBots.Add(Bot);
+		}
+	}
+}

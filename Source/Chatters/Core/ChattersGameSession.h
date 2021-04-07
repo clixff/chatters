@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "../Character/Bot.h"
 #include "ChattersGameSession.generated.h"
 
 UENUM(BlueprintType)
@@ -45,4 +46,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		int32 MaxPlayers = 25;
+
+public:
+	UPROPERTY(EditDefaultsOnly)
+		TSubclassOf<ABot> BotSubclass;
+
+	UPROPERTY(VisibleAnywhere)
+		TArray<ABot*> Bots;
+
+	UPROPERTY(VisibleAnywhere)
+		TArray<ABot*> AliveBots;
 };
