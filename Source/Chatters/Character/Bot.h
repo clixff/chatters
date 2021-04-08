@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "BotController.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "../UI/Widgets/BotNameWidget.h"
 #include "Bot.generated.h"
 
 UCLASS()
@@ -29,17 +32,26 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
-	FString DisplayName = FString();
+	UPROPERTY(VisibleAnywhere, Category="Bot")
+		FString DisplayName = FString();
 
 	uint32 ID;
 
-	uint32 HealthPoints;
+	UPROPERTY(VisibleAnywhere, Category = "Bot")
+		int32 HealthPoints;
 
-	uint32 MaxHealthPoints;
+	UPROPERTY(VisibleAnywhere, Category = "Bot")
+		int32 MaxHealthPoints;
 
 	bool GetIsAlive();
 
 	ABotController* GetAIController();
+
+	void Init(FString NewName, uint32 NewID);
+
+	void ApplyDamage(int32 Damage);
+
+	float GetHeathValue();
 private:
 	bool bAlive = true;
 
@@ -51,9 +63,18 @@ private:
 
 	FVector RandomLocationTarget;
 
+	UBotNameWidget* GetNameWidget();
+
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass);
 public:
-	UPROPERTY(VisibleAnywhere, BLueprintReadWrite)
-		USkeletalMeshComponent* Head;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		USkeletalMeshComponent* HeadMesh;
+
+	/** UI Widget with display name and health points */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		UWidgetComponent* NameWidgetComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		UStaticMeshComponent* HatMesh;
 };
