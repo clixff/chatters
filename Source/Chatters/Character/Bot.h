@@ -43,6 +43,14 @@ public:
 private:
 	bool bAlive = true;
 
+	void SetOutfit();
+
+	void MoveToRandomLocation();
+
+	bool bMovingToRandomLocation = false;
+
+	FVector RandomLocationTarget;
+
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass);
 public:

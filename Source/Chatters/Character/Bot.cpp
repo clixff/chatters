@@ -36,6 +36,16 @@ void ABot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (this->bMovingToRandomLocation)
+	{
+		float DistToTarget = FVector::Dist(this->GetActorLocation(), this->RandomLocationTarget);
+
+		if (DistToTarget <= 150.0f)
+		{
+			this->MoveToRandomLocation();
+		}
+	}
+
 }
 
 // Called to bind functionality to input
@@ -76,21 +86,31 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclas
 		Bot->DisplayName = NameToSet;
 		Bot->ID = IDToSet;
 
-		auto* AIController = Bot->GetAIController();
-
-		if (AIController)
-		{
-
-			float XPos = FMath::RandRange(-7400, 7400);
-			float YPos = FMath::RandRange(-7400, 7400);
-
-			FVector LocationToMove(XPos, YPos, 97);
-
-			AIController->MoveToLocation(LocationToMove);
-		}
+		Bot->MoveToRandomLocation();
 	}
 
 	return Bot;
 }
 
 
+void ABot::SetOutfit()
+{
+
+}
+
+void ABot::MoveToRandomLocation()
+{
+	auto* AIController = this->GetAIController();
+
+	if (AIController)
+	{
+
+		float XPos = FMath::RandRange(-7400, 7400);
+		float YPos = FMath::RandRange(-7400, 7400);
+
+		this->RandomLocationTarget = FVector(XPos, YPos, 97);
+
+		AIController->MoveToLocation(this->RandomLocationTarget);
+		bMovingToRandomLocation = true;
+	}
+}
