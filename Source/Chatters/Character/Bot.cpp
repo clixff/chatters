@@ -48,6 +48,7 @@ void ABot::Tick(float DeltaTime)
 		if (DistToTarget <= 150.0f)
 		{
 			this->ApplyDamage(15);
+			this->bMovingToRandomLocation = false;
 			this->MoveToRandomLocation();
 		}
 	}

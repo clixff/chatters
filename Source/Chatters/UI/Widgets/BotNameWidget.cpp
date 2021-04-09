@@ -16,37 +16,10 @@ void UBotNameWidget::UpdateHealth(float HealthValue)
 		HealthValue = 1.0f;
 	}
 
-	//float FirstHealthElementPercent = 1.0f;
-	//float SecondHealthElementPercent = 1.0f;
-	//float ThirdHealthElementPercent = 1.0f;
-	//
-	//const float HealthElementSize = (1.0f / 3.0f);
-	//const float FirstHealthElementMaxValue = HealthElementSize;
-	//const float SecondHealthElementMaxValue = (HealthElementSize * 2);
-	//const float ThirdHealthElementMaxValue = (HealthElementSize * 3);
-
-
-	//if (HealthValue < FirstHealthElementMaxValue)
-	//{
-	//	FirstHealthElementPercent = (HealthValue / FirstHealthElementMaxValue);
-	//	SecondHealthElementPercent = 0.0f;
-	//	ThirdHealthElementPercent = 0.0f;
-	//}
-	//else if (HealthValue < SecondHealthElementMaxValue)
-	//{
-	//	SecondHealthElementPercent = ((HealthValue - FirstHealthElementMaxValue) / HealthElementSize);
-	//	ThirdHealthElementPercent = 0.0f;
-	//}
-	//else if (HealthValue < ThirdHealthElementMaxValue)
-	//{
-	//	ThirdHealthElementPercent = ((HealthValue - SecondHealthElementPercent) / HealthElementSize);
-	//}
-
 	if (!this->HealthBarMaterials.Num())
 	{
 		this->CreateHealthBarMaterials();
 	}
-
 
 	if (!this->HealthBarMaterials.Num())
 	{
@@ -69,7 +42,7 @@ void UBotNameWidget::UpdateHealth(float HealthValue)
 
 			this->SetHealthBarElementValue(i, HealthBarElementValues[i]);
 
-			for (int32 j = i+1; j < HEALTH_BAR_ELEMENTS_NUMBER; i++)
+			for (int32 j = i+1; j < HEALTH_BAR_ELEMENTS_NUMBER; j++)
 			{
 				HealthBarElementValues[j] = 0.0f;
 				this->SetHealthBarElementValue(j, HealthBarElementValues[j]);
@@ -83,7 +56,6 @@ void UBotNameWidget::UpdateHealth(float HealthValue)
 			this->SetHealthBarElementValue(i, HealthBarElementValues[i]);
 		}
 	}
-
 
 }
 
@@ -109,8 +81,7 @@ void UBotNameWidget::CreateHealthBarMaterials()
 
 				if (BorderWidget)
 				{
-					//BorderWidget->SetBrushFromMaterial(DynamicMaterial);
-					UE_LOG(LogTemp, Display, TEXT("[UBotNameWidget] Set health bar #%d material"), i);
+					BorderWidget->SetBrushFromMaterial(DynamicMaterial);
 				}
 			}
 		}
