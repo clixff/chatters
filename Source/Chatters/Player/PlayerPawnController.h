@@ -27,6 +27,16 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		float MaxMovementSpeedWithShift = 2400.0f;
 
+	UPROPERTY(EditDefaultsOnly)
+		float ZoomModifier = 3000.0f;
+
+	float ZoomValue = 0.0f;
+
+	float ZoomSeconds = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float SecondsForZoom = 0.5f;
+
 protected:
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
@@ -52,4 +62,11 @@ private:
 	void UpdateMaxMovementSpeed(float MaxSpeed);
 
 	void OnSpacePressed();
+
+	void OnMouseWheelUp();
+	void OnMouseWheelDown();
+
+	void Zoom(float Value);
+
+	void ZoomTick(float DeltaTime);
 };

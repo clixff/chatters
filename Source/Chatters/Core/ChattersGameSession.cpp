@@ -42,6 +42,24 @@ void UChattersGameSession::Destroy()
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession destroy"));
 
+	auto* World = GetWorld();
+
+	if (World)
+	{
+		auto* PlayerController = World->GetFirstPlayerController();
+		if (PlayerController)
+		{
+			auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
+			if (PlayerPawn)
+			{
+				PlayerPawn->GameSession = nullptr;
+				PlayerPawn->bReady = false;
+			}
+		}
+	}
+
+
+
 	if (this->IsValidLowLevel())
 	{
 		this->ConditionalBeginDestroy();
@@ -72,6 +90,8 @@ void UChattersGameSession::LevelLoaded()
 			this->Bots.Add(Bot);
 			this->AliveBots.Add(Bot);
 		}
+
+
 	}
 
 	auto* PlayerController = World->GetFirstPlayerController();
@@ -81,6 +101,18 @@ void UChattersGameSession::LevelLoaded()
 		if (PlayerPawn)
 		{
 			PlayerPawn->bReady = true;
+
+			if (this->Bots.Num() > 0)
+			{
+				int32 RandomBotID = FMath::RandRange(0, this->Bots.Num() - 1);
+
+				auto* Bot = this->Bots[RandomBotID];
+
+				if (Bot)
+				{
+					PlayerPawn->AttachToBot(Bot);
+				}
+			}
 		}
 	}
 

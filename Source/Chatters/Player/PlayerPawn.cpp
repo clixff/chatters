@@ -45,6 +45,71 @@ void APlayerPawn::Tick(float DeltaTime)
 	}
 }
 
+void APlayerPawn::AttachToBot(ABot* Bot)
+{
+	if (Bot)
+	{
+		this->BotToAttach = Bot;
+
+		this->bAttachedToBot = true;
+
+
+		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, true);
+
+		if (this->CameraBoom)
+		{
+			this->CameraBoom->TargetArmLength = this->DefaultAttachedZoom;
+			this->CameraBoom->SetRelativeRotation(FRotator(-30.0f, 0.0f, 0.0f));
+		}
+
+		UE_LOG(LogTemp, Display, TEXT("[APlayerPawn] Set pawn rotation %s"), *(this->BotToAttach->GetActorRotation().ToString()));
+
+		this->AttachToActor(this->BotToAttach, TransformRules);
+
+		if (this->Controller)
+		{
+			this->Controller->SetControlRotation(this->BotToAttach->GetActorRotation());
+		}
+	}
+}
+
+void APlayerPawn::DetachFromBot()
+{
+	if (this->bAttachedToBot)
+	{
+		this->bAttachedToBot = false;
+
+		if (this->BotToAttach)
+		{
+			FVector CameraLocation = this->BotToAttach->GetActorLocation();
+			FRotator CameraRotation = this->BotToAttach->GetActorRotation();
+
+			this->BotToAttach = nullptr;
+
+			if (this->Camera)
+			{
+				CameraLocation = this->Camera->GetComponentLocation();;
+				CameraRotation = this->Camera->GetComponentRotation();
+			}
+
+			if (this->CameraBoom)
+			{
+				this->CameraBoom->TargetArmLength = 0.0f;
+				this->CameraBoom->SetRelativeRotation(FRotator(0.0f));
+			}
+
+			this->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+			this->TeleportTo(CameraLocation, CameraRotation);
+
+			if (this->Controller)
+			{
+				this->Controller->SetControlRotation(CameraRotation);
+			}
+		}
+	}
+}
+
 void APlayerPawn::UpdateBotNicknameWidgetsSize()
 {
 	if (!this->GameSession)

@@ -9,6 +9,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "../Core/ChattersGameSession.h"
+#include "../Character/Bot.h"
 #include "PlayerPawn.generated.h"
 
 UCLASS()
@@ -31,21 +32,39 @@ public:
 	/** Sets to true when the playing level loaded */
 	bool bReady = false;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		USphereComponent* SphereCollision;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UCameraComponent* Camera;
 
 
 	UPROPERTY(Category = Pawn, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		UPawnMovementComponent* MovementComponent;
 
-private:
+	UPROPERTY()
+		ABot* BotToAttach = nullptr;
+
 	UChattersGameSession* GameSession = nullptr;
 
+	void AttachToBot(ABot* Bot);
+
+	void DetachFromBot();
+
+	UPROPERTY(EditDefaultsOnly)
+		float MaxAttachedZoom = 3000.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float MinAttachedZoom = 500.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float DefaultAttachedZoom = 2400.0f;
+
+	bool bAttachedToBot = false;
+
+private:
 	void UpdateBotNicknameWidgetsSize();
 };

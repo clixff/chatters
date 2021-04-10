@@ -169,7 +169,7 @@ void ABot::MoveToRandomLocation()
 void ABot::ApplyDamage(int32 Damage)
 {
 	/** When game session not started */
-	if (this->bReady)
+	if (!this->bReady)
 	{
 		return;
 	}
