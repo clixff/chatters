@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "../Character/Bot.h"
+#include "../UI/Widgets/SessionWidget.h"
 #include "ChattersGameSession.generated.h"
 
 UENUM(BlueprintType)
@@ -39,6 +40,10 @@ public:
 
 	void LevelLoaded();
 
+	void OnBotDied(int32 BotID);
+
+	void Start();
+
 public:
 	bool bStarted = false;
 
@@ -56,4 +61,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 		TArray<ABot*> AliveBots;
+private:
+	UPROPERTY(VisibleAnywhere)
+		USessionWidget* SessionWidget = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		TSubclassOf<USessionWidget> SessionWidgetClass;
 };

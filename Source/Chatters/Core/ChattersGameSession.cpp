@@ -67,7 +67,7 @@ void UChattersGameSession::LevelLoaded()
 	{
 		for (int32 i = 0; i < this->MaxPlayers; i++)
 		{
-			auto Name = FString::Printf(TEXT("Bot_%d"), i);
+			auto Name = FString::Printf(TEXT("Bot_%d"), i+1);
 			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass);
 			this->Bots.Add(Bot);
 			this->AliveBots.Add(Bot);
@@ -81,6 +81,60 @@ void UChattersGameSession::LevelLoaded()
 		if (PlayerPawn)
 		{
 			PlayerPawn->bReady = true;
+		}
+	}
+
+	if (!this->SessionWidgetClass)
+	{
+		this->SessionWidgetClass = USessionWidget::StaticClass();
+	}
+
+	this->SessionWidget = UCustomWidgetBase::CreateUserWidget(this->SessionWidgetClass);
+
+	this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
+
+	this->SessionWidget->Show();
+}
+
+void UChattersGameSession::OnBotDied(int32 BotID)
+{
+	for (int32 i = 0; i < this->AliveBots.Num(); i++)
+	{
+		auto* AliveBot = this->AliveBots[i];
+		if (AliveBot && AliveBot->ID == BotID)
+		{
+			this->AliveBots.RemoveAt(i, 1, true);
+
+			if (this->SessionWidget)
+			{
+				this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
+			}
+
+			break;
+		}
+	}
+
+}
+
+void UChattersGameSession::Start()
+{
+	if (!this->bStarted)
+	{
+		this->bStarted = true;
+
+		if (this->SessionWidget)
+		{
+			this->SessionWidget->HideStartGameSessionTip();
+		}
+
+		for (int32 i = 0; i < this->Bots.Num(); i++)
+		{
+			auto* Bot = this->Bots[i];
+
+			if (Bot)
+			{
+				Bot->OnGameSessionStarted();
+			}
 		}
 	}
 }

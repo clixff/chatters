@@ -3,6 +3,8 @@
 
 #include "PlayerPawnController.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "../Core/ChattersGameInstance.h"
+#include "../Core/ChattersGameSession.h"
 
 APlayerPawnController::APlayerPawnController()
 {
@@ -43,6 +45,9 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAction("Shift", IE_Pressed, this, &APlayerPawnController::OnShiftPressed);
 	this->InputComponent->BindAction("Shift", IE_Released, this, &APlayerPawnController::OnShiftReleased);
+
+	this->InputComponent->BindAction("Space", IE_Pressed, this, &APlayerPawnController::OnSpacePressed);
+
 ;}
 
 void APlayerPawnController::BeginPlay()
@@ -120,4 +125,20 @@ void APlayerPawnController::UpdateMaxMovementSpeed(float MaxSpeed)
 			MovementComponent->MaxSpeed = MaxSpeed;
 		}
 	}
+}
+
+void APlayerPawnController::OnSpacePressed()
+{
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (GameInstance)
+	{
+		auto* GameSession = GameInstance->GetGameSession();
+		
+		if (GameSession && !GameSession->bStarted)
+		{
+			GameSession->Start();
+		}
+	}
+
 }

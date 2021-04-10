@@ -50,4 +50,6 @@ private:
 	bool bShiftPressed = false;
 
 	void UpdateMaxMovementSpeed(float MaxSpeed);
+
+	void OnSpacePressed();
 };

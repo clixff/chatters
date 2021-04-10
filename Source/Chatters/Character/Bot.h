@@ -54,8 +54,12 @@ public:
 	float GetHeathValue();
 
 	void Say(FString Message);
+
+	void OnGameSessionStarted();
 private:
 	bool bAlive = true;
+
+	bool bReady = false;
 
 	void SetOutfit();
 

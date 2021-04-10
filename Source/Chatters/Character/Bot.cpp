@@ -3,6 +3,8 @@
 
 #include "Bot.h"
 #include "Components/CapsuleComponent.h"
+#include "../Core/ChattersGameInstance.h"
+#include "../Core/ChattersGameSession.h"
 
 // Sets default values
 ABot::ABot()
@@ -145,8 +147,6 @@ void ABot::Init(FString NewName, uint32 NewID)
 		NameWidget->Nickname = this->DisplayName;
 		NameWidget->UpdateHealth(this->GetHeathValue());
 	}
-
-	this->MoveToRandomLocation();
 }
 
 void ABot::MoveToRandomLocation()
@@ -168,6 +168,12 @@ void ABot::MoveToRandomLocation()
 
 void ABot::ApplyDamage(int32 Damage)
 {
+	/** When game session not started */
+	if (this->bReady)
+	{
+		return;
+	}
+
 	if (Damage < 1)
 	{
 		return;
@@ -282,4 +288,24 @@ void ABot::OnDead()
 	{
 		this->NameWidgetComponent->SetVisibility(false);
 	}
+
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (GameInstance)
+	{
+		auto* GameSession = GameInstance->GetGameSession();
+
+		if (GameSession)
+		{
+			GameSession->OnBotDied(this->ID);
+		}
+	}
+
+}
+
+void ABot::OnGameSessionStarted()
+{
+	this->bReady = true;
+
+	this->MoveToRandomLocation();
 }
