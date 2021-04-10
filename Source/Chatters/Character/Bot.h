@@ -84,4 +84,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		UStaticMeshComponent* HatMesh;
+
+	void OnDead();
 };

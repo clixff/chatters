@@ -2,7 +2,7 @@
 
 
 #include "Bot.h"
-
+#include "Components/CapsuleComponent.h"
 
 // Sets default values
 ABot::ABot()
@@ -47,7 +47,7 @@ void ABot::Tick(float DeltaTime)
 
 		if (DistToTarget <= 150.0f)
 		{
-			this->ApplyDamage(15);
+			this->ApplyDamage(50);
 			this->bMovingToRandomLocation = false;
 			this->SayRandomMessage();
 			this->MoveToRandomLocation();
@@ -177,10 +177,10 @@ void ABot::ApplyDamage(int32 Damage)
 
 	this->HealthPoints -= Damage;
 
-	if (this->HealthPoints < 0)
+	if (this->HealthPoints <= 0)
 	{
 		this->HealthPoints = 0;
-		this->bAlive = false;
+		this->OnDead();
 	}
 
 	UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);
@@ -256,4 +256,30 @@ void ABot::SayRandomMessage()
 	Message = FString(RawMessage);
 
 	this->Say(Message);
+}
+
+void ABot::OnDead()
+{
+	this->bAlive = false;
+	this->HealthPoints = 0;
+
+	this->SetActorLocation(this->GetActorLocation());
+
+	if (this->GetMesh())
+	{
+		this->GetMesh()->SetSimulatePhysics(true);
+		this->GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
+	}
+
+	if (this->GetCapsuleComponent())
+	{
+		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	}
+
+	this->bMovingToRandomLocation = false;
+
+	if (this->NameWidgetComponent)
+	{
+		this->NameWidgetComponent->SetVisibility(false);
+	}
 }
