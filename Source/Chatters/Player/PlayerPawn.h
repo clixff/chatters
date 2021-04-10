@@ -8,6 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "../Core/ChattersGameSession.h"
 #include "PlayerPawn.generated.h"
 
 UCLASS()
@@ -27,6 +28,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	/** Sets to true when the playing level loaded */
+	bool bReady = false;
 
 	UPROPERTY(VisibleAnywhere)
 		USphereComponent* SphereCollision;
@@ -40,4 +43,9 @@ public:
 
 	UPROPERTY(Category = Pawn, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		UPawnMovementComponent* MovementComponent;
+
+private:
+	UChattersGameSession* GameSession = nullptr;
+
+	void UpdateBotNicknameWidgetsSize();
 };

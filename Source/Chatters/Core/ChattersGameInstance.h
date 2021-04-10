@@ -71,6 +71,8 @@ public:
 
 	void StartGameSession();
 
+	bool GetIsInMainMenu();
+
 public:
 	/** Get Singleton */
 	static UChattersGameInstance* Get();

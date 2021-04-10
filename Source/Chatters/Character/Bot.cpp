@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Bot.h"
@@ -49,8 +49,16 @@ void ABot::Tick(float DeltaTime)
 		{
 			this->ApplyDamage(15);
 			this->bMovingToRandomLocation = false;
+			this->SayRandomMessage();
 			this->MoveToRandomLocation();
 		}
+	}
+
+	auto* NameWidgetObject = this->GetNameWidget();
+
+	if (NameWidgetObject)
+	{
+		NameWidgetObject->Tick(DeltaTime);
 	}
 
 }
@@ -81,19 +89,24 @@ ABotController* ABot::GetAIController()
 
 UBotNameWidget* ABot::GetNameWidget()
 {
-	if (!this->NameWidgetComponent)
+	if (!this->NameWidget)
 	{
-		return nullptr;
+		if (!this->NameWidgetComponent)
+		{
+			return nullptr;
+		}
+
+		auto* NameWidgetObject = this->NameWidgetComponent->GetWidget();
+
+		if (!NameWidgetObject)
+		{
+			return nullptr;
+		}
+
+		this->NameWidget = Cast<UBotNameWidget>(NameWidgetObject);
 	}
 
-	auto* NameWidgetObject = this->NameWidgetComponent->GetWidget();
-
-	if (!NameWidgetObject)
-	{
-		return nullptr;
-	}
-
-	return Cast<UBotNameWidget>(NameWidgetObject);
+	return this->NameWidget;
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass)
@@ -125,12 +138,12 @@ void ABot::Init(FString NewName, uint32 NewID)
 	this->ID = NewID;
 	this->HealthPoints = this->MaxHealthPoints;
 
-	auto* NameWidget = this->GetNameWidget();
+	auto* NameWidgetObject = this->GetNameWidget();
 
-	if (NameWidget)
+	if (NameWidgetObject)
 	{
 		NameWidget->Nickname = this->DisplayName;
-		//NameWidget->UpdateHealth(this->GetHeathValue());
+		NameWidget->UpdateHealth(this->GetHeathValue());
 	}
 
 	this->MoveToRandomLocation();
@@ -172,16 +185,75 @@ void ABot::ApplyDamage(int32 Damage)
 
 	UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);
 
-	auto* NameWidget = this->GetNameWidget();
+	auto* NameWidgetObject = this->GetNameWidget();
 
-	if (NameWidget)
+	if (NameWidgetObject)
 	{
 		float HealthValue = this->GetHeathValue();
-		NameWidget->UpdateHealth(HealthValue);
+		NameWidgetObject->UpdateHealth(HealthValue);
 	}
 }
 
 float ABot::GetHeathValue()
 {
 	return (float(this->HealthPoints) / float(this->MaxHealthPoints));
+}
+
+void ABot::Say(FString Message)
+{
+	UE_LOG(LogTemp, Display, TEXT("[ABot] Say message: %s"), *Message);
+	if (Message.IsEmpty())
+	{
+		return;
+	}
+
+	this->ChatBubbleMessage = Message;
+
+	auto* NameWidgetObject = this->GetNameWidget();
+	
+	if (NameWidgetObject)
+	{
+		NameWidgetObject->UpdateChatBubbleMessage(this->ChatBubbleMessage);
+	}
+}
+
+void ABot::SayRandomMessage()
+{
+	FString Message;
+
+	int32 MessageLength = FMath::RandRange(5, 100);
+
+	TArray<TCHAR> RawMessage;
+
+	RawMessage.Init(L' ', MessageLength);
+
+	//TCHAR* RawMessage = new TCHAR[MessageLength];
+
+	for (int32 i = 0; i < MessageLength; i++)
+	{
+		int32 RandNum = FMath::RandRange(0, 10);
+
+		int32 RandCharCode = 0;
+
+		/** Use latin symbols */
+		if (RandNum < 5)
+		{
+			RandCharCode = FMath::RandRange(0x41, 0x7a);
+		}
+		/** Use cyrillic symbols */
+		else if (RandNum < 10)
+		{
+			RandCharCode = FMath::RandRange(0x410, 0x44f);
+		}
+		else
+		{
+			RandCharCode = 20;
+		}
+
+		RawMessage[i] = TCHAR(RandCharCode);
+	}
+	
+	Message = FString(RawMessage);
+
+	this->Say(Message);
 }

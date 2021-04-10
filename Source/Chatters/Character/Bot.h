@@ -52,6 +52,8 @@ public:
 	void ApplyDamage(int32 Damage);
 
 	float GetHeathValue();
+
+	void Say(FString Message);
 private:
 	bool bAlive = true;
 
@@ -63,8 +65,13 @@ private:
 
 	FVector RandomLocationTarget;
 
+	UBotNameWidget* NameWidget = nullptr;
+
 	UBotNameWidget* GetNameWidget();
 
+	FString ChatBubbleMessage;
+
+	void SayRandomMessage();
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass);
 public:

@@ -3,6 +3,7 @@
 
 #include "ChattersGameSession.h"
 #include "ChattersGameInstance.h"
+#include "../Player/PlayerPawn.h"
 #include "Managers/MapManager.h"
 
 UChattersGameSession::UChattersGameSession()
@@ -70,6 +71,16 @@ void UChattersGameSession::LevelLoaded()
 			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass);
 			this->Bots.Add(Bot);
 			this->AliveBots.Add(Bot);
+		}
+	}
+
+	auto* PlayerController = World->GetFirstPlayerController();
+	if (PlayerController)
+	{
+		auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
+		if (PlayerPawn)
+		{
+			PlayerPawn->bReady = true;
 		}
 	}
 }

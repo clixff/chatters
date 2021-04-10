@@ -230,3 +230,8 @@ void UChattersGameInstance::StartGameSession()
 
 	this->GameSession->Init();
 }
+
+bool UChattersGameInstance::GetIsInMainMenu()
+{
+	return this->bInMainMenu;
+}
