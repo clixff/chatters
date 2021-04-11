@@ -7,6 +7,13 @@
 #include "PlayerPawn.h"
 #include "PlayerPawnController.generated.h"
 
+enum class ERotationType : uint8
+{
+	Yaw,
+	Pitch,
+	Roll
+};
+
 /**
  * 
  */
@@ -22,20 +29,29 @@ public:
 	APlayerPawn* GetPlayerPawn();
 
 	UPROPERTY(EditDefaultsOnly)
-		float MaxMovementSpeed = 1200.0f;
+		float MaxMovementSpeed = 1700.0f;
 	
 	UPROPERTY(EditDefaultsOnly)
-		float MaxMovementSpeedWithShift = 2400.0f;
+		float MaxMovementSpeedWithShift = 3500.0f;
 
 	UPROPERTY(EditDefaultsOnly)
-		float ZoomModifier = 3000.0f;
+		float ZoomScale = 2500.0f;
 
 	float ZoomValue = 0.0f;
 
 	float ZoomSeconds = 0.0f;
 
 	UPROPERTY(EditDefaultsOnly)
-		float SecondsForZoom = 0.5f;
+		float SecondsForZoom = 0.25f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float AttachedCameraRotationScale = 2.5f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float AttachedCameraMaxPitchRotation = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float AttachedCameraMinPitchRotation = -70.0f;
 
 protected:
 	virtual void PlayerTick(float DeltaTime) override;
@@ -69,4 +85,7 @@ private:
 	void Zoom(float Value);
 
 	void ZoomTick(float DeltaTime);
+
+	void RotateAttachedCamera(ERotationType Type, float Value);
+
 };

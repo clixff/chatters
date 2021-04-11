@@ -85,6 +85,10 @@ void APlayerPawnController::TurnX(float Value)
 		{
 			this->AddYawInput(Value);
 		}
+		else
+		{
+			this->RotateAttachedCamera(ERotationType::Yaw, Value);
+		}
 	}
 }
 
@@ -97,6 +101,10 @@ void APlayerPawnController::TurnY(float Value)
 		if (!PlayerPawnActor->bAttachedToBot)
 		{
 			this->AddPitchInput(Value);
+		}
+		else
+		{
+			this->RotateAttachedCamera(ERotationType::Pitch, Value);
 		}
 	}
 }
@@ -175,8 +183,6 @@ void APlayerPawnController::OnMouseWheelDown()
 
 void APlayerPawnController::Zoom(float Value)
 {
-	UE_LOG(LogTemp, Display, TEXT("[APlayerPawnController] Zoom value %f"), Value);
-
 	if (Value == 0.0f)
 	{
 		return;
@@ -201,7 +207,7 @@ void APlayerPawnController::ZoomTick(float DeltaTime)
 
 		if (CameraBoom)
 		{
-			CameraBoom->TargetArmLength += this->ZoomModifier * this->ZoomValue * DeltaTime;
+			CameraBoom->TargetArmLength += this->ZoomScale * this->ZoomValue * DeltaTime;
 
 			if (CameraBoom->TargetArmLength < PlayerPawnActor->MinAttachedZoom)
 			{
@@ -221,12 +227,53 @@ void APlayerPawnController::ZoomTick(float DeltaTime)
 					this->ZoomSeconds = 0.0f;
 				}
 			}
-
-			UE_LOG(LogTemp, Display, TEXT("[APlayerPawnController] Set zoom to %f"), CameraBoom->TargetArmLength);
 		}
 	}
 	else
 	{
 		this->ZoomSeconds = 0.0f;
+	}
+}
+
+void APlayerPawnController::RotateAttachedCamera(ERotationType Type, float Value)
+{
+	if (Value == 0)
+	{
+		return;
+	}
+
+	auto* PlayerPawnActor = this->GetPlayerPawn();
+
+	if (PlayerPawnActor)
+	{
+		auto* CameraBoom = PlayerPawnActor->CameraBoom;
+		if (CameraBoom)
+		{
+			FRotator CameraBoomRotation = CameraBoom->GetRelativeRotation();
+
+			float RotationToAdd = Value * this->AttachedCameraRotationScale;
+
+			CameraBoomRotation.Roll = 0.0f;
+
+			if (Type == ERotationType::Yaw)
+			{
+				CameraBoomRotation.Yaw += RotationToAdd;
+			}
+			else if (Type == ERotationType::Pitch)
+			{
+				CameraBoomRotation.Pitch -= RotationToAdd;
+
+				if (CameraBoomRotation.Pitch < this->AttachedCameraMinPitchRotation)
+				{
+					CameraBoomRotation.Pitch = this->AttachedCameraMinPitchRotation;
+				}
+				else if (CameraBoomRotation.Pitch > this->AttachedCameraMaxPitchRotation)
+				{
+					CameraBoomRotation.Pitch = this->AttachedCameraMaxPitchRotation;
+				}
+			}
+
+			CameraBoom->SetRelativeRotation(CameraBoomRotation);
+		}
 	}
 }
