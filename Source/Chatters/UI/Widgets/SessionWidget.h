@@ -22,4 +22,17 @@ public:
 
 	/** Hide "Press space" text */
 	void HideStartGameSessionTip();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText SpectatorBotName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText SpectatorBotHealthPoints;
+
+	void SetSpectatorWidgetVisibility(bool bVisible);
+
+	void UpdateSpectatorBotName(FString BotName);
+
+	void UpdateSpectatorBotHealth(int32 HealthPoints);
+
 };

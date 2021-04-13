@@ -12,6 +12,7 @@
 #include "../Character/Bot.h"
 #include "PlayerPawn.generated.h"
 
+
 UCLASS()
 class CHATTERS_API APlayerPawn : public APawn
 {
@@ -63,8 +64,14 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		float DefaultAttachedZoom = 2400.0f;
 
+	float LastZoomValue;
+
 	bool bAttachedToBot = false;
 
 private:
 	void UpdateBotNicknameWidgetsSize();
+
+	void SetSpectatorMenuVisibiliy(bool bVisible);
+
+	UChattersGameSession* GetGameSession();
 };

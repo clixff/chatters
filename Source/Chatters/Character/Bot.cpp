@@ -111,7 +111,7 @@ UBotNameWidget* ABot::GetNameWidget()
 	return this->NameWidget;
 }
 
-ABot* ABot::CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass)
+ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass)
 {
 	FVector BotPosition(0, float(IDToSet * 300), 100);
 	FActorSpawnParameters SpawnParams;
@@ -133,7 +133,7 @@ void ABot::SetOutfit()
 
 }
 
-void ABot::Init(FString NewName, uint32 NewID)
+void ABot::Init(FString NewName, int32 NewID)
 {
 	this->SpawnDefaultController();
 	this->DisplayName = NewName;
@@ -197,6 +197,25 @@ void ABot::ApplyDamage(int32 Damage)
 	{
 		float HealthValue = this->GetHeathValue();
 		NameWidgetObject->UpdateHealth(HealthValue);
+	}
+	
+	if (this->bPlayerAttached)
+	{
+		auto* GameInstance = UChattersGameInstance::Get();
+
+		if (GameInstance)
+		{
+			auto* GameSession = GameInstance->GetGameSession();
+
+			if (GameSession)
+			{
+				auto* SessionWidget = GameSession->GetSessionWidget();
+				if (SessionWidget)
+				{
+					SessionWidget->UpdateSpectatorBotHealth(this->HealthPoints);
+				}
+			}
+		}
 	}
 }
 

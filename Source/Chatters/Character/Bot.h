@@ -35,7 +35,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category="Bot")
 		FString DisplayName = FString();
 
-	uint32 ID;
+	int32 ID;
 
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
 		int32 HealthPoints;
@@ -47,7 +47,7 @@ public:
 
 	ABotController* GetAIController();
 
-	void Init(FString NewName, uint32 NewID);
+	void Init(FString NewName, int32 NewID);
 
 	void ApplyDamage(int32 Damage);
 
@@ -56,6 +56,9 @@ public:
 	void Say(FString Message);
 
 	void OnGameSessionStarted();
+
+	bool bPlayerAttached = false;
+
 private:
 	bool bAlive = true;
 
@@ -77,7 +80,7 @@ private:
 
 	void SayRandomMessage();
 public:
-	static ABot* CreateBot(UWorld* World, FString NameToSet, uint32 IDToSet, TSubclassOf<ABot> Subclass);
+	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass);
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		USkeletalMeshComponent* HeadMesh;

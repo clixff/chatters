@@ -4,6 +4,8 @@
 #include "PlayerPawn.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "../Core/ChattersGameInstance.h"
+#include "../Misc/MathHelper.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "PlayerPawnController.h"
 
 // Sets default values
@@ -32,6 +34,7 @@ void APlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	this->LastZoomValue = this->DefaultAttachedZoom;
 }
 
 // Called every frame
@@ -43,33 +46,53 @@ void APlayerPawn::Tick(float DeltaTime)
 	{
 		this->UpdateBotNicknameWidgetsSize();
 	}
+
 }
 
 void APlayerPawn::AttachToBot(ABot* Bot)
 {
 	if (Bot)
 	{
+		if (this->BotToAttach)
+		{
+			this->BotToAttach->bPlayerAttached = false;
+		}
+
 		this->BotToAttach = Bot;
-
-		this->bAttachedToBot = true;
-
+		this->BotToAttach->bPlayerAttached = true;
 
 		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, true);
-
-		if (this->CameraBoom)
-		{
-			this->CameraBoom->TargetArmLength = this->DefaultAttachedZoom;
-			this->CameraBoom->SetRelativeRotation(FRotator(-30.0f, 0.0f, 0.0f));
-		}
-
-		UE_LOG(LogTemp, Display, TEXT("[APlayerPawn] Set pawn rotation %s"), *(this->BotToAttach->GetActorRotation().ToString()));
-
 		this->AttachToActor(this->BotToAttach, TransformRules);
 
-		if (this->Controller)
+		if (!this->bAttachedToBot)
 		{
-			this->Controller->SetControlRotation(this->BotToAttach->GetActorRotation());
+			if (this->Controller)
+			{
+				this->Controller->SetControlRotation(FRotator(0.0f, 0.0f, 0.0f));
+			}
+
+			if (this->CameraBoom)
+			{
+				this->CameraBoom->TargetArmLength = this->LastZoomValue;
+
+				FRotator BotRotation = Bot->GetActorRotation();
+
+				this->CameraBoom->SetRelativeRotation(FRotator(-30.0f, BotRotation.Yaw, 0.0f));
+			}
+			
 		}
+		else
+		{
+			if (this->CameraBoom)
+			{
+				FRotator CameraBoomRotation = this->CameraBoom->GetRelativeRotation();
+				CameraBoomRotation.Roll = 0.0f;
+				this->CameraBoom->SetRelativeRotation(CameraBoomRotation);
+			}
+		}
+
+		this->bAttachedToBot = true;
+		this->SetSpectatorMenuVisibiliy(true);
 	}
 }
 
@@ -84,6 +107,8 @@ void APlayerPawn::DetachFromBot()
 			FVector CameraLocation = this->BotToAttach->GetActorLocation();
 			FRotator CameraRotation = this->BotToAttach->GetActorRotation();
 
+			this->BotToAttach->bPlayerAttached = false;
+
 			this->BotToAttach = nullptr;
 
 			if (this->Camera)
@@ -91,6 +116,8 @@ void APlayerPawn::DetachFromBot()
 				CameraLocation = this->Camera->GetComponentLocation();;
 				CameraRotation = this->Camera->GetComponentRotation();
 			}
+
+			CameraRotation.Roll = 0.0f;
 
 			if (this->CameraBoom)
 			{
@@ -105,30 +132,18 @@ void APlayerPawn::DetachFromBot()
 			if (this->Controller)
 			{
 				this->Controller->SetControlRotation(CameraRotation);
+
 			}
 		}
+		this->SetSpectatorMenuVisibiliy(false);
 	}
 }
 
 void APlayerPawn::UpdateBotNicknameWidgetsSize()
 {
-	if (!this->GameSession)
-	{
-		auto* GameInstance = UChattersGameInstance::Get();
-		if (!GameInstance || GameInstance->GetIsInMainMenu())
-		{
-			return;
-		}
+	auto* GameSessionObject = this->GetGameSession();
 
-		this->GameSession = GameInstance->GetGameSession();
-
-		if (!this->GameSession)
-		{
-			return;
-		}
-	}
-
-	TArray<ABot*> Bots = this->GameSession->Bots;
+	TArray<ABot*> Bots = GameSessionObject->Bots;
 
 	if (!Bots.Num())
 	{
@@ -176,4 +191,40 @@ void APlayerPawn::UpdateBotNicknameWidgetsSize()
 
 }
 
+void APlayerPawn::SetSpectatorMenuVisibiliy(bool bVisible)
+{
+	auto* GameSessionObject = this->GetGameSession();
 
+	if (GameSessionObject)
+	{
+		auto* SessionWidget = GameSessionObject->GetSessionWidget();
+
+		if (SessionWidget)
+		{
+			if (bVisible && this->bAttachedToBot && this->BotToAttach)
+			{
+				SessionWidget->UpdateSpectatorBotName(this->BotToAttach->DisplayName);
+				SessionWidget->UpdateSpectatorBotHealth(this->BotToAttach->HealthPoints);
+			}
+
+			SessionWidget->SetSpectatorWidgetVisibility(bVisible);
+		}
+	}
+}
+
+UChattersGameSession* APlayerPawn::GetGameSession()
+{
+	if (!this->GameSession)
+	{
+		auto* GameInstance = UChattersGameInstance::Get();
+
+		if (!GameInstance || GameInstance->GetIsInMainMenu())
+		{
+			return nullptr;
+		}
+
+		this->GameSession = GameInstance->GetGameSession();
+	}
+
+	return this->GameSession;
+}

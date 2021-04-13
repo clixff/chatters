@@ -5,6 +5,7 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "../Core/ChattersGameInstance.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "../Character/Bot.h"
 #include "../Core/ChattersGameSession.h"
 
 APlayerPawnController::APlayerPawnController()
@@ -56,6 +57,9 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAction("ZoomUp", IE_Pressed, this, &APlayerPawnController::OnMouseWheelUp);
 	this->InputComponent->BindAction("ZoomDown", IE_Pressed, this, &APlayerPawnController::OnMouseWheelDown);
+
+	this->InputComponent->BindAction("LeftMouseClick", IE_Pressed, this, &APlayerPawnController::OnLeftMouseClick);
+	this->InputComponent->BindAction("RightMouseClick", IE_Pressed, this, &APlayerPawnController::OnRightMouseClick);
 ;}
 
 void APlayerPawnController::BeginPlay()
@@ -227,6 +231,8 @@ void APlayerPawnController::ZoomTick(float DeltaTime)
 					this->ZoomSeconds = 0.0f;
 				}
 			}
+
+			PlayerPawnActor->LastZoomValue = CameraBoom->TargetArmLength;
 		}
 	}
 	else
@@ -274,6 +280,43 @@ void APlayerPawnController::RotateAttachedCamera(ERotationType Type, float Value
 			}
 
 			CameraBoom->SetRelativeRotation(CameraBoomRotation);
+		}
+	}
+}
+
+void APlayerPawnController::OnLeftMouseClick()
+{
+	this->AttachPlayerToAliveBot(EAttachCameraToBotType::NextBot);
+}
+
+void APlayerPawnController::OnRightMouseClick()
+{
+	this->AttachPlayerToAliveBot(EAttachCameraToBotType::PrevBot);
+}
+
+void APlayerPawnController::AttachPlayerToAliveBot(EAttachCameraToBotType Type)
+{
+	auto* PlayerActor = this->GetPlayerPawn();
+
+	if (PlayerActor)
+	{
+		int32 AttachedToBotID = -1;
+
+		if (PlayerActor->bAttachedToBot && PlayerActor->BotToAttach)
+		{
+			AttachedToBotID = PlayerActor->BotToAttach->ID;
+		}
+
+		auto* GameInstance = UChattersGameInstance::Get();
+
+		if (GameInstance)
+		{
+			auto* GameSession = GameInstance->GetGameSession();
+
+			if (GameSession)
+			{
+				GameSession->AttachPlayerToAliveBot(Type, AttachedToBotID);
+			}
 		}
 	}
 }

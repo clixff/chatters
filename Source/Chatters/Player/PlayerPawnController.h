@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "PlayerPawn.h"
+#include "../Misc/Misc.h"
 #include "PlayerPawnController.generated.h"
 
 enum class ERotationType : uint8
@@ -87,5 +88,10 @@ private:
 	void ZoomTick(float DeltaTime);
 
 	void RotateAttachedCamera(ERotationType Type, float Value);
+
+	void OnLeftMouseClick();
+	void OnRightMouseClick();
+
+	void AttachPlayerToAliveBot(EAttachCameraToBotType Type);
 
 };

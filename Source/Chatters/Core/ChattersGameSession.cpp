@@ -76,6 +76,13 @@ void UChattersGameSession::LevelLoaded()
 		return;
 	}
 
+	if (!this->SessionWidgetClass)
+	{
+		this->SessionWidgetClass = USessionWidget::StaticClass();
+	}
+
+	this->SessionWidget = UCustomWidgetBase::CreateUserWidget(this->SessionWidgetClass);
+
 	if (!this->BotSubclass)
 	{
 		this->BotSubclass = ABot::StaticClass();
@@ -116,16 +123,11 @@ void UChattersGameSession::LevelLoaded()
 		}
 	}
 
-	if (!this->SessionWidgetClass)
-	{
-		this->SessionWidgetClass = USessionWidget::StaticClass();
-	}
-
-	this->SessionWidget = UCustomWidgetBase::CreateUserWidget(this->SessionWidgetClass);
 
 	this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
 
 	this->SessionWidget->Show();
+
 }
 
 void UChattersGameSession::OnBotDied(int32 BotID)
@@ -169,4 +171,83 @@ void UChattersGameSession::Start()
 			}
 		}
 	}
+}
+
+void UChattersGameSession::AttachPlayerToAliveBot(EAttachCameraToBotType Type, int32 ActiveBotID)
+{
+	int32 AliveBotsNumber = this->AliveBots.Num();
+	if (AliveBotsNumber < 1)
+	{
+		return;
+	}
+
+	int32 AliveBotToAttachIndex = -1;
+	int32 AliveBotToAttachID = -1;
+
+	bool bCheckPrev = false;
+
+	for (int32 i = 0; i < AliveBotsNumber; i++)
+	{
+		auto* Bot = this->AliveBots[i];
+		if (Bot)
+		{
+			if ((Type == EAttachCameraToBotType::NextBot && Bot->ID > ActiveBotID) ||
+				(Type == EAttachCameraToBotType::PrevBot && Bot->ID < ActiveBotID))
+			{
+				if (bCheckPrev)
+				{
+					if ((Type == EAttachCameraToBotType::NextBot && Bot->ID > AliveBotToAttachID) ||
+						(Type == EAttachCameraToBotType::PrevBot && Bot->ID < AliveBotToAttachID))
+					{
+						continue;
+					}
+				}
+
+				AliveBotToAttachIndex = i;
+				AliveBotToAttachID = this->AliveBots[i]->ID;
+				bCheckPrev = true;
+			}
+
+		}
+	}
+
+	if (AliveBotToAttachIndex == -1)
+	{
+		if (Type == EAttachCameraToBotType::NextBot)
+		{
+			AliveBotToAttachIndex = 0;
+			AliveBotToAttachID = this->AliveBots[AliveBotToAttachIndex]->ID;
+		}
+		else
+		{
+			AliveBotToAttachIndex = AliveBotsNumber - 1;
+			AliveBotToAttachID = this->AliveBots[AliveBotToAttachIndex]->ID;
+		}
+	}
+
+	if (ActiveBotID == AliveBotToAttachID)
+	{
+		return;
+	}
+
+
+	auto* World = GetWorld();
+
+	if (World)
+	{
+		auto* PlayerController = World->GetFirstPlayerController();
+		if (PlayerController)
+		{
+			auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
+			if (PlayerPawn)
+			{
+				PlayerPawn->AttachToBot(this->AliveBots[AliveBotToAttachIndex]);
+			}
+		}
+	}
+}
+
+USessionWidget* UChattersGameSession::GetSessionWidget()
+{
+	return this->SessionWidget;
 }

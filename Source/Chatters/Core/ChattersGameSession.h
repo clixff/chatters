@@ -6,6 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "../Character/Bot.h"
 #include "../UI/Widgets/SessionWidget.h"
+#include "../Misc/Misc.h"
 #include "ChattersGameSession.generated.h"
 
 UENUM(BlueprintType)
@@ -44,6 +45,8 @@ public:
 
 	void Start();
 
+	void AttachPlayerToAliveBot(EAttachCameraToBotType Type, int32 ActiveBotID);
+
 public:
 	bool bStarted = false;
 
@@ -52,6 +55,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		int32 MaxPlayers = 25;
 
+	USessionWidget* GetSessionWidget();
 public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<ABot> BotSubclass;

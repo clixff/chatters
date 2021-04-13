@@ -19,3 +19,27 @@ void USessionWidget::HideStartGameSessionTip()
 		TipWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
+
+void USessionWidget::SetSpectatorWidgetVisibility(bool bVisible)
+{
+	FName WidgetName = FName(TEXT("Spec_Wrapper"));
+
+	auto* SpectatorWidget = this->GetWidgetFromName(WidgetName);
+
+	if (SpectatorWidget)
+	{
+		SpectatorWidget->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	}
+}
+
+void USessionWidget::UpdateSpectatorBotName(FString BotName)
+{
+	this->SpectatorBotName = FText::FromString(BotName);
+}
+
+void USessionWidget::UpdateSpectatorBotHealth(int32 HealthPoints)
+{
+	FString HealthText = FString::Printf(TEXT("%d"), HealthPoints);
+	
+	this->SpectatorBotHealthPoints = FText::FromString(HealthText);
+}
