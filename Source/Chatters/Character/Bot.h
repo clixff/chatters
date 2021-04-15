@@ -79,6 +79,12 @@ private:
 	FString ChatBubbleMessage;
 
 	void SayRandomMessage();
+
+	bool bHatAttached = false;
+
+	float SecondsAfterDeath = 0.0f;
+
+	void TryDetachHat();
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass);
 public:

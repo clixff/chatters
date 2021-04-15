@@ -29,6 +29,16 @@ void UChattersGameInstance::Init()
 	this->CreateWidgetManager();
 
 	this->bInitialized = true;
+
+	auto* PlayerController = this->GetPlayerController();
+
+	if (PlayerController)
+	{
+		/** Fix shadow distance bug */
+		PlayerController->ConsoleCommand(TEXT("r.Shadow.MaxCSMResolution 4096"), true);
+		PlayerController->ConsoleCommand(TEXT("r.Shadow.RadiusThreshold 0"), true);
+	}
+
 	this->GetMapManager()->LoadLevel(this->GetMapManager()->MenuWorldName, true);
 }
 

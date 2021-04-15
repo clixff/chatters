@@ -4,6 +4,7 @@
 #include "Bot.h"
 #include "Components/CapsuleComponent.h"
 #include "../Core/ChattersGameInstance.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "../Core/ChattersGameSession.h"
 
 // Sets default values
@@ -21,7 +22,7 @@ ABot::ABot()
 	this->HeadMesh->SetupAttachment(this->GetMesh(), NAME_None);
 
 	this->HatMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Hat"));
-	this->HatMesh->SetupAttachment(this->HeadMesh, TEXT("head1"));
+	this->HatMesh->SetupAttachment(this->HeadMesh, FName(TEXT("head_")));
 
 	this->NameWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameWidget"));
 	this->NameWidgetComponent->SetupAttachment(this->GetMesh());
@@ -43,26 +44,44 @@ void ABot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (this->bMovingToRandomLocation)
+	if (this->bAlive)
 	{
-		float DistToTarget = FVector::Dist(this->GetActorLocation(), this->RandomLocationTarget);
-
-		if (DistToTarget <= 150.0f)
+		if (this->bMovingToRandomLocation)
 		{
-			this->ApplyDamage(50);
-			this->bMovingToRandomLocation = false;
-			this->SayRandomMessage();
-			this->MoveToRandomLocation();
+			float DistToTarget = FVector::Dist(this->GetActorLocation(), this->RandomLocationTarget);
+
+			if (DistToTarget <= 150.0f)
+			{
+				this->ApplyDamage(50);
+				this->bMovingToRandomLocation = false;
+				this->SayRandomMessage();
+				this->MoveToRandomLocation();
+			}
+		}
+
+		auto* NameWidgetObject = this->GetNameWidget();
+
+		if (NameWidgetObject)
+		{
+			NameWidgetObject->Tick(DeltaTime);
 		}
 	}
-
-	auto* NameWidgetObject = this->GetNameWidget();
-
-	if (NameWidgetObject)
+	else
 	{
-		NameWidgetObject->Tick(DeltaTime);
-	}
+		if (this->SecondsAfterDeath < 100.0f)
+		{
+			this->SecondsAfterDeath += DeltaTime;
+			if (this->SecondsAfterDeath > 100.0f)
+			{
+				this->SecondsAfterDeath = 100.0f;
+			}
+		}
 
+		if (this->bHatAttached && this->SecondsAfterDeath <= 25.0f)
+		{
+			this->TryDetachHat();
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -308,6 +327,19 @@ void ABot::OnDead()
 		this->NameWidgetComponent->SetVisibility(false);
 	}
 
+
+	if (this->HatMesh)
+	{
+		this->bHatAttached = true;
+	}
+
+	auto* CharacterMovementComponent = Cast<UCharacterMovementComponent>(this->GetMovementComponent());
+
+	if (CharacterMovementComponent)
+	{
+		CharacterMovementComponent->bUseRVOAvoidance = false;
+	}
+
 	auto* GameInstance = UChattersGameInstance::Get();
 
 	if (GameInstance)
@@ -319,7 +351,6 @@ void ABot::OnDead()
 			GameSession->OnBotDied(this->ID);
 		}
 	}
-
 }
 
 void ABot::OnGameSessionStarted()
@@ -327,4 +358,23 @@ void ABot::OnGameSessionStarted()
 	this->bReady = true;
 
 	this->MoveToRandomLocation();
+}
+
+void ABot::TryDetachHat()
+{
+	if (this->bHatAttached && this->HatMesh && this->GetMesh())
+	{
+		FRotator HeadRotation = this->GetMesh()->GetSocketRotation(FName(TEXT("head_")));
+
+		if (HeadRotation.Roll > 150.0f || HeadRotation.Roll < 75.0f || HeadRotation.Pitch > 50.0f || HeadRotation.Pitch < 50.0f)
+		{
+			this->bHatAttached = false;
+			this->HatMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+			//this->HatMesh->DetachFromParent(true, false);
+			//this->HatMesh->AttachToComponent(this->HeadMesh, FAttachmentTransformRules::KeepRelativeTransform);
+			this->HatMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
+			this->HatMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+			this->HatMesh->SetSimulatePhysics(true);
+		}
+	}
 }
