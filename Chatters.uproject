@@ -12,7 +12,20 @@
 				"Engine",
 				"CoreUObject",
 				"UMG",
-				"AIModule"
+				"AIModule",
+				"UnrealEd"
+			]
+		},
+		{
+			"Name": "ChattersEditorModule",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject",
+				"AssetTools",
+				"Chatters",
+				"UnrealEd"
 			]
 		}
 	],

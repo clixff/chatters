@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../Core/ChattersGameSession.h"
 
+
 // Sets default values
 ABot::ABot()
 {
@@ -130,7 +131,21 @@ UBotNameWidget* ABot::GetNameWidget()
 	return this->NameWidget;
 }
 
-ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass)
+UChattersGameSession* ABot::GetGameSession()
+{
+	if (!this->GameSession)
+	{
+		auto* GameInstance = UChattersGameInstance::Get();
+		if (GameInstance)
+		{
+			this->GameSession = GameInstance->GetGameSession();
+		}
+	}
+
+	return this->GameSession;
+}
+
+ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
 {
 	FVector BotPosition(0, float(IDToSet * 300), 100);
 	FActorSpawnParameters SpawnParams;
@@ -140,6 +155,7 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 
 	if (Bot)
 	{
+		Bot->GameSession = GameSessionObject;
 		Bot->Init(NameToSet, IDToSet);
 	}
 
@@ -147,9 +163,34 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 }
 
 
-void ABot::SetOutfit()
+void ABot::SetEquipment()
 {
+	auto* GameSessionObject = this->GetGameSession();
+	if (GameSessionObject)
+	{
+		auto* EquipmentList =  GameSessionObject->EquipmentListLevel;
 
+		if (EquipmentList)
+		{
+			auto RandomEquipment = EquipmentList->GetRandomEquipment();
+			if (this->HatMesh)
+			{
+				if (!RandomEquipment.Hat)
+				{
+					this->HatMesh->SetStaticMesh(nullptr);
+				}
+				else
+				{
+					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
+					FTransform HatTransform;
+					HatTransform.SetLocation(RandomEquipment.Hat->Location);
+					HatTransform.SetRotation(FQuat(RandomEquipment.Hat->Rotation));
+					HatTransform.SetScale3D(RandomEquipment.Hat->Scale);
+					this->HatMesh->SetRelativeTransform(HatTransform);
+				}
+			}
+		}
+	}
 }
 
 void ABot::Init(FString NewName, int32 NewID)
@@ -166,6 +207,8 @@ void ABot::Init(FString NewName, int32 NewID)
 		NameWidget->Nickname = this->DisplayName;
 		NameWidget->UpdateHealth(this->GetHeathValue());
 	}
+
+	this->SetEquipment();
 }
 
 void ABot::MoveToRandomLocation()
@@ -220,19 +263,13 @@ void ABot::ApplyDamage(int32 Damage)
 	
 	if (this->bPlayerAttached)
 	{
-		auto* GameInstance = UChattersGameInstance::Get();
-
-		if (GameInstance)
+		auto* GameSessionObject = this->GetGameSession();
+		if (GameSessionObject)
 		{
-			auto* GameSession = GameInstance->GetGameSession();
-
-			if (GameSession)
+			auto* SessionWidget = GameSessionObject->GetSessionWidget();
+			if (SessionWidget)
 			{
-				auto* SessionWidget = GameSession->GetSessionWidget();
-				if (SessionWidget)
-				{
-					SessionWidget->UpdateSpectatorBotHealth(this->HealthPoints);
-				}
+				SessionWidget->UpdateSpectatorBotHealth(this->HealthPoints);
 			}
 		}
 	}
@@ -340,16 +377,11 @@ void ABot::OnDead()
 		CharacterMovementComponent->bUseRVOAvoidance = false;
 	}
 
-	auto* GameInstance = UChattersGameInstance::Get();
+	auto* GameSessionObject = this->GetGameSession();
 
-	if (GameInstance)
+	if (GameSessionObject)
 	{
-		auto* GameSession = GameInstance->GetGameSession();
-
-		if (GameSession)
-		{
-			GameSession->OnBotDied(this->ID);
-		}
+		GameSessionObject->OnBotDied(this->ID);
 	}
 }
 

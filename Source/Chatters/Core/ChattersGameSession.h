@@ -7,6 +7,7 @@
 #include "../Character/Bot.h"
 #include "../UI/Widgets/SessionWidget.h"
 #include "../Misc/Misc.h"
+#include "../Character/Equipment/EquipmentList.h"
 #include "ChattersGameSession.generated.h"
 
 UENUM(BlueprintType)
@@ -39,7 +40,7 @@ public:
 
 	void Destroy();
 
-	void LevelLoaded();
+	void LevelLoaded(FString LevelName);
 
 	void OnBotDied(int32 BotID);
 
@@ -65,6 +66,14 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 		TArray<ABot*> AliveBots;
+
+	/** Equipment lists for all levels */
+	UPROPERTY(EditDefaultsOnly)
+		TMap<FString, UEquipmentList*> EquipmentListsForLevels;
+
+	/** Equipment list for current level */
+	UPROPERTY()
+		UEquipmentList* EquipmentListLevel;
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;

@@ -66,7 +66,7 @@ void UChattersGameSession::Destroy()
 	}
 }
 
-void UChattersGameSession::LevelLoaded()
+void UChattersGameSession::LevelLoaded(FString LevelName)
 {
 	UWorld* World = GetWorld();
 
@@ -74,6 +74,13 @@ void UChattersGameSession::LevelLoaded()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[UChattersGameSession::LevelLoaded] World was nullptr"));
 		return;
+	}
+
+	auto* EquipmentList = this->EquipmentListsForLevels.Find(LevelName);
+
+	if (EquipmentList && *EquipmentList)
+	{
+		this->EquipmentListLevel = *EquipmentList;
 	}
 
 	if (!this->SessionWidgetClass)
@@ -93,12 +100,10 @@ void UChattersGameSession::LevelLoaded()
 		for (int32 i = 0; i < this->MaxPlayers; i++)
 		{
 			auto Name = FString::Printf(TEXT("Bot_%d"), i+1);
-			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass);
+			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass, this);
 			this->Bots.Add(Bot);
 			this->AliveBots.Add(Bot);
 		}
-
-
 	}
 
 	auto* PlayerController = World->GetFirstPlayerController();

@@ -11,6 +11,8 @@
 #include "../UI/Widgets/BotNameWidget.h"
 #include "Bot.generated.h"
 
+class UChattersGameSession;
+
 UCLASS()
 class CHATTERS_API ABot : public ACharacter
 {
@@ -64,7 +66,7 @@ private:
 
 	bool bReady = false;
 
-	void SetOutfit();
+	void SetEquipment();
 
 	void MoveToRandomLocation();
 
@@ -85,8 +87,12 @@ private:
 	float SecondsAfterDeath = 0.0f;
 
 	void TryDetachHat();
+
+	UChattersGameSession* GameSession = nullptr;
+
+	UChattersGameSession* GetGameSession();
 public:
-	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass);
+	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		USkeletalMeshComponent* HeadMesh;
@@ -99,4 +105,6 @@ public:
 		UStaticMeshComponent* HatMesh;
 
 	void OnDead();
+
+
 };

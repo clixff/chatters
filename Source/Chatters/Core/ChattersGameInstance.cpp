@@ -75,7 +75,7 @@ void UChattersGameInstance::LoadComplete(const float LoadTime, const FString& Ma
 	{
 		if (this->GameSession)
 		{
-			this->GameSession->LevelLoaded();
+			this->GameSession->LevelLoaded(this->GetMapManager()->WorldName);
 		}
 	}
 }

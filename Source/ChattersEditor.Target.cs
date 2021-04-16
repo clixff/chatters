@@ -9,6 +9,6 @@ public class ChattersEditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "Chatters" } );
+		ExtraModuleNames.AddRange( new string[] { "Chatters", "ChattersEditorModule" } );
 	}
 }
