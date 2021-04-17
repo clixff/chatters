@@ -7,6 +7,7 @@ UEquipmentItem::UEquipmentItem()
 {
 	this->StaticMesh = nullptr;
 	this->Transform.SetScale3D(FVector(1.0f));
+
 }
 
 UEquipmentItem::~UEquipmentItem()

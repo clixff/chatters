@@ -213,6 +213,7 @@ void ABot::SetEquipment()
 					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
 					this->HatMesh->SetRelativeTransform(RandomEquipment.Hat->GetTransform());
 
+
 					if (RandomEquipment.Hat->StaticMesh)
 					{
 						TArray<UMaterialInterface*> Materials = RandomEquipment.Hat->GetRandomMaterials();
