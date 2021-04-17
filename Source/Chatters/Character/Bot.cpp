@@ -24,6 +24,11 @@ ABot::ABot()
 
 	this->HatMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Hat"));
 	this->HatMesh->SetupAttachment(this->HeadMesh, FName(TEXT("head_")));
+	this->HatMesh->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+
+	this->BeardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Beard"));
+	this->BeardMesh->SetupAttachment(this->HeadMesh, FName(TEXT("head_")));
+	this->BeardMesh->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 
 	this->NameWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameWidget"));
 	this->NameWidgetComponent->SetupAttachment(this->GetMesh());
@@ -182,11 +187,39 @@ void ABot::SetEquipment()
 				else
 				{
 					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
-					FTransform HatTransform;
-					HatTransform.SetLocation(RandomEquipment.Hat->Location);
-					HatTransform.SetRotation(FQuat(RandomEquipment.Hat->Rotation));
-					HatTransform.SetScale3D(RandomEquipment.Hat->Scale);
-					this->HatMesh->SetRelativeTransform(HatTransform);
+					this->HatMesh->SetRelativeTransform(RandomEquipment.Hat->GetTransform());
+
+					if (RandomEquipment.Hat->StaticMesh)
+					{
+						TArray<UMaterialInterface*> Materials = RandomEquipment.Hat->GetRandomMaterials();
+
+						for (int32 i = 0; i < Materials.Num(); i++)
+						{
+							this->HatMesh->SetMaterial(i, Materials[i]);
+						}
+
+					}
+				}
+			}
+
+			if (this->BeardMesh)
+			{
+				if (!RandomEquipment.BeardStyle)
+				{
+					this->BeardMesh->SetStaticMesh(nullptr);
+				}
+				else
+				{
+					this->BeardMesh->SetStaticMesh(RandomEquipment.BeardStyle->StaticMesh);
+					this->BeardMesh->SetRelativeTransform(RandomEquipment.BeardStyle->GetTransform());
+				}
+			}
+
+			if (RandomEquipment.FaceMaterial)
+			{
+				if (this->HeadMesh)
+				{
+					this->HeadMesh->SetMaterial(0, RandomEquipment.FaceMaterial);
 				}
 			}
 		}

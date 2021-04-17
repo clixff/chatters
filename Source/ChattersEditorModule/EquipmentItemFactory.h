@@ -10,6 +10,7 @@
 #include "AssetTypeActions_Base.h"
 #include "../Chatters/Character/Equipment/EquipmentItem.h"
 #include "../Chatters/Character/Equipment/HatItem.h"
+#include "../Chatters/Character/Equipment/BeardStyle.h"
 #include "EquipmentItemFactory.generated.h"
 
 /**
@@ -56,4 +57,23 @@ class CHATTERSEDITORMODULE_API FHatItemAssetActions : public FEquipmentItemAsset
 public:
 	virtual FText GetName() const override { return NSLOCTEXT("ChattersEditorModule", "EquipmentHatItem", "Hat Item Asset"); }
 	virtual UClass* GetSupportedClass() const override { return UHatItem::StaticClass(); };
+};
+
+UCLASS()
+class CHATTERSEDITORMODULE_API UBeardStyleFactory : public UEquipmentItemFactory
+{
+	GENERATED_BODY()
+public:
+
+	UBeardStyleFactory(const FObjectInitializer& ObjectInitializer);
+
+	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;
+};
+
+class CHATTERSEDITORMODULE_API FBeardStyleAssetActions : public FEquipmentItemAssetActions
+{
+public:
+	virtual FText GetName() const override { return NSLOCTEXT("ChattersEditorModule", "EquipmentBeardStyle", "Beard Style Asset"); }
+	virtual FColor GetTypeColor() const override { return FColor(247, 227, 92); }
+	virtual UClass* GetSupportedClass() const override { return UBeardStyle::StaticClass(); };
 };

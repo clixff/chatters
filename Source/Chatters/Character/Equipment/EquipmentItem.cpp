@@ -6,9 +6,7 @@
 UEquipmentItem::UEquipmentItem()
 {
 	this->StaticMesh = nullptr;
-	this->Location = FVector(0.0f);
-	this->Rotation = FRotator(0.0f);
-	this->Scale = FVector(1.0f);
+	this->Transform.SetScale3D(FVector(1.0f));
 }
 
 UEquipmentItem::~UEquipmentItem()
@@ -28,4 +26,9 @@ TArray<UMaterialInterface*> UEquipmentItem::GetRandomMaterials()
 	}
 
 	return Materials;
+}
+
+FTransform UEquipmentItem::GetTransform()
+{
+	return this->Transform;;
 }

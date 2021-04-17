@@ -6,6 +6,7 @@
 UEquipmentList::UEquipmentList()
 {
 	this->Hats.Add(nullptr);
+	this->BeardStyles.Add(nullptr);
 }
 
 
@@ -17,9 +18,32 @@ FRandomEquipment UEquipmentList::GetRandomEquipment()
 {
 	FRandomEquipment Equipment;
 
+	int32 RandomIndex = 0;
+
 	int32 NumberOfHats = this->Hats.Num();
-	int32 RandHatIndex = FMath::RandRange(0, NumberOfHats - 1);
-	Equipment.Hat = this->Hats[RandHatIndex];
+	if (NumberOfHats)
+	{
+		RandomIndex = FMath::RandRange(0, NumberOfHats - 1);
+		Equipment.Hat = this->Hats[RandomIndex];
+	}
+
+	int32 NumberOfBeards = this->BeardStyles.Num();
+	int32 NumberOfFaceMaterials = this->AdditionalFaceMaterials.Num();
+	int32 NumberOfFaceModifications = NumberOfBeards + NumberOfFaceMaterials;
+	if (NumberOfFaceModifications)
+	{
+		RandomIndex = FMath::RandRange(0, NumberOfFaceModifications - 1);
+		if (RandomIndex < NumberOfBeards)
+		{
+			Equipment.BeardStyle = this->BeardStyles[RandomIndex];
+			Equipment.FaceMaterial = nullptr;
+		}
+		else
+		{
+			Equipment.FaceMaterial = this->AdditionalFaceMaterials[RandomIndex - NumberOfBeards];
+			Equipment.BeardStyle = nullptr;
+		}
+	}
 
 	return Equipment;
 }

@@ -104,6 +104,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		UStaticMeshComponent* HatMesh;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		UStaticMeshComponent* BeardMesh;
+
 	void OnDead();
 
 

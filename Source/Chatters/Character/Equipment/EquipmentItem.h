@@ -34,14 +34,10 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		TArray<FMaterialSlots> RandomMaterials;
 
-	UPROPERTY(EditDefaultsOnly)
-		FVector Location;
-
-	UPROPERTY(EditDefaultsOnly)
-		FRotator Rotation;
-
-	UPROPERTY(EditDefaultsOnly)
-		FVector Scale;
+	UPROPERTY(EditDefaultsOnly, Category = "Transform")
+		FTransform Transform;
 
 	TArray<UMaterialInterface*> GetRandomMaterials();
+
+	FTransform GetTransform();
 };

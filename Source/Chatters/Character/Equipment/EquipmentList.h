@@ -6,6 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "Engine/StaticMesh.h"
 #include "HatItem.h"
+#include "BeardStyle.h"
 #include "EquipmentList.generated.h"
 
 USTRUCT(BlueprintType)
@@ -14,6 +15,8 @@ struct FRandomEquipment
 	GENERATED_BODY()
 public:
 	UHatItem* Hat;
+	UBeardStyle* BeardStyle;
+	UMaterialInterface* FaceMaterial;
 };
 
 /**
@@ -28,6 +31,12 @@ public:
 	~UEquipmentList();
 	UPROPERTY(EditDefaultsOnly)
 		TArray<UHatItem*> Hats;
+
+	UPROPERTY(EditDefaultsOnly)
+		TArray<UBeardStyle*> BeardStyles;
+
+	UPROPERTY(EditDefaultsOnly)
+		TArray<UMaterialInterface*> AdditionalFaceMaterials;
 
 	FRandomEquipment GetRandomEquipment();
 };

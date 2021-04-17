@@ -36,3 +36,14 @@ UObject* UHatItemFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, F
 {
 	return NewObject<UHatItem>(InParent, InClass, InName, Flags);
 }
+
+UBeardStyleFactory::UBeardStyleFactory(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	this->SupportedClass = UBeardStyle::StaticClass();
+}
+
+UObject* UBeardStyleFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
+{
+	return NewObject<UBeardStyle>(InParent, InClass, InName, Flags);
+}
