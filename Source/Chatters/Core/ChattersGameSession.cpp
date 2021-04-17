@@ -6,6 +6,8 @@
 #include "../Player/PlayerPawn.h"
 #include "Managers/MapManager.h"
 
+UChattersGameSession* UChattersGameSession::Singleton = nullptr;
+
 UChattersGameSession::UChattersGameSession()
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession created"));
@@ -14,11 +16,14 @@ UChattersGameSession::UChattersGameSession()
 UChattersGameSession::~UChattersGameSession()
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession destroyed"));
+	UChattersGameSession::Singleton = nullptr;
 }
 
 void UChattersGameSession::Init()
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession init"));
+
+	UChattersGameSession::Singleton = this;
 
 	auto* GameInstance = UChattersGameInstance::Get();
 	
@@ -41,6 +46,8 @@ void UChattersGameSession::Init()
 void UChattersGameSession::Destroy()
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession destroy"));
+
+	UChattersGameSession::Singleton = nullptr;
 
 	auto* World = GetWorld();
 
@@ -68,6 +75,8 @@ void UChattersGameSession::Destroy()
 
 void UChattersGameSession::LevelLoaded(FString LevelName)
 {
+	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] Level loaded"));
+
 	UWorld* World = GetWorld();
 
 	if (!World)
@@ -101,8 +110,11 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		{
 			auto Name = FString::Printf(TEXT("Bot_%d"), i+1);
 			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass, this);
-			this->Bots.Add(Bot);
-			this->AliveBots.Add(Bot);
+			if (Bot)
+			{
+				this->Bots.Add(Bot);
+				this->AliveBots.Add(Bot);
+			}
 		}
 	}
 
@@ -250,6 +262,11 @@ void UChattersGameSession::AttachPlayerToAliveBot(EAttachCameraToBotType Type, i
 			}
 		}
 	}
+}
+
+UChattersGameSession* UChattersGameSession::Get()
+{
+	return UChattersGameSession::Singleton;
 }
 
 USessionWidget* UChattersGameSession::GetSessionWidget()

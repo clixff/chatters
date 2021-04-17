@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "../Character/Bot.h"
+#include "../Character/BotSpawnPoint.h"
 #include "../UI/Widgets/SessionWidget.h"
 #include "../Misc/Misc.h"
 #include "../Character/Equipment/EquipmentList.h"
@@ -48,6 +49,10 @@ public:
 
 	void AttachPlayerToAliveBot(EAttachCameraToBotType Type, int32 ActiveBotID);
 
+	static UChattersGameSession* Get();
+
+	static UChattersGameSession* Singleton;
+
 public:
 	bool bStarted = false;
 
@@ -74,10 +79,17 @@ public:
 	/** Equipment list for current level */
 	UPROPERTY()
 		UEquipmentList* EquipmentListLevel;
+
+	UPROPERTY()
+		TArray<ABotSpawnPoint*> BotSpawnPoints;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<USessionWidget> SessionWidgetClass;
+
+
+
 };

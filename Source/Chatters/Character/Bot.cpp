@@ -5,6 +5,7 @@
 #include "Components/CapsuleComponent.h"
 #include "../Core/ChattersGameInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "BotSpawnPoint.h"
 #include "../Core/ChattersGameSession.h"
 
 
@@ -152,11 +153,34 @@ UChattersGameSession* ABot::GetGameSession()
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
 {
-	FVector BotPosition(0, float(IDToSet * 300), 100);
+	if (!GameSessionObject)
+	{
+		return nullptr;
+	}
+
+	auto& SpawnPoints = GameSessionObject->BotSpawnPoints;
+
+	if (!SpawnPoints.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ABot::CreateBot] No spawn point found for bot ID %d"), IDToSet);
+		return nullptr;
+	}
+
+	int32 RandNumber = FMath::RandRange(0, SpawnPoints.Num() - 1);
+	auto* SpawnPoint = SpawnPoints[RandNumber];
+
+	if (!SpawnPoint)
+	{
+		return nullptr;
+	}
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Name = FName(*FString::Printf(TEXT("Bot_%d"), IDToSet));
 	SpawnParams.bNoFail = true;
-	ABot* Bot = World->SpawnActor<ABot>(Subclass, BotPosition, FRotator(0), SpawnParams);
+	ABot* Bot = World->SpawnActor<ABot>(Subclass, SpawnPoint->GetActorLocation(), SpawnPoint->GetRotation(), SpawnParams);
+
+	SpawnPoint->Destroy();
+	SpawnPoints.RemoveAt(RandNumber, 1, true);
 
 	if (Bot)
 	{

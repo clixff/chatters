@@ -14,9 +14,9 @@ struct FRandomEquipment
 {
 	GENERATED_BODY()
 public:
-	UHatItem* Hat;
-	UBeardStyle* BeardStyle;
-	UMaterialInterface* FaceMaterial;
+	UHatItem* Hat = nullptr;
+	UBeardStyle* BeardStyle = nullptr;
+	UMaterialInterface* FaceMaterial = nullptr;
 };
 
 /**

@@ -24,6 +24,7 @@ void UChattersGameInstance::Init()
 	UGameInstance::Init();
 
 	this->Singleton = this;
+	UChattersGameSession::Singleton = nullptr;
 
 	this->CreateMapManager();
 	this->CreateWidgetManager();
