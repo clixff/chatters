@@ -7,6 +7,7 @@
 #include "Engine/StaticMesh.h"
 #include "HatItem.h"
 #include "BeardStyle.h"
+#include "Weapon/WeaponItem.h"
 #include "EquipmentList.generated.h"
 
 USTRUCT(BlueprintType)
@@ -17,6 +18,7 @@ public:
 	UHatItem* Hat = nullptr;
 	UBeardStyle* BeardStyle = nullptr;
 	UMaterialInterface* FaceMaterial = nullptr;
+	UWeaponItem* Weapon = nullptr;
 };
 
 /**
@@ -37,6 +39,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		TArray<UMaterialInterface*> AdditionalFaceMaterials;
+
+	UPROPERTY(EditDefaultsOnly)
+		TArray<UWeaponItem*> Weapons;
 
 	FRandomEquipment GetRandomEquipment();
 };

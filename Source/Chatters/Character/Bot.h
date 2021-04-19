@@ -10,6 +10,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "../UI/Widgets/BotNameWidget.h"
 #include "Chaos/ChaosEngineInterface.h"
+#include "Equipment/Weapon/WeaponItem.h"
+#include "Equipment/Weapon/Instances/WeaponInstance.h"
 #include "Bot.generated.h"
 
 class UChattersGameSession;
@@ -72,6 +74,11 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 		void PlayFootstepSound(const FVector& Location, EPhysicalSurface Surface);
 
+	UPROPERTY(EditAnywhere)
+		UWeaponInstance* WeaponInstance = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+		ABot* TargetTo = nullptr;
 private:
 	bool bReady = false;
 
@@ -100,6 +107,8 @@ private:
 	UChattersGameSession* GameSession = nullptr;
 
 	UChattersGameSession* GetGameSession();
+
+	void FindNewEnemyTarget();
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
@@ -115,6 +124,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		UStaticMeshComponent* BeardMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		UStaticMeshComponent* WeaponMesh;
 
 	void OnDead();
 

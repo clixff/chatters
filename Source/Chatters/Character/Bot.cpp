@@ -6,6 +6,8 @@
 #include "../Core/ChattersGameInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BotSpawnPoint.h"
+#include "Equipment/Weapon/Instances/MeleeWeaponInstance.h"
+#include "Equipment/Weapon/Instances/FirearmWeaponInstance.h"
 #include "../Core/ChattersGameSession.h"
 
 
@@ -30,6 +32,10 @@ ABot::ABot()
 	this->BeardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Beard"));
 	this->BeardMesh->SetupAttachment(this->HeadMesh, FName(TEXT("head_")));
 	this->BeardMesh->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+
+	this->WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Weapon"));
+	this->WeaponMesh->SetupAttachment(this->GetMesh(), FName(TEXT("R_arm_4")));
+	this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 
 	this->NameWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameWidget"));
 	this->NameWidgetComponent->SetupAttachment(this->GetMesh());
@@ -71,6 +77,11 @@ void ABot::Tick(float DeltaTime)
 		if (NameWidgetObject)
 		{
 			NameWidgetObject->Tick(DeltaTime);
+		}
+
+		if (this->WeaponInstance)
+		{
+			this->WeaponInstance->Tick(DeltaTime);
 		}
 	}
 	else
@@ -149,6 +160,14 @@ UChattersGameSession* ABot::GetGameSession()
 	}
 
 	return this->GameSession;
+}
+
+void ABot::FindNewEnemyTarget()
+{
+	float MinDistance = -1.0f;
+	ABot* NewTarget = nullptr;
+
+	auto* GameSession = UChattersGameSession::Get();
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
@@ -277,6 +296,36 @@ void ABot::SetEquipment()
 				if (this->HeadMesh)
 				{
 					this->HeadMesh->SetMaterial(0, RandomEquipment.FaceMaterial);
+				}
+			}
+
+			if (RandomEquipment.Weapon)
+			{
+				if (this->WeaponMesh)
+				{
+					this->WeaponMesh->SetStaticMesh(RandomEquipment.Weapon->StaticMesh);
+					this->WeaponMesh->SetRelativeTransform(RandomEquipment.Weapon->GetTransform());
+
+					UClass* WeaponInstanceClass = UWeaponInstance::StaticClass();
+
+					EWeaponType WeaponType = RandomEquipment.Weapon->Type;
+
+					if (WeaponType == EWeaponType::Melee)
+					{
+						WeaponInstanceClass = UMeleeWeaponInstance::StaticClass();
+					}
+					else if (WeaponType == EWeaponType::Firearm)
+					{
+						WeaponInstanceClass = UFirearmWeaponInstance::StaticClass();
+					}
+
+					this->WeaponInstance = NewObject<UWeaponInstance>(this, WeaponInstanceClass);
+					if (this->WeaponInstance)
+					{
+						this->WeaponInstance->WeaponRef = RandomEquipment.Weapon;
+						this->WeaponInstance->Bot = this;
+						this->WeaponInstance->Init();
+					}
 				}
 			}
 		}

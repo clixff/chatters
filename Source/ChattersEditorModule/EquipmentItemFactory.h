@@ -11,6 +11,8 @@
 #include "../Chatters/Character/Equipment/EquipmentItem.h"
 #include "../Chatters/Character/Equipment/HatItem.h"
 #include "../Chatters/Character/Equipment/BeardStyle.h"
+#include "../Chatters/Character/Equipment/Weapon/MeleeWeaponItem.h"
+#include "../Chatters/Character/Equipment/Weapon/FirearmWeaponItem.h"
 #include "EquipmentItemFactory.generated.h"
 
 /**
@@ -76,4 +78,42 @@ public:
 	virtual FText GetName() const override { return NSLOCTEXT("ChattersEditorModule", "EquipmentBeardStyle", "Beard Style Asset"); }
 	virtual FColor GetTypeColor() const override { return FColor(247, 227, 92); }
 	virtual UClass* GetSupportedClass() const override { return UBeardStyle::StaticClass(); };
+};
+
+UCLASS()
+class CHATTERSEDITORMODULE_API UMeleeWeaponFactory : public UEquipmentItemFactory
+{
+	GENERATED_BODY()
+public:
+
+	UMeleeWeaponFactory(const FObjectInitializer& ObjectInitializer);
+
+	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;
+};
+
+class CHATTERSEDITORMODULE_API FMeleeWeaponAssetActions : public FEquipmentItemAssetActions
+{
+public:
+	virtual FText GetName() const override { return NSLOCTEXT("ChattersEditorModule", "EquipmentMeleeWeapon", "Melee Weapon Asset"); }
+	virtual FColor GetTypeColor() const override { return FColor(172, 255, 127); }
+	virtual UClass* GetSupportedClass() const override { return UMeleeWeaponItem::StaticClass(); };
+};
+
+UCLASS()
+class CHATTERSEDITORMODULE_API UFirearmWeaponFactory : public UEquipmentItemFactory
+{
+	GENERATED_BODY()
+public:
+
+	UFirearmWeaponFactory(const FObjectInitializer& ObjectInitializer);
+
+	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;
+};
+
+class CHATTERSEDITORMODULE_API FFirearmWeaponAssetActions : public FEquipmentItemAssetActions
+{
+public:
+	virtual FText GetName() const override { return NSLOCTEXT("ChattersEditorModule", "EquipmentFirearmWeapon", "Firearm Weapon Asset"); }
+	virtual FColor GetTypeColor() const override { return FColor(212, 76, 133); }
+	virtual UClass* GetSupportedClass() const override { return UFirearmWeaponItem::StaticClass(); };
 };

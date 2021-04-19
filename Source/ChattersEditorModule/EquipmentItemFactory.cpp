@@ -47,3 +47,25 @@ UObject* UBeardStyleFactory::FactoryCreateNew(UClass* InClass, UObject* InParent
 {
 	return NewObject<UBeardStyle>(InParent, InClass, InName, Flags);
 }
+
+UMeleeWeaponFactory::UMeleeWeaponFactory(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	this->SupportedClass = UMeleeWeaponItem::StaticClass();
+}
+
+UObject* UMeleeWeaponFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
+{
+	return NewObject<UMeleeWeaponItem>(InParent, InClass, InName, Flags);
+}
+
+UFirearmWeaponFactory::UFirearmWeaponFactory(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	this->SupportedClass = UFirearmWeaponItem::StaticClass();
+}
+
+UObject* UFirearmWeaponFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
+{
+	return NewObject<UFirearmWeaponItem>(InParent, InClass, InName, Flags);
+}

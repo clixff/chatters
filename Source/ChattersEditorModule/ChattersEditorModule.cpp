@@ -14,6 +14,8 @@ void FChattersEditorModule::StartupModule()
 	AssetTools.RegisterAssetTypeActions(MakeShareable(new FEquipmentListAssetActions()));
 	AssetTools.RegisterAssetTypeActions(MakeShareable(new FHatItemAssetActions()));
 	AssetTools.RegisterAssetTypeActions(MakeShareable(new FBeardStyleAssetActions()));
+	AssetTools.RegisterAssetTypeActions(MakeShareable(new FMeleeWeaponAssetActions()));
+	AssetTools.RegisterAssetTypeActions(MakeShareable(new FFirearmWeaponAssetActions()));
 }
 
 void FChattersEditorModule::ShutdownModule()
