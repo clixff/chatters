@@ -12,7 +12,6 @@ void FChattersEditorModule::StartupModule()
 	EquipmentCategory = AssetTools.RegisterAdvancedAssetCategory(FName(TEXT("EquipmentCategory")), NSLOCTEXT("ChattersEditorModule", "EquipmentCategory", "Equipment"));
 
 	AssetTools.RegisterAssetTypeActions(MakeShareable(new FEquipmentListAssetActions()));
-	AssetTools.RegisterAssetTypeActions(MakeShareable(new FEquipmentItemAssetActions()));
 	AssetTools.RegisterAssetTypeActions(MakeShareable(new FHatItemAssetActions()));
 	AssetTools.RegisterAssetTypeActions(MakeShareable(new FBeardStyleAssetActions()));
 }

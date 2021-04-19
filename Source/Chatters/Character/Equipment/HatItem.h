@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class CHATTERS_API UHatItem : public UEquipmentItem
+class CHATTERS_API UHatItem : public UStaticMeshEquipmentItem
 {
 	GENERATED_BODY()
 	

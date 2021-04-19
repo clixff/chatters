@@ -13,7 +13,8 @@
 				"CoreUObject",
 				"UMG",
 				"AIModule",
-				"UnrealEd"
+				"UnrealEd",
+				"PhysicsCore"
 			]
 		},
 		{

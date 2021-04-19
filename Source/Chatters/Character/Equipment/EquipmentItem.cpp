@@ -5,8 +5,6 @@
 
 UEquipmentItem::UEquipmentItem()
 {
-	this->StaticMesh = nullptr;
-	this->Transform.SetScale3D(FVector(1.0f));
 
 }
 
@@ -29,7 +27,27 @@ TArray<UMaterialInterface*> UEquipmentItem::GetRandomMaterials()
 	return Materials;
 }
 
-FTransform UEquipmentItem::GetTransform()
+UStaticMeshEquipmentItem::UStaticMeshEquipmentItem()
+{
+	this->StaticMesh = nullptr;
+	this->Transform.SetScale3D(FVector(1.0f));
+}
+
+UStaticMeshEquipmentItem::~UStaticMeshEquipmentItem()
+{
+}
+
+FTransform UStaticMeshEquipmentItem::GetTransform()
 {
 	return this->Transform;;
+}
+
+USkeletalMeshEquipmentItem::USkeletalMeshEquipmentItem()
+{
+	this->SkeletalMesh = nullptr;
+}
+
+USkeletalMeshEquipmentItem::~USkeletalMeshEquipmentItem()
+{
+
 }

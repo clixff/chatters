@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class CHATTERS_API UBeardStyle : public UEquipmentItem
+class CHATTERS_API UBeardStyle : public UStaticMeshEquipmentItem
 {
 	GENERATED_BODY()
 	

@@ -9,6 +9,7 @@
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "../UI/Widgets/BotNameWidget.h"
+#include "Chaos/ChaosEngineInterface.h"
 #include "Bot.generated.h"
 
 class UChattersGameSession;
@@ -59,11 +60,19 @@ public:
 
 	void OnGameSessionStarted();
 
-	bool bPlayerAttached = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		 bool bPlayerAttached = false;
+
+	UPROPERTY(BlueprintReadOnly)
+		bool bAlive = true;
+
+	UFUNCTION(BlueprintCallable)
+		void OnFootstep();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void PlayFootstepSound(const FVector& Location, EPhysicalSurface Surface);
 
 private:
-	bool bAlive = true;
-
 	bool bReady = false;
 
 	void SetEquipment();

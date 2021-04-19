@@ -6,6 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
+#include "Engine/SkeletalMesh.h"
 #include "EquipmentItem.generated.h"
 
 USTRUCT(BlueprintType)
@@ -29,15 +30,38 @@ public:
 	~UEquipmentItem();
 
 	UPROPERTY(EditDefaultsOnly)
-		UStaticMesh* StaticMesh;
+		TArray<FMaterialSlots> RandomMaterials;
+
+	TArray<UMaterialInterface*> GetRandomMaterials();
+};
+
+
+UCLASS()
+class CHATTERS_API UStaticMeshEquipmentItem : public UEquipmentItem
+{
+	GENERATED_BODY()
+public:
+	UStaticMeshEquipmentItem();
+	~UStaticMeshEquipmentItem();
 
 	UPROPERTY(EditDefaultsOnly)
-		TArray<FMaterialSlots> RandomMaterials;
+		UStaticMesh* StaticMesh;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Transform")
 		FTransform Transform;
 
-	TArray<UMaterialInterface*> GetRandomMaterials();
-
 	FTransform GetTransform();
+};
+
+UCLASS()
+class CHATTERS_API USkeletalMeshEquipmentItem : public UEquipmentItem
+{
+	GENERATED_BODY()
+public:
+	USkeletalMeshEquipmentItem();
+	~USkeletalMeshEquipmentItem();
+
+	UPROPERTY(EditDefaultsOnly)
+		USkeletalMesh* SkeletalMesh;
+
 };
