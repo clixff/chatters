@@ -14,6 +14,15 @@
 #include "Equipment/Weapon/Instances/WeaponInstance.h"
 #include "Bot.generated.h"
 
+UENUM(BlueprintType)
+enum class ECombatAction : uint8
+{
+	IDLE,
+	Shooting,
+	Rotating,
+	Moving
+};
+
 class UChattersGameSession;
 
 UCLASS()
@@ -25,6 +34,7 @@ public:
 	// Sets default values for this character's properties
 	ABot();
 
+	~ABot();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -54,7 +64,7 @@ public:
 
 	void Init(FString NewName, int32 NewID);
 
-	void ApplyDamage(int32 Damage);
+	void ApplyDamage(int32 Damage, ABot* ByBot = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None);
 
 	float GetHeathValue();
 
@@ -79,6 +89,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 		ABot* TargetTo = nullptr;
+
+	UPROPERTY(VisibleAnywhere)
+		ECombatAction CombatAction = ECombatAction::IDLE;
 private:
 	bool bReady = false;
 
@@ -104,11 +117,22 @@ private:
 
 	void TryDetachHat();
 
-	UChattersGameSession* GameSession = nullptr;
-
 	UChattersGameSession* GetGameSession();
 
 	void FindNewEnemyTarget();
+
+	void SetNewEnemyTarget(ABot* Target);
+
+	FVector MovingTarget;
+
+	float UpdateMovingTargetTimeout = 0.0f;
+
+	void MoveToTarget();
+
+	void CombatTick(float DeltaTime);
+
+	void Shoot();
+
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
@@ -128,7 +152,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		UStaticMeshComponent* WeaponMesh;
 
-	void OnDead();
+	void OnDead(ABot* Killer = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None);
 
 
 };

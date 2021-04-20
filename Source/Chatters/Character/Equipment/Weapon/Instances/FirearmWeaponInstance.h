@@ -38,8 +38,9 @@ public:
 	UPROPERTY()
 		EFirearmPhase Phase = EFirearmPhase::IDLE;
 
-	bool bCanShoot();
+	bool CanShoot();
 
+	void OnShoot();
 private:
 	void StartReloading();
 };

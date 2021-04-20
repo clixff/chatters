@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "WeaponItem.h"
+#include "Sound/SoundBase.h"
 #include "FirearmWeaponItem.generated.h"
 
 
@@ -32,4 +33,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		float ShootTime = 1.0f;
 
+	UPROPERTY(EditDefaultsOnly)
+		USoundBase* ShootSound;
+
+	UPROPERTY(EditDefaultsOnly)
+		float ImpulseForce = 1000.0f;
 };

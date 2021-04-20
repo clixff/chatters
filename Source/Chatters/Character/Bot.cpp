@@ -8,6 +8,10 @@
 #include "BotSpawnPoint.h"
 #include "Equipment/Weapon/Instances/MeleeWeaponInstance.h"
 #include "Equipment/Weapon/Instances/FirearmWeaponInstance.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "../Misc/MathHelper.h"
+#include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 #include "../Core/ChattersGameSession.h"
 
 
@@ -43,6 +47,17 @@ ABot::ABot()
 	this->NameWidgetComponent->SetWidgetClass(UBotNameWidget::StaticClass());
 }
 
+ABot::~ABot()
+{
+	if (this->WeaponInstance != nullptr)
+	{
+		if (this->WeaponInstance->IsValidLowLevel())
+		{
+			this->WeaponInstance->ConditionalBeginDestroy();
+		}
+	}
+}
+
 // Called when the game starts or when spawned
 void ABot::BeginPlay()
 {
@@ -59,18 +74,25 @@ void ABot::Tick(float DeltaTime)
 
 	if (this->bAlive)
 	{
-		if (this->bMovingToRandomLocation)
+		if (this->WeaponInstance)
 		{
-			float DistToTarget = FVector::Dist(this->GetActorLocation(), this->RandomLocationTarget);
+			this->WeaponInstance->Tick(DeltaTime);
 
-			if (DistToTarget <= 150.0f)
-			{
-				this->ApplyDamage(50);
-				this->bMovingToRandomLocation = false;
-				this->SayRandomMessage();
-				this->MoveToRandomLocation();
-			}
+			this->CombatTick(DeltaTime);
 		}
+
+		//if (this->bMovingToRandomLocation)
+		//{
+		//	float DistToTarget = FVector::Dist(this->GetActorLocation(), this->RandomLocationTarget);
+
+		//	if (DistToTarget <= 150.0f)
+		//	{
+		//		this->ApplyDamage(50);
+		//		this->bMovingToRandomLocation = false;
+		//		this->SayRandomMessage();
+		//		this->MoveToRandomLocation();
+		//	}
+		//}
 
 		auto* NameWidgetObject = this->GetNameWidget();
 
@@ -79,10 +101,6 @@ void ABot::Tick(float DeltaTime)
 			NameWidgetObject->Tick(DeltaTime);
 		}
 
-		if (this->WeaponInstance)
-		{
-			this->WeaponInstance->Tick(DeltaTime);
-		}
 	}
 	else
 	{
@@ -150,16 +168,7 @@ UBotNameWidget* ABot::GetNameWidget()
 
 UChattersGameSession* ABot::GetGameSession()
 {
-	if (!this->GameSession)
-	{
-		auto* GameInstance = UChattersGameInstance::Get();
-		if (GameInstance)
-		{
-			this->GameSession = GameInstance->GetGameSession();
-		}
-	}
-
-	return this->GameSession;
+	return UChattersGameSession::Get();
 }
 
 void ABot::FindNewEnemyTarget()
@@ -167,7 +176,203 @@ void ABot::FindNewEnemyTarget()
 	float MinDistance = -1.0f;
 	ABot* NewTarget = nullptr;
 
-	auto* GameSession = UChattersGameSession::Get();
+	auto* GameSessionObject = this->GetGameSession();
+
+	if (GameSessionObject)
+	{
+		auto AliveBots = GameSessionObject->AliveBots;
+
+		for (int32 i = 0; i < AliveBots.Num(); i++)
+		{
+			ABot* Bot = AliveBots[i];
+
+			if (!Bot || Bot->ID == this->ID || !Bot->bAlive)
+			{
+				continue;
+			}
+
+			float Dist = FVector::Dist(this->GetActorLocation(), Bot->GetActorLocation());
+
+			if (MinDistance == -1.0f || Dist < MinDistance)
+			{
+				MinDistance = Dist;
+				NewTarget = Bot;
+			}
+			
+		}
+	}
+
+	this->SetNewEnemyTarget(NewTarget);
+}
+
+void ABot::SetNewEnemyTarget(ABot* Target)
+{
+	this->TargetTo = Target;
+	this->CombatAction = ECombatAction::IDLE;
+}
+
+void ABot::MoveToTarget()
+{
+	if (!this->TargetTo)
+	{
+		return;
+	}
+
+	auto* AIController = this->GetAIController();
+
+	if (!AIController)
+	{
+		return;
+	}
+
+	/** Allow to update target location every 1 second */
+	this->UpdateMovingTargetTimeout = 1.0f;
+	this->CombatAction = ECombatAction::Moving;
+	FVector TargetLocation = this->TargetTo->GetActorLocation();
+
+	AIController->MoveToLocation(TargetLocation);
+}
+
+void ABot::CombatTick(float DeltaTime)
+{
+	if (this->WeaponInstance->WeaponRef)
+	{
+		if (this->TargetTo)
+		{
+			if (!this->TargetTo->bAlive)
+			{
+				this->FindNewEnemyTarget();
+			}
+			else
+			{
+				float TargetDist = FVector::Dist(this->GetActorLocation(), this->TargetTo->GetActorLocation());
+
+				//UE_LOG(LogTemp, Display, TEXT("[ABot] Dist is %f"), TargetDist);
+
+				EWeaponType WeaponType = this->WeaponInstance->WeaponRef->Type;
+
+				if (WeaponType == EWeaponType::Firearm)
+				{
+					if (TargetDist <= 700.0f)
+					{
+						if (this->CombatAction == ECombatAction::Moving)
+						{
+							UE_LOG(LogTemp, Display, TEXT("[ABot] Stop moving"));
+
+							auto* AIController = this->GetAIController();
+
+							if (AIController)
+							{
+								AIController->StopMovement();
+							}
+						}
+						
+						this->CombatAction = ECombatAction::Shooting;
+						
+						float OldYawRotation = this->GetActorRotation().Yaw;
+						float NewYawRotation = UKismetMathLibrary::FindLookAtRotation(this->WeaponMesh->GetComponentLocation(), this->TargetTo->GetActorLocation()).Yaw;
+
+						float YawDiff = FMath::Abs(FMath::Fmod((OldYawRotation - NewYawRotation) + 180.0f, 360.0f) - 180.0f);
+
+						if (YawDiff >= 1.0f)
+						{
+							this->SetActorRotation(FRotator(0.0f, NewYawRotation, 0.0f));
+
+							UE_LOG(LogTemp, Display, TEXT("[ABot] Set rotation yaw %f. Old yaw is %f. YawDiff is %f."), NewYawRotation, OldYawRotation, YawDiff);
+						}
+
+						this->Shoot();
+
+					}
+					else
+					{
+						if (this->CombatAction == ECombatAction::Moving)
+						{
+							this->UpdateMovingTargetTimeout -= DeltaTime;
+
+							if (this->UpdateMovingTargetTimeout <= 0.0f)
+							{
+								this->UpdateMovingTargetTimeout = 0.0f;
+								this->MoveToTarget();
+							}
+						}
+						else
+						{
+							this->MoveToTarget();
+						}
+					}
+				}
+			}
+		}
+	}
+
+}
+
+void ABot::Shoot()
+{
+	if (this->WeaponInstance && this->WeaponInstance->WeaponRef)
+	{
+		EWeaponType WeaponType = this->WeaponInstance->WeaponRef->Type;
+
+		if (WeaponType != EWeaponType::Firearm || !this->WeaponMesh)
+		{
+			return;
+		}
+
+		auto* FirearmInstance = Cast<UFirearmWeaponInstance>(this->WeaponInstance);
+
+		auto* FirearmRef = FirearmInstance->GetFirearmRef();
+
+		if (FirearmInstance->CanShoot())
+		{
+			FVector OutLocation;
+			FRotator OutRotation;
+			this->WeaponMesh->GetSocketWorldLocationAndRotation(TEXT("OutBullet"), OutLocation, OutRotation);
+
+			float YawRotation = this->GetActorRotation().Yaw;
+			FRotator GunRotation = FRotator(FMath::RandRange(-5.0f, 5.0f), YawRotation + FMath::RandRange(-5.0f, 5.0f), 0.0f);
+
+			FVector EndLocation = OutLocation + (GunRotation.Vector() * FirearmRef->MaxDistance);
+
+			UWorld* World = this->GetWorld();
+
+			if (!World)
+			{
+				return;
+			}
+
+			FirearmInstance->OnShoot();
+			
+			//EndLocation = OutLocation + FVector(0.0f, 0.0f, 150.0f);
+
+			FHitResult HitResult;
+			World->LineTraceSingleByChannel(HitResult, OutLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3);
+
+
+			DrawDebugLine(World, OutLocation, HitResult.TraceEnd, FColor(255, 0, 0), false, 0.5f);
+
+			if (HitResult.bBlockingHit)
+			{
+				DrawDebugSphere(World, HitResult.ImpactPoint, 10.0f, 2, FColor(0, 255, 0), false, 0.5f);
+				auto* Actor = HitResult.Actor.Get();
+				if (Actor)
+				{
+					ABot* BotToDamage = Cast<ABot>(Actor);
+					if (BotToDamage && BotToDamage->ID != this->ID)
+					{
+						FVector ImpulseVector = this->GetActorForwardVector() * FirearmRef->ImpulseForce;
+						BotToDamage->ApplyDamage(FirearmInstance->GetDamage(), this, WeaponType, ImpulseVector, HitResult.ImpactPoint, HitResult.BoneName);
+					}
+				}
+			}
+
+
+			if (FirearmRef->ShootSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutLocation, FMath::RandRange(0.5f, 0.7f));
+			}
+		}
+	}
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
@@ -203,7 +408,6 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 
 	if (Bot)
 	{
-		Bot->GameSession = GameSessionObject;
 		Bot->Init(NameToSet, IDToSet);
 	}
 
@@ -356,7 +560,6 @@ void ABot::MoveToRandomLocation()
 
 	if (AIController)
 	{
-
 		float XPos = FMath::RandRange(-7400, 7400);
 		float YPos = FMath::RandRange(-7400, 7400);
 
@@ -367,7 +570,7 @@ void ABot::MoveToRandomLocation()
 	}
 }
 
-void ABot::ApplyDamage(int32 Damage)
+void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit)
 {
 	/** When game session not started */
 	if (!this->bReady)
@@ -387,7 +590,7 @@ void ABot::ApplyDamage(int32 Damage)
 	if (this->HealthPoints <= 0)
 	{
 		this->HealthPoints = 0;
-		this->OnDead();
+		this->OnDead(ByBot, WeaponType, ImpulseVector, ImpulseLocation, BoneHit);
 	}
 
 	UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);
@@ -478,12 +681,19 @@ void ABot::SayRandomMessage()
 	this->Say(Message);
 }
 
-void ABot::OnDead()
+void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit)
 {
 	this->bAlive = false;
 	this->HealthPoints = 0;
 
 	this->SetActorLocation(this->GetActorLocation());
+
+	auto* AIController = this->GetAIController();
+
+	if (AIController)
+	{
+		AIController->StopMovement();
+	}
 
 	if (this->GetMesh())
 	{
@@ -494,6 +704,14 @@ void ABot::OnDead()
 	if (this->GetCapsuleComponent())
 	{
 		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	}
+
+	if (Killer)
+	{
+		if (WeaponType == EWeaponType::Firearm)
+		{
+			this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
+		}
 	}
 
 	this->bMovingToRandomLocation = false;
@@ -528,7 +746,8 @@ void ABot::OnGameSessionStarted()
 {
 	this->bReady = true;
 
-	this->MoveToRandomLocation();
+	this->FindNewEnemyTarget();
+	//this->MoveToRandomLocation();
 }
 
 void ABot::TryDetachHat()

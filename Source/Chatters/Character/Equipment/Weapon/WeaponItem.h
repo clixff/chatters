@@ -28,7 +28,10 @@ public:
 	~UWeaponItem();
 
 	UPROPERTY(EditDefaultsOnly)
-		int32 Damage = 0;
+		int32 MinDamage = 0;
+
+	UPROPERTY(EditDefaultsOnly)
+		int32 MaxDamage = 0;
 
 	UPROPERTY(VisibleAnywhere)
 		EWeaponType Type = EWeaponType::None;

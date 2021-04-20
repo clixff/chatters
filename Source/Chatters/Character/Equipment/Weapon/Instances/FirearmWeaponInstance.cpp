@@ -68,7 +68,7 @@ void UFirearmWeaponInstance::Init()
 
 }
 
-bool UFirearmWeaponInstance::bCanShoot()
+bool UFirearmWeaponInstance::CanShoot()
 {
 	return this->Phase == EFirearmPhase::IDLE;
 }
@@ -82,5 +82,18 @@ void UFirearmWeaponInstance::StartReloading()
 		this->Phase = EFirearmPhase::Reloading;
 		this->TimeoutValue = FirearmRef->ReloadingTime;
 		this->NumberOfBullets = 0;
+	}
+}
+
+void UFirearmWeaponInstance::OnShoot()
+{
+	auto* FirearmRef = this->GetFirearmRef();
+
+	if (FirearmRef)
+	{
+		this->Phase = EFirearmPhase::Shooting;
+		this->TimeoutValue = FirearmRef->ShootTime;
+		this->NumberOfBullets -= 1;
+
 	}
 }

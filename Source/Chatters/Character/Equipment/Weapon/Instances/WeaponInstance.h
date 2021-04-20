@@ -29,4 +29,7 @@ public:
 
 	UPROPERTY()
 		ACharacter* Bot = nullptr;
+
+	/** Generated new damage value between min and max */
+	int32 GetDamage();
 };
