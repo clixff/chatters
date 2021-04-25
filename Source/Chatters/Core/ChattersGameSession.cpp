@@ -39,7 +39,7 @@ void UChattersGameSession::Init()
 
 	if (MaxPlayers < 2)
 	{
-		MaxPlayers = 25;
+		//MaxPlayers = 25;
 	}
 }
 

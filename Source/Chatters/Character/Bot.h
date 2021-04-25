@@ -92,6 +92,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 		ECombatAction CombatAction = ECombatAction::IDLE;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		float AimingAngle = 50.0f;
+
+	UPROPERTY(EditAnywhere)
+		FVector AimAtTestLocation;
 private:
 	bool bReady = false;
 
@@ -133,6 +139,24 @@ private:
 
 	void Shoot();
 
+	void AimAt(FVector Location);
+
+	void TestAimAt();
+	
+	bool bTestAiming = false;
+
+	UPROPERTY(EditAnywhere)
+		float MinAimingPitchRotation = -80.0f;
+
+	UPROPERTY(EditAnywhere)
+		float MaxAimingPitchRotation = 80.0f;
+
+	static const float MinAimRotationValue;
+	static const float MaxAimRotationValue;
+	
+	AActor* AimingTarget = nullptr;
+
+	FVector GunSocketRelativeLocation;
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:

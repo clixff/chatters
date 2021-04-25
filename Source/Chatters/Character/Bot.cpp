@@ -14,6 +14,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "../Core/ChattersGameSession.h"
 
+const float ABot::MinAimRotationValue = 0.0f;
+const float ABot::MaxAimRotationValue = 100.0f;
 
 // Sets default values
 ABot::ABot()
@@ -77,6 +79,19 @@ void ABot::Tick(float DeltaTime)
 		if (this->WeaponInstance)
 		{
 			this->WeaponInstance->Tick(DeltaTime);
+
+			if (this->bTestAiming)
+			{
+				FVector AimAtLocation = this->AimAtTestLocation; 
+
+				if (this->AimingTarget)
+				{
+					AimAtLocation = this->AimingTarget->GetActorLocation();
+				}
+
+				this->AimAt(AimAtLocation);
+				this->Shoot();
+			}
 
 			this->CombatTick(DeltaTime);
 		}
@@ -231,6 +246,8 @@ void ABot::MoveToTarget()
 	FVector TargetLocation = this->TargetTo->GetActorLocation();
 
 	AIController->MoveToLocation(TargetLocation);
+
+	this->AimingAngle = 50.0f;
 }
 
 void ABot::CombatTick(float DeltaTime)
@@ -268,18 +285,10 @@ void ABot::CombatTick(float DeltaTime)
 						}
 						
 						this->CombatAction = ECombatAction::Shooting;
-						
-						float OldYawRotation = this->GetActorRotation().Yaw;
-						float NewYawRotation = UKismetMathLibrary::FindLookAtRotation(this->WeaponMesh->GetComponentLocation(), this->TargetTo->GetActorLocation()).Yaw;
 
-						float YawDiff = FMath::Abs(FMath::Fmod((OldYawRotation - NewYawRotation) + 180.0f, 360.0f) - 180.0f);
+						FVector AimTargetLoaction = this->TargetTo->GetMesh()->GetSocketTransform(TEXT("head_")).GetLocation();
 
-						if (YawDiff >= 1.0f)
-						{
-							this->SetActorRotation(FRotator(0.0f, NewYawRotation, 0.0f));
-
-							UE_LOG(LogTemp, Display, TEXT("[ABot] Set rotation yaw %f. Old yaw is %f. YawDiff is %f."), NewYawRotation, OldYawRotation, YawDiff);
-						}
+						this->AimAt(AimTargetLoaction);
 
 						this->Shoot();
 
@@ -325,14 +334,20 @@ void ABot::Shoot()
 
 		if (FirearmInstance->CanShoot())
 		{
-			FVector OutLocation;
-			FRotator OutRotation;
-			this->WeaponMesh->GetSocketWorldLocationAndRotation(TEXT("OutBullet"), OutLocation, OutRotation);
-
 			float YawRotation = this->GetActorRotation().Yaw;
-			FRotator GunRotation = FRotator(FMath::RandRange(-5.0f, 5.0f), YawRotation + FMath::RandRange(-5.0f, 5.0f), 0.0f);
+			float AimingAngleScale = UKismetMathLibrary::NormalizeToRange(this->AimingAngle, ABot::MinAimRotationValue, ABot::MaxAimRotationValue);
 
-			FVector EndLocation = OutLocation + (GunRotation.Vector() * FirearmRef->MaxDistance);
+			float PitchRotation = FMath::Clamp(FMath::Lerp(this->MinAimingPitchRotation, this->MaxAimingPitchRotation, AimingAngleScale), this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
+
+			FRotator GunRotation = FRotator(PitchRotation, YawRotation, 0.0f);
+
+			FVector OutLocation = GunRotation.RotateVector(this->GunSocketRelativeLocation);
+			OutLocation += this->GetActorLocation();
+
+			FVector GunRotationVector = GunRotation.Vector();
+			GunRotationVector.Normalize();
+
+			FVector EndLocation = OutLocation + (GunRotationVector * FirearmRef->MaxDistance);
 
 			UWorld* World = this->GetWorld();
 
@@ -343,16 +358,16 @@ void ABot::Shoot()
 
 			FirearmInstance->OnShoot();
 			
-			//EndLocation = OutLocation + FVector(0.0f, 0.0f, 150.0f);
+			FVector StartLocation = OutLocation;
 
 			FHitResult HitResult;
-			World->LineTraceSingleByChannel(HitResult, OutLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3);
+			World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3);
 
-
-			DrawDebugLine(World, OutLocation, HitResult.TraceEnd, FColor(255, 0, 0), false, 0.5f);
+			DrawDebugLine(World, StartLocation, HitResult.TraceEnd, FColor(0, 0, 255), false, 0.5f);
 
 			if (HitResult.bBlockingHit)
 			{
+				UE_LOG(LogTemp, Display, TEXT("[ABot] Bullet hit at %s. "), *HitResult.ImpactPoint.ToString());
 				DrawDebugSphere(World, HitResult.ImpactPoint, 10.0f, 2, FColor(0, 255, 0), false, 0.5f);
 				auto* Actor = HitResult.Actor.Get();
 				if (Actor)
@@ -366,13 +381,75 @@ void ABot::Shoot()
 				}
 			}
 
-
 			if (FirearmRef->ShootSound)
 			{
 				UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutLocation, FMath::RandRange(0.5f, 0.7f));
 			}
 		}
 	}
+}
+
+void ABot::AimAt(FVector Location)
+{
+	FVector AimRelativeLocation = Location - this->GetActorLocation();
+
+	FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(FVector(0.0f), AimRelativeLocation);
+
+	FVector AimLocationRotated = FRotator(0.0f, LookAtRotation.Yaw * -1.0f, 0.0f).RotateVector(AimRelativeLocation);
+
+	FVector SocketLocation = this->GunSocketRelativeLocation;
+
+	/** Gun socket relative location without X */
+	FVector SocketYLocation = SocketLocation;
+	SocketYLocation.X = 0.0f;
+
+	/** Yaw rotation */
+
+	FVector SocketYLocationRotated = FRotator(0.0f, LookAtRotation.Yaw, 0.0f).RotateVector(SocketYLocation);
+
+	float NewYawRotation = UKismetMathLibrary::FindLookAtRotation(SocketYLocationRotated, AimRelativeLocation).Yaw;
+
+	float OldYawRotation = this->GetActorRotation().Yaw;
+	float YawDiff = FMath::Abs(FMath::Fmod((OldYawRotation - NewYawRotation) + 180.0f, 360.0f) - 180.0f);
+
+	if (YawDiff >= 0.05f)
+	{
+		this->SetActorRotation(FRotator(0.0f, NewYawRotation, 0.0f));
+	}
+
+	/** Pitch rotation */
+
+	FRotator TempPitchRotation = UKismetMathLibrary::FindLookAtRotation(FVector(0.0f, 0.0f, SocketLocation.Z), AimLocationRotated);
+
+	FVector TempPitchVector = FVector(this->GunSocketRelativeLocation.Z, 0.0f, 0.0f);
+	TempPitchVector = FRotator(0.0f, TempPitchRotation.Pitch, 0.0f).RotateVector(TempPitchVector);
+
+	float Pitch = FMath::Atan2(AimLocationRotated.Z - TempPitchVector.X, AimLocationRotated.X + TempPitchVector.Y);
+	Pitch = FMath::RadiansToDegrees(Pitch);
+
+	float PitchClamped = FMath::Clamp(Pitch, this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
+	float PitchScale = UKismetMathLibrary::NormalizeToRange(PitchClamped, this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
+
+	this->AimingAngle = FMath::Clamp(FMath::Lerp(ABot::MinAimRotationValue, ABot::MaxAimRotationValue, PitchScale), ABot::MinAimRotationValue, ABot::MaxAimRotationValue);
+
+}
+
+void ABot::TestAimAt()
+{
+	UWorld* World = this->GetWorld();
+
+	if (World)
+	{
+		TArray<AActor*> AimTargetActors;
+		UGameplayStatics::GetAllActorsWithTag(World, TEXT("Aim_Target"), AimTargetActors);
+		if (AimTargetActors.Num())
+		{
+			this->AimingTarget = AimTargetActors[0];
+		}
+	}
+
+	this->SetActorLocation(FVector(0.0f, 0.0f, 100.0f));
+	this->bTestAiming = true;
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
@@ -529,6 +606,15 @@ void ABot::SetEquipment()
 						this->WeaponInstance->WeaponRef = RandomEquipment.Weapon;
 						this->WeaponInstance->Bot = this;
 						this->WeaponInstance->Init();
+
+						if (WeaponType == EWeaponType::Firearm)
+						{
+							UFirearmWeaponItem* FirearmRef = Cast<UFirearmWeaponItem>(RandomEquipment.Weapon);
+							if (FirearmRef)
+							{
+								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation;
+							}
+						}
 					}
 				}
 			}
@@ -746,7 +832,10 @@ void ABot::OnGameSessionStarted()
 {
 	this->bReady = true;
 
+	//this->TestAimAt();
+
 	this->FindNewEnemyTarget();
+
 	//this->MoveToRandomLocation();
 }
 
