@@ -83,15 +83,7 @@ void ABot::Tick(float DeltaTime)
 
 			if (this->bTestAiming)
 			{
-				FVector AimAtLocation = this->AimAtTestLocation; 
-
-				if (this->AimingTarget)
-				{
-					AimAtLocation = this->AimingTarget->GetActorLocation();
-				}
-
-				this->AimAt(AimAtLocation);
-				this->Shoot();
+				this->TestAimingTick(DeltaTime);
 			}
 
 			this->CombatTick(DeltaTime);
@@ -225,6 +217,15 @@ void ABot::SetNewEnemyTarget(ABot* Target)
 {
 	this->TargetTo = Target;
 	this->CombatAction = ECombatAction::IDLE;
+
+	if (this->TargetTo && this->TargetTo->CombatStyle == ECombatStyle::Defense)
+	{
+		this->CombatStyle = ECombatStyle::Attack;
+	}
+	else
+	{
+		this->CombatStyle = ECombatStyle::Defense;
+	}
 }
 
 void ABot::MoveToTarget()
@@ -259,6 +260,7 @@ void ABot::CombatTick(float DeltaTime)
 		{
 			if (!this->TargetTo->bAlive)
 			{
+				this->bMovingToRandomCombatLocation = false;
 				this->FindNewEnemyTarget();
 			}
 			else
@@ -291,18 +293,19 @@ void ABot::CombatTick(float DeltaTime)
 						/** Moving around target */
 						float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
 
-						if (!this->bMovingToRandomCombatLocation || DistToRandomLocation < 150.0f)
+						if (this->CombatStyle == ECombatStyle::Attack && (!this->bMovingToRandomCombatLocation || DistToRandomLocation < 150.0f))
 						{
 							FVector NewRandomLocation;
-							bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->TargetTo->GetActorLocation(), NewRandomLocation, 500.0f);
+							bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->TargetTo->GetActorLocation(), NewRandomLocation, 700.0f);
 
 							if (bFoundRandomLocation)
 							{
 								if (CharacterMovementComponent)
 								{
-									CharacterMovementComponent->MaxWalkSpeed = 350.0f;
+									CharacterMovementComponent->MaxWalkSpeed = 250.0f;
 								}
 								this->bMovingToRandomCombatLocation = true;
+								this->bUseControllerRotationYaw = false;
 								this->CombatRandomLocation = NewRandomLocation;
 								auto* AIController = this->GetAIController();
 
@@ -310,6 +313,21 @@ void ABot::CombatTick(float DeltaTime)
 								{
 									AIController->MoveToLocation(NewRandomLocation);
 								}
+							}
+							else
+							{
+								this->bMovingToRandomCombatLocation = false;
+							}
+						}
+
+						if (bMovingToRandomCombatLocation)
+						{
+							DrawDebugSphere(GetWorld(), this->CombatRandomLocation, 20.0f, 12, FColor(0, 0, 255), false, -1.0f);
+							DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->GetActorLocation(), FColor(255, 255, 255), false, -1.0f);
+
+							if (this->TargetTo)
+							{
+								DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->TargetTo->GetActorLocation(), FColor(255, 0, 0), false, -1.0f);
 							}
 						}
 						
@@ -319,6 +337,8 @@ void ABot::CombatTick(float DeltaTime)
 
 						this->AimAt(AimTargetLoaction);
 
+						this->SmoothRotatingTick(DeltaTime);
+
 						this->Shoot();
 					}
 					else
@@ -327,6 +347,8 @@ void ABot::CombatTick(float DeltaTime)
 						{
 							CharacterMovementComponent->MaxWalkSpeed = 600.0f;
 						}
+
+						this->bUseControllerRotationYaw = true;
 
 						if (this->CombatAction == ECombatAction::Moving)
 						{
@@ -377,7 +399,7 @@ void ABot::Shoot()
 			FVector OutLocation = GunRotation.RotateVector(this->GunSocketRelativeLocation);
 			OutLocation += this->GetActorLocation();
 
-			const bool bBulletOffset = true;
+			const bool bBulletOffset = false;
 
 			if (bBulletOffset)
 			{
@@ -478,12 +500,6 @@ void ABot::AimAt(FVector Location)
 	float NewYawRotation = UKismetMathLibrary::FindLookAtRotation(SocketYLocationRotated, AimRelativeLocation).Yaw;
 
 	float OldYawRotation = this->GetActorRotation().Yaw;
-	float YawDiff = FMath::Abs(FMath::Fmod((OldYawRotation - NewYawRotation) + 180.0f, 360.0f) - 180.0f);
-
-	if (YawDiff >= 0.05f)
-	{
-		this->SetActorRotation(FRotator(0.0f, NewYawRotation, 0.0f));
-	}
 
 	/** Pitch rotation */
 
@@ -498,7 +514,33 @@ void ABot::AimAt(FVector Location)
 	float PitchClamped = FMath::Clamp(Pitch, this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
 	float PitchScale = UKismetMathLibrary::NormalizeToRange(PitchClamped, this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
 
-	this->AimingAngle = FMath::Clamp(FMath::Lerp(ABot::MinAimRotationValue, ABot::MaxAimRotationValue, PitchScale), ABot::MinAimRotationValue, ABot::MaxAimRotationValue);
+	this->SmoothRotation.Target.Pitch = FMath::Clamp(FMath::Lerp(ABot::MinAimRotationValue, ABot::MaxAimRotationValue, PitchScale), ABot::MinAimRotationValue, ABot::MaxAimRotationValue);
+
+	if (NewYawRotation != OldYawRotation || this->SmoothRotation.Target.Pitch != this->AimingAngle)
+	{
+		this->SmoothRotation.bActive = true;
+
+		//float YawDiff = FMath::Fmod((NewYawRotation - OldYawRotation) + 180.0f, 360.0f) - 180.0f;
+
+		float YawDiff = FMath::FindDeltaAngleDegrees(OldYawRotation, NewYawRotation);
+
+		this->SmoothRotation.CurrentYaw = FMath::Fmod((OldYawRotation + 360.0f), 360.0f);
+
+		this->SmoothRotation.Target.Yaw = this->SmoothRotation.CurrentYaw + YawDiff;
+
+		if (this->SmoothRotation.Target.Yaw < this->SmoothRotation.CurrentYaw)
+		{
+			this->SmoothRotation.YawType = EYawRotatingType::CounterClockwise;
+		}
+		else
+		{
+			this->SmoothRotation.YawType = EYawRotatingType::Clockwise;
+		}
+	}
+	else
+	{
+		this->SmoothRotation.bActive = false;
+	}
 
 }
 
@@ -524,6 +566,7 @@ UCharacterMovementComponent* ABot::GetCharacterMovementComponent()
 {
 	return Cast<UCharacterMovementComponent>(this->GetMovementComponent());
 }
+
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
 {
@@ -916,9 +959,9 @@ void ABot::OnGameSessionStarted()
 {
 	this->bReady = true;
 
-	//this->TestAimAt();
+	this->TestAimAt();
 
-	this->FindNewEnemyTarget();
+	//this->FindNewEnemyTarget();
 
 	//this->MoveToRandomLocation();
 }
@@ -951,4 +994,144 @@ void ABot::DeatachWeapon()
 		this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 		this->WeaponMesh->SetSimulatePhysics(true);
 	}
+}
+
+void ABot::SmoothRotatingTick(float DeltaTime)
+{
+	if (this->SmoothRotation.bActive)
+	{
+		bool bYawEnd = false;
+		bool bPitchEnd = false;
+
+		const float YawSpeed = 360.0f;
+		const float PitchSpeed = 180.0f;
+
+		if (this->SmoothRotation.YawType == EYawRotatingType::Clockwise)
+		{
+			this->SmoothRotation.CurrentYaw += YawSpeed * DeltaTime;
+			
+			if (this->SmoothRotation.CurrentYaw >= this->SmoothRotation.Target.Yaw)
+			{
+				this->SmoothRotation.CurrentYaw = this->SmoothRotation.Target.Yaw;
+				bYawEnd = true;
+			}
+		}
+		else
+		{
+			this->SmoothRotation.CurrentYaw -= YawSpeed * DeltaTime;
+
+			if (this->SmoothRotation.CurrentYaw <= this->SmoothRotation.Target.Yaw)
+			{
+				this->SmoothRotation.CurrentYaw = this->SmoothRotation.Target.Yaw;
+				bYawEnd = true;
+			}
+		}
+
+		this->SetActorRotation(FRotator(0.0f, this->SmoothRotation.CurrentYaw, 0.0f));
+
+		if (this->AimingAngle < this->SmoothRotation.Target.Pitch)
+		{
+			this->AimingAngle += PitchSpeed * DeltaTime;
+
+			if (this->AimingAngle >= this->SmoothRotation.Target.Pitch)
+			{
+				this->AimingAngle = this->SmoothRotation.Target.Pitch;
+				bPitchEnd = true;
+			}
+		}
+		else
+		{
+			this->AimingAngle -= PitchSpeed * DeltaTime;
+
+			if (this->AimingAngle <= this->SmoothRotation.Target.Pitch)
+			{
+				this->AimingAngle = this->SmoothRotation.Target.Pitch;
+				bPitchEnd = true;
+			}
+		}
+
+		if (bYawEnd && bPitchEnd)
+		{
+			this->SmoothRotation.bActive = false;
+		}
+	}
+}
+
+void ABot::TestAimingTick(float DeltaTime)
+{
+	FVector AimAtLocation = this->AimAtTestLocation;
+
+	if (this->AimingTarget)
+	{
+		AimAtLocation = this->AimingTarget->GetActorLocation();
+	}
+
+	const bool bMovingToRandomPointWhileAiming = true;
+
+	float Dist = FVector::Dist(this->GetActorLocation(), this->RandomPointToMoveWhileAiming);
+
+	if (bMovingToRandomPointWhileAiming && (Dist < 130.0f))
+	{
+		this->bUseControllerRotationYaw = false;
+		
+		auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
+
+		if (CharacterMovementComponent)
+		{
+			CharacterMovementComponent->MaxWalkSpeed = 250.0f;
+		}
+
+		float XPos = 0.0f;
+		float YPos = 0.0f;
+
+		int32 RandNumber = FMath::RandRange(0, 2);
+		float RandLocation = 0.0f;
+
+
+		if (RandNumber == 0)
+		{
+			RandLocation = 0.0f;
+		}
+		else if (RandNumber == 1)
+		{
+			RandLocation = 500.0f;
+		}
+		else
+		{
+			RandLocation = -500.0f;
+		}
+
+		if (bTestAimingMovingToCenter)
+		{
+			RandLocation = 0.0f;
+			bTestAimingMovingToCenter = false;
+		}
+		else
+		{
+			bTestAimingMovingToCenter = true;
+		}
+
+		if (FMath::RandRange(0, 1))
+		{
+			XPos = RandLocation;
+		}
+		else
+		{
+			YPos = RandLocation;
+		}
+
+		this->RandomPointToMoveWhileAiming = FVector(XPos, YPos, 0.0f);
+
+		auto* AIController = this->GetAIController();
+
+		if (AIController)
+		{
+			AIController->MoveToLocation(this->RandomPointToMoveWhileAiming);
+		}
+
+	}
+
+	this->AimAt(AimAtLocation);
+	this->SmoothRotatingTick(DeltaTime);
+	this->Shoot();
 }

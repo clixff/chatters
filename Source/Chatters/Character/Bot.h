@@ -16,12 +16,44 @@
 #include "Bot.generated.h"
 
 UENUM(BlueprintType)
+enum class EYawRotatingType : uint8
+{
+	Clockwise,
+	CounterClockwise
+};
+
+UENUM(BlueprintType)
 enum class ECombatAction : uint8
 {
 	IDLE,
 	Shooting,
 	Rotating,
 	Moving
+};
+
+UENUM(BlueprintType)
+enum class ECombatStyle : uint8
+{
+	/** 
+	 * When in gunfight, stands at one place and shoots
+	 */
+	Defense,
+	/**
+	 * When in gunfight, moving around target and shoots 
+	 */
+	Attack
+};
+
+USTRUCT()
+struct FSmoothRotation
+{
+	GENERATED_BODY()
+public:
+	bool bActive = false;
+	FRotator Target = FRotator(0.0f);
+	EYawRotatingType YawType = EYawRotatingType::Clockwise;
+	/** Yaw rotation without limits */
+	float CurrentYaw = 0.0f;
 };
 
 class UChattersGameSession;
@@ -140,6 +172,8 @@ private:
 
 	void CombatTick(float DeltaTime);
 
+	ECombatStyle CombatStyle = ECombatStyle::Defense;
+
 	void FirearmCombatTick(float DeltaTime);
 
 	void Shoot();
@@ -168,6 +202,16 @@ private:
 	bool bMovingToRandomCombatLocation = false;
 
 	UCharacterMovementComponent* GetCharacterMovementComponent();
+
+	FSmoothRotation SmoothRotation;
+
+	void SmoothRotatingTick(float DeltaTime);
+
+	FVector RandomPointToMoveWhileAiming = FVector(0.0f);
+
+	bool bTestAimingMovingToCenter = true;
+
+	void TestAimingTick(float DeltaTime);
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
