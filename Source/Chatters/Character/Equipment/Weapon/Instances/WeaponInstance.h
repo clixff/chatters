@@ -28,7 +28,7 @@ public:
 	float TimeoutValue = 0.0f;
 
 	UPROPERTY()
-		ACharacter* Bot = nullptr;
+		ACharacter* BotOwner = nullptr;
 
 	/** Generated new damage value between min and max */
 	int32 GetDamage();

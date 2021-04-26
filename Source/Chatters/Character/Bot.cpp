@@ -315,7 +315,7 @@ void ABot::CombatTick(float DeltaTime)
 						
 						this->CombatAction = ECombatAction::Shooting;
 
-						FVector AimTargetLoaction = this->TargetTo->GetMesh()->GetSocketTransform(TEXT("head_")).GetLocation();
+						FVector AimTargetLoaction = this->TargetTo->GetMesh()->GetSocketTransform(TEXT("spine_5")).GetLocation();
 
 						this->AimAt(AimTargetLoaction);
 
@@ -376,6 +376,14 @@ void ABot::Shoot()
 
 			FVector OutLocation = GunRotation.RotateVector(this->GunSocketRelativeLocation);
 			OutLocation += this->GetActorLocation();
+
+			const bool bBulletOffset = true;
+
+			if (bBulletOffset)
+			{
+				GunRotation.Pitch += FMath::RandRange(-5.0f, 5.0f);
+				GunRotation.Yaw += FMath::RandRange(-5.0f, 5.0f);
+			}
 
 			FVector GunRotationVector = GunRotation.Vector();
 			GunRotationVector.Normalize();
@@ -669,7 +677,7 @@ void ABot::SetEquipment()
 					if (this->WeaponInstance)
 					{
 						this->WeaponInstance->WeaponRef = RandomEquipment.Weapon;
-						this->WeaponInstance->Bot = this;
+						this->WeaponInstance->BotOwner = this;
 						this->WeaponInstance->Init();
 
 						if (WeaponType == EWeaponType::Firearm)
@@ -884,6 +892,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->bHatAttached = true;
 	}
 
+	if (this->WeaponInstance)
+	{
+		this->DeatachWeapon();
+	}
+
 	auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
 
 	if (CharacterMovementComponent)
@@ -920,11 +933,22 @@ void ABot::TryDetachHat()
 		{
 			this->bHatAttached = false;
 			this->HatMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-			//this->HatMesh->DetachFromParent(true, false);
-			//this->HatMesh->AttachToComponent(this->HeadMesh, FAttachmentTransformRules::KeepRelativeTransform);
 			this->HatMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
 			this->HatMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 			this->HatMesh->SetSimulatePhysics(true);
 		}
+	}
+}
+
+void ABot::DeatachWeapon()
+{
+	if (this->WeaponMesh && this->WeaponInstance)
+	{
+		this->WeaponInstance->BotOwner = nullptr;
+		this->WeaponInstance = nullptr;
+		this->WeaponMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		this->WeaponMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
+		this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+		this->WeaponMesh->SetSimulatePhysics(true);
 	}
 }

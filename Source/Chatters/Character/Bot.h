@@ -124,6 +124,8 @@ private:
 
 	void TryDetachHat();
 
+	void DeatachWeapon();
+
 	UChattersGameSession* GetGameSession();
 
 	void FindNewEnemyTarget();
