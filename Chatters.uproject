@@ -14,7 +14,11 @@
 				"UMG",
 				"AIModule",
 				"UnrealEd",
-				"PhysicsCore"
+				"PhysicsCore",
+				"NavigationSystem",
+				"SlateCore",
+				"Slate",
+				"UMG"
 			]
 		},
 		{

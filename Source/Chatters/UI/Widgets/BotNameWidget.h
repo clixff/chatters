@@ -7,7 +7,23 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/Border.h"
 #include "Components/CanvasPanel.h"
+#include "Components/TextBlock.h"
+#include "Fonts/SlateFontInfo.h"
 #include "BotNameWidget.generated.h"
+
+USTRUCT()
+struct FDamageNumberWidget
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		UTextBlock* TextBlock = nullptr;
+	UPROPERTY()
+		UCanvasPanelSlot* Slot = nullptr;
+	float Time = 0.0f;
+
+	FVector2D Position;
+};
 
 /**
  * 
@@ -50,6 +66,11 @@ public:
 
 	void UpdateChatBubbleMessage(FString Message);
 
+public:
+	void ShowDamageNumber(int32 DamageNumber, bool bCritical = false);
+
+	UPROPERTY(EditAnywhere, Category="DamageNumber")
+		FSlateFontInfo DamageNumberFont;
 private:
 	UCanvasPanel* Wrapper = nullptr;
 	UCanvasPanel* GetWrapper();
@@ -71,4 +92,12 @@ private:
 		float ChatBubbleMessageOpacityModifier = 1.0f;
 
 	void SetChatBubbleOpacity(float Opacity);
+
+	TArray<FDamageNumberWidget> DamageWidgets;
+
+	float DamageWidgetMaxTime = 1.0f;
+
+	UWidget* TempWidget = nullptr;
+
+	int32 DamageNumbers = 0;
 };

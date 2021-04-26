@@ -12,6 +12,7 @@
 #include "Chaos/ChaosEngineInterface.h"
 #include "Equipment/Weapon/WeaponItem.h"
 #include "Equipment/Weapon/Instances/WeaponInstance.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Bot.generated.h"
 
 UENUM(BlueprintType)
@@ -64,7 +65,7 @@ public:
 
 	void Init(FString NewName, int32 NewID);
 
-	void ApplyDamage(int32 Damage, ABot* ByBot = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None);
+	void ApplyDamage(int32 Damage, ABot* ByBot = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None, bool bCritical = false);
 
 	float GetHeathValue();
 
@@ -137,6 +138,8 @@ private:
 
 	void CombatTick(float DeltaTime);
 
+	void FirearmCombatTick(float DeltaTime);
+
 	void Shoot();
 
 	void AimAt(FVector Location);
@@ -157,6 +160,12 @@ private:
 	AActor* AimingTarget = nullptr;
 
 	FVector GunSocketRelativeLocation;
+
+	FVector CombatRandomLocation;
+
+	bool bMovingToRandomCombatLocation = false;
+
+	UCharacterMovementComponent* GetCharacterMovementComponent();
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:

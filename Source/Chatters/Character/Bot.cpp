@@ -4,7 +4,6 @@
 #include "Bot.h"
 #include "Components/CapsuleComponent.h"
 #include "../Core/ChattersGameInstance.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "BotSpawnPoint.h"
 #include "Equipment/Weapon/Instances/MeleeWeaponInstance.h"
 #include "Equipment/Weapon/Instances/FirearmWeaponInstance.h"
@@ -12,6 +11,8 @@
 #include "../Misc/MathHelper.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "NavigationSystem.h"
+#include "AI/Navigation/NavigationTypes.h"
 #include "../Core/ChattersGameSession.h"
 
 const float ABot::MinAimRotationValue = 0.0f;
@@ -270,6 +271,8 @@ void ABot::CombatTick(float DeltaTime)
 
 				if (WeaponType == EWeaponType::Firearm)
 				{
+					auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
+
 					if (TargetDist <= 700.0f)
 					{
 						if (this->CombatAction == ECombatAction::Moving)
@@ -283,6 +286,32 @@ void ABot::CombatTick(float DeltaTime)
 								AIController->StopMovement();
 							}
 						}
+
+
+						/** Moving around target */
+						float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
+
+						if (!this->bMovingToRandomCombatLocation || DistToRandomLocation < 150.0f)
+						{
+							FVector NewRandomLocation;
+							bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->TargetTo->GetActorLocation(), NewRandomLocation, 500.0f);
+
+							if (bFoundRandomLocation)
+							{
+								if (CharacterMovementComponent)
+								{
+									CharacterMovementComponent->MaxWalkSpeed = 350.0f;
+								}
+								this->bMovingToRandomCombatLocation = true;
+								this->CombatRandomLocation = NewRandomLocation;
+								auto* AIController = this->GetAIController();
+
+								if (AIController)
+								{
+									AIController->MoveToLocation(NewRandomLocation);
+								}
+							}
+						}
 						
 						this->CombatAction = ECombatAction::Shooting;
 
@@ -291,10 +320,14 @@ void ABot::CombatTick(float DeltaTime)
 						this->AimAt(AimTargetLoaction);
 
 						this->Shoot();
-
 					}
 					else
 					{
+						if (CharacterMovementComponent)
+						{
+							CharacterMovementComponent->MaxWalkSpeed = 600.0f;
+						}
+
 						if (this->CombatAction == ECombatAction::Moving)
 						{
 							this->UpdateMovingTargetTimeout -= DeltaTime;
@@ -375,8 +408,35 @@ void ABot::Shoot()
 					ABot* BotToDamage = Cast<ABot>(Actor);
 					if (BotToDamage && BotToDamage->ID != this->ID)
 					{
-						FVector ImpulseVector = this->GetActorForwardVector() * FirearmRef->ImpulseForce;
-						BotToDamage->ApplyDamage(FirearmInstance->GetDamage(), this, WeaponType, ImpulseVector, HitResult.ImpactPoint, HitResult.BoneName);
+						int32 ChanceOfMiss = FMath::RandRange(0, 9);
+						bool bMiss = false;
+						if (ChanceOfMiss < 1)
+						{
+							bMiss = true;
+						}
+
+						if (bMiss)
+						{
+							auto* TargetNameWidget = BotToDamage->GetNameWidget();
+							if (TargetNameWidget)
+							{
+								TargetNameWidget->ShowDamageNumber(-1, false);
+							}
+						}
+						else
+						{
+							int32 CriticalHitChance = FMath::RandRange(0, 9);
+							bool bCriticalHit = false;
+
+							if (CriticalHitChance < 1)
+							{
+								bCriticalHit = true;
+							}
+
+							FVector ImpulseVector = this->GetActorForwardVector() * FirearmRef->ImpulseForce;
+							BotToDamage->ApplyDamage(FirearmInstance->GetDamage(), this, WeaponType, ImpulseVector, HitResult.ImpactPoint, HitResult.BoneName, bCriticalHit);
+							this->SayRandomMessage();
+						}
 					}
 				}
 			}
@@ -450,6 +510,11 @@ void ABot::TestAimAt()
 
 	this->SetActorLocation(FVector(0.0f, 0.0f, 100.0f));
 	this->bTestAiming = true;
+}
+
+UCharacterMovementComponent* ABot::GetCharacterMovementComponent()
+{
+	return Cast<UCharacterMovementComponent>(this->GetMovementComponent());
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
@@ -656,7 +721,7 @@ void ABot::MoveToRandomLocation()
 	}
 }
 
-void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit)
+void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit, bool bCritical)
 {
 	/** When game session not started */
 	if (!this->bReady)
@@ -667,6 +732,11 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	if (Damage < 1)
 	{
 		return;
+	}
+
+	if (bCritical)
+	{
+		Damage *= 2;
 	}
 
 	auto OldHP = this->HealthPoints;
@@ -687,6 +757,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	{
 		float HealthValue = this->GetHeathValue();
 		NameWidgetObject->UpdateHealth(HealthValue);
+		NameWidgetObject->ShowDamageNumber(Damage, bCritical);
 	}
 	
 	if (this->bPlayerAttached)
@@ -813,7 +884,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->bHatAttached = true;
 	}
 
-	auto* CharacterMovementComponent = Cast<UCharacterMovementComponent>(this->GetMovementComponent());
+	auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
 
 	if (CharacterMovementComponent)
 	{

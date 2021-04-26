@@ -19,6 +19,8 @@ UChattersGameInstance::~UChattersGameInstance()
 
 void UChattersGameInstance::Init()
 {
+	float RandNumber = FMath::RandRange(0.0f, 100.0f);
+
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameInstance] GameInstance init"));
 
 	UGameInstance::Init();

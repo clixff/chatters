@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "BotNameWidget.h"
-#include "Components/TextBlock.h"
-
+#include "Components/CanvasPanelSlot.h"
+#include "Blueprint/WidgetTree.h"
 
 
 #define HEALTH_BAR_ELEMENTS_NUMBER 3
@@ -156,6 +156,65 @@ void UBotNameWidget::Tick(float DeltaTime)
 		this->SetChatBubbleOpacity(this->ChatBubbleMessageOpacity);
 	}
 
+	/** Fade out damage number widgets */
+	for (int32 i = 0; i < this->DamageWidgets.Num(); i++)
+	{
+		auto& DamageNumberWidget = this->DamageWidgets[i];
+		DamageNumberWidget.Time -= DeltaTime;
+
+		if (DamageNumberWidget.Time <= 0.0f)
+		{
+			DamageNumberWidget.Time = 0.0f;
+			
+			if (DamageNumberWidget.TextBlock)
+			{
+				/** Remove text block widget from wrapper */
+				DamageNumberWidget.TextBlock->RemoveFromParent();
+
+				/** Remove text block widget from memory */
+				if (DamageNumberWidget.TextBlock->IsValidLowLevel())
+				{
+					DamageNumberWidget.TextBlock->ConditionalBeginDestroy();
+				}
+
+				DamageNumberWidget.TextBlock = nullptr;
+			}
+
+			this->DamageWidgets.RemoveAt(i, 1, true);
+			i--;
+		}
+		else
+		{
+			if (DamageNumberWidget.TextBlock)
+			{
+				float Scale = DamageNumberWidget.Time / this->DamageWidgetMaxTime;
+				DamageNumberWidget.TextBlock->SetRenderOpacity(Scale);
+				float RenderScale = FMath::Clamp(Scale, 0.5f, 1.0f);
+				DamageNumberWidget.TextBlock->SetRenderScale(FVector2D(RenderScale, RenderScale));
+			}
+
+			if (DamageNumberWidget.Slot)
+			{
+				DamageNumberWidget.Position.Y -= 250.0f * DeltaTime;
+				DamageNumberWidget.Slot->SetPosition(DamageNumberWidget.Position);
+			}
+		}
+	}
+
+	if (!this->TempWidget)
+	{
+		this->TempWidget = this->GetWidgetFromName(TEXT("TempWidget"));
+	}
+
+	if (this->TempWidget)
+	{
+		UCanvasPanelSlot* SlotObj = Cast<UCanvasPanelSlot>(this->TempWidget->Slot);
+		if (SlotObj)
+		{
+			SlotObj->SetPosition(FVector2D(FMath::RandRange(-500.0f, 500.0f), FMath::RandRange(-500.0f, 500.0f)));
+		}
+	}
+
 	//UE_LOG(LogTemp, Display, TEXT("[UBotNameWidget::Tick] Opacity: %f. Timer: %f. DeltaTime: %f."), this->ChatBubbleMessageOpacity, this->ChatBubbleMessageTimer, DeltaTime);
 }
 
@@ -181,6 +240,46 @@ void UBotNameWidget::UpdateChatBubbleMessage(FString Message)
 		this->ChatBubbleMessageTimer = this->ChatBubbleMessageMaxTime;
 
 		ChatBubbleTextWidget->SetAutoWrapText(true);
+	}
+}
+
+void UBotNameWidget::ShowDamageNumber(int32 DamageNumber, bool bCritical)
+{
+	FString DamageNumberWidgetName = FString::Printf(TEXT("Damage_Number_%d"), this->DamageNumbers);
+	UTextBlock* TextBlock = this->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*DamageNumberWidgetName));
+	this->DamageNumbers++;
+
+	if (TextBlock)
+	{
+		auto* WrapperObject = this->GetWrapper();
+		if (WrapperObject)
+		{
+			auto* CanvasPanelSlot = WrapperObject->AddChildToCanvas(TextBlock);
+			FString DamageNumberText = DamageNumber == -1 ? TEXT("Miss") : FString::Printf(TEXT("%d"), DamageNumber);
+			TextBlock->SetText(FText::FromString(DamageNumberText));
+			TextBlock->SetFont(this->DamageNumberFont);
+			TextBlock->SetJustification(ETextJustify::Type::Center);
+
+			TextBlock->SetColorAndOpacity(bCritical ? FLinearColor(0.9f, 0.43f, 0.06f, 1.0f) : FLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
+
+			FVector2D Position = FVector2D(FMath::RandRange(-160.0f, 160.0f), 160.0f);
+
+			if (CanvasPanelSlot)
+			{
+				CanvasPanelSlot->SetAnchors(FAnchors(0.5, 0.5));
+				CanvasPanelSlot->SetAlignment(FVector2D(0.5f, 0.5f));
+				CanvasPanelSlot->bAutoSize = true;
+				CanvasPanelSlot->SetPosition(Position);
+			}
+
+			FDamageNumberWidget DamageNumberWidget;
+			DamageNumberWidget.TextBlock = TextBlock;
+			DamageNumberWidget.Slot = CanvasPanelSlot;
+			DamageNumberWidget.Time = this->DamageWidgetMaxTime;
+			DamageNumberWidget.Position = Position;
+
+			this->DamageWidgets.Add(DamageNumberWidget);
+		}
 	}
 }
 
