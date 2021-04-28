@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "../EquipmentItem.h"
 #include "GameFramework/Character.h"
+#include "Animation/BlendSpace.h"
 #include "WeaponItem.generated.h"
 	
 UENUM(BlueprintType)
@@ -35,4 +36,7 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 		EWeaponType Type = EWeaponType::None;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UBlendSpace* IdleBlendSpace;
 };

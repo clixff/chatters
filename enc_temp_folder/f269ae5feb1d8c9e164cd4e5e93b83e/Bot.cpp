@@ -282,18 +282,9 @@ void ABot::CombatTick(float DeltaTime)
 						return;
 					}
 
-					float MaxDist = 700.0f;
-
-					auto* FirearmRef = FirearmInstance->GetFirearmRef();
-
-					if (FirearmRef)
-					{
-						MaxDist = FirearmRef->MaxDistance;
-					}
-
 					auto* AIController = this->GetAIController();
 
-					if (TargetDist <= MaxDist)
+					if (TargetDist <= 700.0f)
 					{
 						if (this->CombatAction == ECombatAction::Moving)
 						{
@@ -325,7 +316,7 @@ void ABot::CombatTick(float DeltaTime)
 						if (this->CombatStyle == ECombatStyle::Attack && (!bCanShoot || HitActor != this->TargetTo) && !bReloading && (!this->bMovingToRandomCombatLocation || DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 7.0f))
 						{
 							FVector NewRandomLocation;
-							bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->TargetTo->GetActorLocation(), NewRandomLocation, MaxDist);
+							bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->TargetTo->GetActorLocation(), NewRandomLocation, 700.0f);
 
 							this->TimeSinceStartedMovingInCombat = 0.0f;
 

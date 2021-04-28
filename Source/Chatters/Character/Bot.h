@@ -12,6 +12,7 @@
 #include "Chaos/ChaosEngineInterface.h"
 #include "Equipment/Weapon/WeaponItem.h"
 #include "Equipment/Weapon/Instances/WeaponInstance.h"
+#include "Equipment/Weapon/FirearmWeaponItem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Bot.generated.h"
 
@@ -54,6 +55,15 @@ public:
 	EYawRotatingType YawType = EYawRotatingType::Clockwise;
 	/** Yaw rotation without limits */
 	float CurrentYaw = 0.0f;
+};
+
+USTRUCT()
+struct FBulletHitResult
+{
+	GENERATED_BODY()
+public:
+	FHitResult HitResult;
+	ABot* BotToDamage = nullptr;
 };
 
 class UChattersGameSession;
@@ -117,13 +127,13 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 		void PlayFootstepSound(const FVector& Location, EPhysicalSurface Surface);
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UWeaponInstance* WeaponInstance = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 		ABot* TargetTo = nullptr;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		ECombatAction CombatAction = ECombatAction::IDLE;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -212,6 +222,16 @@ private:
 	bool bTestAimingMovingToCenter = true;
 
 	void TestAimingTick(float DeltaTime);
+
+	FVector GetFirearmOutBulletWorldPosition(FRotator GunRotation = FRotator(0.0f), bool bShouldRecalculateGunLocation = true);
+
+	FVector GetFirearmBulletTargetWorldPosition(FVector OutBulletWorldPosition, float BulletDistance, FRotator GunRotation = FRotator(0.0f), bool bShouldRecalculateGunLocation = true, bool bBulletOffset = true);
+
+	FRotator GetGunRotation();
+
+	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset);
+
+	float TimeSinceStartedMovingInCombat = 0.0f;
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
@@ -233,5 +253,12 @@ public:
 
 	void OnDead(ABot* Killer = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None);
 
+	UFUNCTION(BlueprintCallable)
+		float GetSpeed();
 
+	UFUNCTION(BlueprintCallable)
+		float GetSpeedForAnimationBlueprint();
+
+	UFUNCTION(BlueprintCallable)
+		UWeaponItem* GetWeaponRef();
 };

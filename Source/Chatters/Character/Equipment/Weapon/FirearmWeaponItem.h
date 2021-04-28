@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "WeaponItem.h"
 #include "Sound/SoundBase.h"
+#include "Particles/ParticleSystem.h"
 #include "FirearmWeaponItem.generated.h"
 
 
@@ -41,4 +42,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category="Transform")
 		FVector SocketRelativeLocation;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
+		UParticleSystem* ShotParticle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Particle")
+		FVector ParticleScale = FVector(1.0f);
 };
