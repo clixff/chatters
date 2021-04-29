@@ -14,6 +14,7 @@ enum class EWeaponType : uint8
 	None,
 	Melee,
 	Firearm,
+	Explosion,
 	Bow
 };
 

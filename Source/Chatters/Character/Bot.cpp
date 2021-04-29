@@ -213,12 +213,25 @@ void ABot::FindNewEnemyTarget()
 	this->SetNewEnemyTarget(NewTarget);
 }
 
-void ABot::SetNewEnemyTarget(ABot* Target)
+void ABot::SetNewEnemyTarget(ABot* TargetBot)
 {
-	this->TargetTo = Target;
+	if (!TargetBot)
+	{
+		this->Target.TargetType = ETargetType::None;
+		this->Target.Actor = nullptr;
+		this->Target.Bot = nullptr;
+		this->CombatAction = ECombatAction::IDLE;
+		this->bShouldApplyGunAnimation = false;
+		return;
+	}
+
+	this->Target.TargetType = ETargetType::Bot;
+	this->Target.Actor = TargetBot;
+	this->Target.Bot = TargetBot;
+
 	this->CombatAction = ECombatAction::IDLE;
 
-	if (this->TargetTo && this->TargetTo->CombatStyle == ECombatStyle::Defense)
+	if (this->Target.Bot && this->Target.Bot->CombatStyle == ECombatStyle::Defense)
 	{
 		this->CombatStyle = ECombatStyle::Attack;
 	}
@@ -230,7 +243,7 @@ void ABot::SetNewEnemyTarget(ABot* Target)
 
 void ABot::MoveToTarget()
 {
-	if (!this->TargetTo)
+	if (!this->Target.Actor)
 	{
 		return;
 	}
@@ -245,7 +258,7 @@ void ABot::MoveToTarget()
 	/** Allow to update target location every 1 second */
 	this->UpdateMovingTargetTimeout = 1.0f;
 	this->CombatAction = ECombatAction::Moving;
-	FVector TargetLocation = this->TargetTo->GetActorLocation();
+	FVector TargetLocation = this->Target.Actor->GetActorLocation();
 
 	AIController->MoveToLocation(TargetLocation);
 
@@ -256,165 +269,264 @@ void ABot::CombatTick(float DeltaTime)
 {
 	if (this->WeaponInstance->WeaponRef)
 	{
-		if (this->TargetTo)
+		if (this->Target.Actor && this->Target.TargetType != ETargetType::None)
 		{
-			if (!this->TargetTo->bAlive)
+			if (this->Target.TargetType == ETargetType::Bot && this->Target.Bot && !this->Target.Bot->bAlive)
 			{
 				this->bMovingToRandomCombatLocation = false;
 				this->FindNewEnemyTarget();
 			}
 			else
 			{
-				float TargetDist = FVector::Dist(this->GetActorLocation(), this->TargetTo->GetActorLocation());
+				float TargetDist = FVector::Dist(this->GetActorLocation(), this->Target.Actor->GetActorLocation());
 
-				//UE_LOG(LogTemp, Display, TEXT("[ABot] Dist is %f"), TargetDist);
+				auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
 
 				EWeaponType WeaponType = this->WeaponInstance->WeaponRef->Type;
 
+				float MaxDist = 100.0f;
+
 				if (WeaponType == EWeaponType::Firearm)
 				{
-					auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
-
 					auto* FirearmInstance = Cast<UFirearmWeaponInstance>(this->WeaponInstance);
-
-					if (!FirearmInstance)
+					if (FirearmInstance && FirearmInstance->GetFirearmRef())
 					{
-						return;
+						MaxDist = FirearmInstance->GetFirearmRef()->MaxDistance;
+					}
+				}
+
+				this->bShouldApplyGunAnimation = (TargetDist <= MaxDist + 100.0f);
+
+				if (TargetDist <= MaxDist)
+				{
+					if (WeaponType == EWeaponType::Firearm)
+					{
+						this->FirearmCombatTick(DeltaTime, TargetDist);
+					}
+				}
+				else
+				{
+					if (CharacterMovementComponent)
+					{
+						CharacterMovementComponent->MaxWalkSpeed = 600.0f;
 					}
 
-					float MaxDist = 700.0f;
+					this->bUseControllerRotationYaw = true;
 
-					auto* FirearmRef = FirearmInstance->GetFirearmRef();
-
-					if (FirearmRef)
+					if (this->CombatAction == ECombatAction::Moving)
 					{
-						MaxDist = FirearmRef->MaxDistance;
-					}
+						this->UpdateMovingTargetTimeout -= DeltaTime;
 
-					auto* AIController = this->GetAIController();
-
-					if (TargetDist <= MaxDist)
-					{
-						if (this->CombatAction == ECombatAction::Moving)
+						if (this->UpdateMovingTargetTimeout <= 0.0f)
 						{
-							UE_LOG(LogTemp, Display, TEXT("[ABot] Stop moving"));
-
-
-							if (AIController)
-							{
-								AIController->StopMovement();
-							}
+							this->UpdateMovingTargetTimeout = 0.0f;
+							this->MoveToTarget();
 						}
-
-						bool bCanShoot = FirearmInstance->CanShoot();
-						bool bReloading = FirearmInstance->Phase == EFirearmPhase::Reloading;
-
-						AActor* HitActor = nullptr;
-
-						if (bCanShoot)
-						{
-							FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false);
-							
-							HitActor = BulletHitResult.HitResult.GetActor();
-						}
-
-						/** Moving around target */
-						float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
-
-						/** If the bot can shoot and not reloading, find new location for it */
-						if (this->CombatStyle == ECombatStyle::Attack && (!bCanShoot || HitActor != this->TargetTo) && !bReloading && (!this->bMovingToRandomCombatLocation || DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 7.0f))
-						{
-							FVector NewRandomLocation;
-							bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->TargetTo->GetActorLocation(), NewRandomLocation, MaxDist);
-
-							this->TimeSinceStartedMovingInCombat = 0.0f;
-
-							if (bFoundRandomLocation)
-							{
-								if (CharacterMovementComponent)
-								{
-									CharacterMovementComponent->MaxWalkSpeed = 250.0f;
-								}
-								this->bMovingToRandomCombatLocation = true;
-								this->bUseControllerRotationYaw = false;
-								this->CombatRandomLocation = NewRandomLocation;
-
-								if (AIController)
-								{
-									AIController->MoveToLocation(NewRandomLocation);
-								}
-							}
-							else
-							{
-								this->bMovingToRandomCombatLocation = false;
-							}
-						}
-
-						/** If the bot can shoot or reloading and still moving, stop it */
-						if (((bCanShoot && HitActor == this->TargetTo) || bReloading) && this->bMovingToRandomCombatLocation)
-						{
-							if (AIController)
-							{
-								AIController->StopMovement();
-								this->bMovingToRandomCombatLocation = false;
-							}
-						}
-
-						if (bMovingToRandomCombatLocation)
-						{
-							this->TimeSinceStartedMovingInCombat += DeltaTime;
-							//DrawDebugSphere(GetWorld(), this->CombatRandomLocation, 20.0f, 12, FColor(0, 0, 255), false, -1.0f);
-							//DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->GetActorLocation(), FColor(255, 255, 255), false, -1.0f);
-
-							//if (this->TargetTo)
-							//{
-							//	DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->TargetTo->GetActorLocation(), FColor(255, 0, 0), false, -1.0f);
-							//}
-						}
-						
-						this->CombatAction = ECombatAction::Shooting;
-
-						FVector AimTargetLoaction = this->TargetTo->GetMesh()->GetSocketTransform(TEXT("spine_5")).GetLocation();
-
-						this->AimAt(AimTargetLoaction);
-
-						this->SmoothRotatingTick(DeltaTime);
-						
-						float BotSpeed = this->GetSpeed();
-
-						if (bCanShoot && BotSpeed < 5.0f && HitActor == this->TargetTo)
-						{
-							this->Shoot();
-						}
-
 					}
 					else
 					{
-						if (CharacterMovementComponent)
-						{
-							CharacterMovementComponent->MaxWalkSpeed = 600.0f;
-						}
+						this->MoveToTarget();
+					}
+				}
+			}
+		}
+	}
 
-						this->bUseControllerRotationYaw = true;
+}
 
-						if (this->CombatAction == ECombatAction::Moving)
-						{
-							this->UpdateMovingTargetTimeout -= DeltaTime;
+void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
+{
+	EWeaponType WeaponType = EWeaponType::Firearm;
 
-							if (this->UpdateMovingTargetTimeout <= 0.0f)
-							{
-								this->UpdateMovingTargetTimeout = 0.0f;
-								this->MoveToTarget();
-							}
-						}
-						else
+	auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
+
+	FVector ActorLocation = this->GetActorLocation();
+
+	auto* FirearmInstance = Cast<UFirearmWeaponInstance>(this->WeaponInstance);
+
+	if (!FirearmInstance)
+	{
+		return;
+	}
+	auto* FirearmRef = FirearmInstance->GetFirearmRef();
+
+	auto* AIController = this->GetAIController();
+
+	if (this->CombatAction == ECombatAction::Moving)
+	{
+		UE_LOG(LogTemp, Display, TEXT("[ABot] Stop moving"));
+
+		if (AIController)
+		{
+			AIController->StopMovement();
+		}
+	}
+
+	AExplodingBarrel* TargetBarrel = nullptr;
+
+	if (this->Target.TargetType == ETargetType::ExplodingBarrel)
+	{
+		auto* Barrel = Cast<AExplodingBarrel>(this->Target.Actor);
+
+		if (!Barrel || !Barrel->bCanExplode)
+		{
+			this->Target.TargetType = ETargetType::None;
+			this->Target.Actor = nullptr;
+			this->FindNewEnemyTarget();
+		}
+		else
+		{
+			TargetBarrel = Cast<AExplodingBarrel>(this->Target.Actor);
+		}
+	}
+	else
+	{
+		auto* GameSessionObject = this->GetGameSession();
+
+		if (GameSessionObject)
+		{
+			int32 ExplodingBarrelsNum = GameSessionObject->ExplodingBarrels.Num();
+
+			if (ExplodingBarrelsNum)
+			{
+				for (int32 i = 0; i < ExplodingBarrelsNum; i++)
+				{
+					auto* Barrel = GameSessionObject->ExplodingBarrels[i];
+
+					if (!Barrel)
+					{
+						continue;
+					}
+
+					FVector BarrelLocation = Barrel->GetActorLocation();
+
+					float Dist = FVector::Dist(BarrelLocation, ActorLocation);
+
+					if (Dist <= FirearmRef->MaxDistance && Dist > Barrel->Radius)
+					{
+						auto BotsInRadius = Barrel->GetBotsInRadius();
+
+						if (BotsInRadius.Num())
 						{
-							this->MoveToTarget();
+							this->Target.Actor = Barrel;
+							this->Target.TargetType = ETargetType::ExplodingBarrel;
+							TargetBarrel = Barrel;
+							break;
 						}
 					}
 				}
 			}
 		}
+	}
+
+	if (this->Target.TargetType == ETargetType::None || !this->Target.Actor)
+	{
+		return;
+	}
+
+	bool bCanShoot = FirearmInstance->CanShoot();
+	bool bReloading = FirearmInstance->Phase == EFirearmPhase::Reloading;
+
+	FVector AimTargetLocation = FVector(0.0f);
+	
+	if (this->Target.TargetType == ETargetType::Bot)
+	{
+		AimTargetLocation = this->Target.Bot->GetMesh()->GetSocketTransform(TEXT("spine_5")).GetLocation();
+	}
+	else
+	{
+		AimTargetLocation = this->Target.Actor->GetActorLocation();
+	}
+
+	this->AimAt(AimTargetLocation);
+
+	this->SmoothRotatingTick(DeltaTime);
+
+	AActor* HitActor = nullptr;
+
+
+	if (bCanShoot)
+	{
+		FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false);
+
+		HitActor = BulletHitResult.HitResult.GetActor();
+	}
+
+	bool bCanActuallyShoot = bCanShoot && (HitActor == this->Target.Actor || HitActor == this->Target.Bot);
+
+	/** If aiming at barrel */
+	if (TargetBarrel && HitActor == this->Target.Actor)
+	{
+		float Dist = FVector::Dist(TargetBarrel->GetActorLocation(), this->GetActorLocation());
+
+		if (Dist <= TargetBarrel->Radius)
+		{
+			bCanActuallyShoot = false;
+		}
+	}
+
+	/** Moving around target */
+	float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
+
+	/** If the bot can shoot and not reloading, find new location for it */
+	if (this->CombatStyle == ECombatStyle::Attack && !bCanActuallyShoot && !bReloading && (!this->bMovingToRandomCombatLocation || DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 7.0f))
+	{
+		FVector NewRandomLocation;
+		bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->Target.Actor->GetActorLocation(), NewRandomLocation, FirearmRef->MaxDistance);
+
+		this->TimeSinceStartedMovingInCombat = 0.0f;
+
+		if (bFoundRandomLocation)
+		{
+			if (CharacterMovementComponent)
+			{
+				CharacterMovementComponent->MaxWalkSpeed = 250.0f;
+			}
+			this->bMovingToRandomCombatLocation = true;
+			this->bUseControllerRotationYaw = false;
+			this->CombatRandomLocation = NewRandomLocation;
+
+			if (AIController)
+			{
+				AIController->MoveToLocation(NewRandomLocation);
+			}
+		}
+		else
+		{
+			this->bMovingToRandomCombatLocation = false;
+		}
+	}
+
+	/** If the bot can shoot or reloading and still moving, stop it */
+	if ((bCanActuallyShoot || bReloading) && this->bMovingToRandomCombatLocation)
+	{
+		if (AIController)
+		{
+			AIController->StopMovement();
+			this->bMovingToRandomCombatLocation = false;
+		}
+	}
+
+	if (bMovingToRandomCombatLocation)
+	{
+		this->TimeSinceStartedMovingInCombat += DeltaTime;
+		//DrawDebugSphere(GetWorld(), this->CombatRandomLocation, 20.0f, 12, FColor(0, 0, 255), false, -1.0f);
+		//DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->GetActorLocation(), FColor(255, 255, 255), false, -1.0f);
+
+		//if (this->TargetTo)
+		//{
+		//	DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->TargetTo->GetActorLocation(), FColor(255, 0, 0), false, -1.0f);
+		//}
+	}
+
+	this->CombatAction = ECombatAction::Shooting;
+
+
+	float BotSpeed = this->GetSpeed();
+
+	if (bCanActuallyShoot && BotSpeed < 5.0f)
+	{
+		this->Shoot();
 	}
 
 }
@@ -486,8 +598,22 @@ void ABot::Shoot()
 							FVector ImpulseVector = this->GetActorForwardVector() * FirearmRef->ImpulseForce;
 							BotToDamage->ApplyDamage(FirearmInstance->GetDamage(), this, WeaponType, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
 							this->SayRandomMessage();
+
+							if (BotToDamage->BloodParticle)
+							{
+								FTransform BloodParticleTransform;
+								BloodParticleTransform.SetLocation(BulletHitResult.HitResult.ImpactPoint);
+								FRotator TestRot = UKismetMathLibrary::FindLookAtRotation(OutBulletLocation, BulletHitResult.HitResult.ImpactPoint);
+								TestRot.Pitch += 90.0f;
+								BloodParticleTransform.SetRotation(FQuat(TestRot));
+								UGameplayStatics::SpawnEmitterAtLocation(World, BotToDamage->BloodParticle, BloodParticleTransform, true);
+							}
 						}
 					}
+				}
+				else if (BulletHitResult.ExplodingBarrel)
+				{
+					BulletHitResult.ExplodingBarrel->Explode(this);
 				}
 			}
 
@@ -943,12 +1069,9 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	}
 
-	if (Killer)
+	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Bow)
 	{
-		if (WeaponType == EWeaponType::Firearm)
-		{
-			this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
-		}
+		this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
 	}
 
 	this->bMovingToRandomLocation = false;
@@ -992,10 +1115,6 @@ float ABot::GetSpeed()
 float ABot::GetSpeedForAnimationBlueprint()
 {
 	float DefaultSpeed = this->GetSpeed();
-	if (DefaultSpeed == 0.0f && this->SmoothRotation.bActive)
-	{
-		return 100.0f;
-	}
 
 	return DefaultSpeed;
 }
@@ -1011,7 +1130,6 @@ UWeaponItem* ABot::GetWeaponRef()
 		return this->WeaponInstance->WeaponRef;
 	}
 }
-
 
 void ABot::OnGameSessionStarted()
 {
@@ -1260,6 +1378,9 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 		FHitResult HitResult;
 		World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3);
 
+		BulletHitResult.HitResult = HitResult;
+
+
 		if (HitResult.bBlockingHit)
 		{
 			AActor* Actor = HitResult.GetActor();
@@ -1271,11 +1392,18 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 				if (Bot)
 				{
 					BulletHitResult.BotToDamage = Bot;
+					return BulletHitResult;
+				}
+
+				AExplodingBarrel* Barrel = Cast<AExplodingBarrel>(Actor);
+				if (Barrel)
+				{
+					BulletHitResult.ExplodingBarrel = Barrel;
+					return BulletHitResult;
 				}
 			}
 		}
 
-		BulletHitResult.HitResult = HitResult;
 	}
 
 	return BulletHitResult;

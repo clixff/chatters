@@ -14,6 +14,8 @@
 #include "Equipment/Weapon/Instances/WeaponInstance.h"
 #include "Equipment/Weapon/FirearmWeaponItem.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Particles/ParticleSystem.h"
+#include "../Props/ExplodingBarrel.h"
 #include "Bot.generated.h"
 
 UENUM(BlueprintType)
@@ -45,6 +47,14 @@ enum class ECombatStyle : uint8
 	Attack
 };
 
+UENUM()
+enum class ETargetType : uint8
+{
+	None,
+	Bot,
+	ExplodingBarrel
+};
+
 USTRUCT()
 struct FSmoothRotation
 {
@@ -64,6 +74,17 @@ struct FBulletHitResult
 public:
 	FHitResult HitResult;
 	ABot* BotToDamage = nullptr;
+	AExplodingBarrel* ExplodingBarrel = nullptr;
+};
+
+USTRUCT()
+struct FBotTarget
+{
+	GENERATED_BODY()
+public:
+	AActor* Actor = nullptr;
+	ABot* Bot = nullptr;
+	ETargetType TargetType = ETargetType::None;
 };
 
 class UChattersGameSession;
@@ -130,9 +151,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UWeaponInstance* WeaponInstance = nullptr;
 
-	UPROPERTY(VisibleAnywhere, Category = "Combat")
-		ABot* TargetTo = nullptr;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		ECombatAction CombatAction = ECombatAction::IDLE;
 
@@ -172,7 +190,7 @@ private:
 
 	void FindNewEnemyTarget();
 
-	void SetNewEnemyTarget(ABot* Target);
+	void SetNewEnemyTarget(ABot* TargetBot);
 
 	FVector MovingTarget;
 
@@ -184,7 +202,7 @@ private:
 
 	ECombatStyle CombatStyle = ECombatStyle::Defense;
 
-	void FirearmCombatTick(float DeltaTime);
+	void FirearmCombatTick(float DeltaTime, float TargetDist);
 
 	void Shoot();
 
@@ -232,6 +250,9 @@ private:
 	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset);
 
 	float TimeSinceStartedMovingInCombat = 0.0f;
+
+private:
+	FBotTarget Target;
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
@@ -261,4 +282,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		UWeaponItem* GetWeaponRef();
+
+	UPROPERTY(EditDefaultsOnly)
+		UParticleSystem* BloodParticle = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		bool bShouldApplyGunAnimation = false;
 };

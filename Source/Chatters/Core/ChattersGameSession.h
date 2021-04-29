@@ -9,6 +9,7 @@
 #include "../UI/Widgets/SessionWidget.h"
 #include "../Misc/Misc.h"
 #include "../Character/Equipment/EquipmentList.h"
+#include "../Props/ExplodingBarrel.h"
 #include "ChattersGameSession.generated.h"
 
 UENUM(BlueprintType)
@@ -83,13 +84,14 @@ public:
 	UPROPERTY()
 		TArray<ABotSpawnPoint*> BotSpawnPoints;
 
+	UPROPERTY()
+		TArray<AExplodingBarrel*> ExplodingBarrels;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<USessionWidget> SessionWidgetClass;
-
-
 
 };
