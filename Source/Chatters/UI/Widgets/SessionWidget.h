@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "CustomWidgetBase.h"
+#include "KillFeedElement.h"
+#include "Components/VerticalBox.h"
 #include "SessionWidget.generated.h"
 
 /**
@@ -35,4 +37,23 @@ public:
 
 	void UpdateSpectatorBotHealth(int32 HealthPoints);
 
+public:
+	// Kill feed
+
+	UPROPERTY(EditDefaultsOnly, Category="KillFeed")
+		TSubclassOf<UKillFeedElement> KillFeedSubclass;
+
+	UPROPERTY()
+		TArray<UKillFeedElement*> KillFeedElements;
+
+	void OnKill(FString KillerName, FString VictimName);
+
+	UPROPERTY(EditDefaultsOnly, Category = "KillFeed")
+		int32 MaxKillFeedElements = 7;
+
+	UPROPERTY()
+		UVerticalBox* KillFeedContainer = nullptr;
+
+protected:
+	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
 };

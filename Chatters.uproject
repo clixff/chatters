@@ -18,7 +18,8 @@
 				"NavigationSystem",
 				"SlateCore",
 				"Slate",
-				"UMG"
+				"UMG",
+				"ApexDestruction"
 			]
 		},
 		{

@@ -13,8 +13,15 @@ AExplodingBarrel::AExplodingBarrel()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	this->StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
-	this->SetRootComponent(this->StaticMeshComponent);
+	this->DestructibleComponent = CreateDefaultSubobject<UDestructibleComponent>(TEXT("DestructibleMesh"));
+	this->DestructibleComponent->SetCanEverAffectNavigation(true);
+	this->SetRootComponent(this->DestructibleComponent);
+
+	this->SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Radius"));
+	this->SphereComponent->SetupAttachment(this->GetRootComponent());
+	this->SphereComponent->SetSphereRadius(this->Radius, false);
+	this->SphereComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	this->SphereComponent->SetCanEverAffectNavigation(false);
 }
 
 // Called when the game starts or when spawned
@@ -92,6 +99,12 @@ void AExplodingBarrel::Explode(ABot* BotCauser)
 			}
 		}
 
+		if (this->DestructibleComponent)
+		{
+			this->DestructibleComponent->ApplyDamage(1, this->GetActorLocation(), FVector(0.0f, 0.0f, 1.0f), 10000.0f);
+			this->DestructibleComponent->SetCanEverAffectNavigation(false);
+		}
+
 		this->bCanExplode = false;
 	}
 }
@@ -125,3 +138,22 @@ TArray<ABot*> AExplodingBarrel::GetBotsInRadius()
 	return Bots;
 }
 
+#if WITH_EDITOR
+void AExplodingBarrel::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+
+	if (PropertyName != NAME_None)
+	{
+		if (PropertyName == TEXT("Radius"))
+		{
+			if (this->SphereComponent)
+			{
+				this->SphereComponent->SetSphereRadius(this->Radius);
+			}
+		}
+	}
+}
+#endif

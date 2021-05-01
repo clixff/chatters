@@ -1104,6 +1104,16 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 	if (GameSessionObject)
 	{
 		GameSessionObject->OnBotDied(this->ID);
+		auto* SessionWidget = GameSessionObject->GetSessionWidget();
+		if (SessionWidget)
+		{
+			FString KillerName = TEXT("");
+			if (Killer)
+			{
+				KillerName = Killer->DisplayName;
+			}
+			SessionWidget->OnKill(KillerName, this->DisplayName);
+		}
 	}
 }
 
