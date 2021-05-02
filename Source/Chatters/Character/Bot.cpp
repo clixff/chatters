@@ -85,8 +85,11 @@ void ABot::Tick(float DeltaTime)
 			{
 				this->TestAimingTick(DeltaTime);
 			}
+			else
+			{
+				this->CombatTick(DeltaTime);
+			}
 
-			this->CombatTick(DeltaTime);
 		}
 
 		//if (this->bMovingToRandomLocation)
@@ -447,7 +450,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	if (bCanShoot)
 	{
-		FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false);
+		FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false, false);
 
 		HitActor = BulletHitResult.HitResult.GetActor();
 	}
@@ -526,12 +529,12 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	if (bCanActuallyShoot && BotSpeed < 5.0f)
 	{
-		this->Shoot();
+		this->Shoot(true);
 	}
 
 }
 
-void ABot::Shoot()
+void ABot::Shoot(bool bBulletOffset)
 {
 	if (this->WeaponInstance && this->WeaponInstance->WeaponRef)
 	{
@@ -559,7 +562,7 @@ void ABot::Shoot()
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition();
 
-			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, true);
+			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, true);
 
 			if (BulletHitResult.HitResult.bBlockingHit)
 			{
@@ -1155,9 +1158,9 @@ void ABot::OnGameSessionStarted()
 {
 	this->bReady = true;
 
-	//this->TestAimAt();
+	this->TestAimAt();
 
-	this->FindNewEnemyTarget();
+	//this->FindNewEnemyTarget();
 
 	//this->MoveToRandomLocation();
 }
@@ -1262,7 +1265,9 @@ void ABot::TestAimingTick(float DeltaTime)
 		AimAtLocation = this->AimingTarget->GetActorLocation();
 	}
 
-	const bool bMovingToRandomPointWhileAiming = true;
+	this->bShouldApplyGunAnimation = true;
+	this->CombatAction = ECombatAction::Shooting;
+	const bool bMovingToRandomPointWhileAiming = false;
 
 	float Dist = FVector::Dist(this->GetActorLocation(), this->RandomPointToMoveWhileAiming);
 
@@ -1329,7 +1334,7 @@ void ABot::TestAimingTick(float DeltaTime)
 
 	this->AimAt(AimAtLocation);
 	this->SmoothRotatingTick(DeltaTime);
-	this->Shoot();
+	this->Shoot(false);
 }
 
 FVector ABot::GetFirearmOutBulletWorldPosition(FRotator GunRotation, bool bShouldRecalculateGunLocation)
@@ -1378,7 +1383,7 @@ FRotator ABot::GetGunRotation()
 	return GunRotation;
 }
 
-FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset)
+FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset, bool bDrawDebugLines)
 {
 	FBulletHitResult BulletHitResult;
 
@@ -1397,6 +1402,19 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 
 		FHitResult HitResult;
 		World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3);
+
+#if !UE_BUILD_SHIPPING
+
+		if (bDrawDebugLines)
+		{
+			DrawDebugLine(World, StartLocation, EndLocation, FColor(0, 0, 255), false, 0.5f);
+
+			if (HitResult.bBlockingHit)
+			{
+				DrawDebugSphere(World, HitResult.ImpactPoint, 15.0f, 6, FColor(0, 255, 0), false, 0.5f);
+			}
+		}
+#endif
 
 		BulletHitResult.HitResult = HitResult;
 

@@ -204,7 +204,7 @@ private:
 
 	void FirearmCombatTick(float DeltaTime, float TargetDist);
 
-	void Shoot();
+	void Shoot(bool bBulletOffset = true);
 
 	void AimAt(FVector Location);
 
@@ -247,7 +247,7 @@ private:
 
 	FRotator GetGunRotation();
 
-	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset);
+	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset, bool bDrawDebugLines = false);
 
 	float TimeSinceStartedMovingInCombat = 0.0f;
 
