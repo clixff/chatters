@@ -9,6 +9,8 @@ public class ChattersTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
+		// bCompileChaos = true;
+		// bUseChaos = true;
 		ExtraModuleNames.AddRange( new string[] { "Chatters" } );
 	}
 }

@@ -45,6 +45,13 @@ void USessionWidget::UpdateSpectatorBotHealth(int32 HealthPoints)
 	this->SpectatorBotHealthPoints = FText::FromString(HealthText);
 }
 
+void USessionWidget::UpdateSpectatorBotKills(int32 NumberOfKills)
+{
+	FString BotKillsString = FString::Printf(TEXT("%d"), NumberOfKills);
+
+	this->SpectatorBotKillsText = FText::FromString(BotKillsString);
+}
+
 void USessionWidget::OnKill(FString KillerName, FString VictimName)
 {
 	if (!this->KillFeedSubclass)

@@ -288,4 +288,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool bShouldApplyGunAnimation = false;
+	
+	UPROPERTY()
+		int32 Kills = 0;
+
 };

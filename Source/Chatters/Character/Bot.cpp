@@ -1099,6 +1099,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		CharacterMovementComponent->bUseRVOAvoidance = false;
 	}
 
+	if (Killer && Killer != this)
+	{
+		Killer->Kills++;
+	}
+
 	auto* GameSessionObject = this->GetGameSession();
 
 	if (GameSessionObject)
@@ -1111,6 +1116,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 			if (Killer)
 			{
 				KillerName = Killer->DisplayName;
+
+				if (Killer->bPlayerAttached && Killer != this)
+				{
+					SessionWidget->UpdateSpectatorBotKills(Killer->Kills);
+				}
 			}
 			SessionWidget->OnKill(KillerName, this->DisplayName);
 		}
