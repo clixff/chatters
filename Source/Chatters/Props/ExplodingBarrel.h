@@ -7,8 +7,9 @@
 #include "Particles/ParticleSystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Sound/SoundBase.h"
-#include "DestructibleComponent.h"
+#include "../Misc/FieldSystems/ExplosionFieldSystem.h"
 #include "Components/SphereComponent.h"
+#include "GeometryCollection/GeometryCollectionComponent.h"
 #include "ExplodingBarrel.generated.h"
 
 class ABot;
@@ -49,7 +50,7 @@ public:
 		USoundBase* ExplodingSound = nullptr;
 
 	UPROPERTY(VisibleAnywhere)
-		UDestructibleComponent* DestructibleComponent = nullptr;
+		UGeometryCollectionComponent* Mesh = nullptr;
 
 	UPROPERTY(VisibleAnywhere)
 		USphereComponent* SphereComponent = nullptr;
@@ -57,6 +58,12 @@ public:
 	void Explode(ABot* BotCauser);
 
 	TArray<ABot*> GetBotsInRadius();
+
+	UPROPERTY(VisibleAnywhere, Category= "FieldSystem" )
+		AExplosionFieldSystem* FieldSystemActor = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "FieldSystem")
+		TSubclassOf<AExplosionFieldSystem> FieldSystemSubclass;
 
 #if WITH_EDITOR  
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

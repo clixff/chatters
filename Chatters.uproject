@@ -19,7 +19,9 @@
 				"SlateCore",
 				"Slate",
 				"UMG",
-				"ApexDestruction"
+				"ApexDestruction",
+				"GeometryCollectionEngine",
+				"FieldSystemEngine"
 			]
 		},
 		{

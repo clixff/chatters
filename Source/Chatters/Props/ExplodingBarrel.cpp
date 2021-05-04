@@ -13,15 +13,18 @@ AExplodingBarrel::AExplodingBarrel()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	this->DestructibleComponent = CreateDefaultSubobject<UDestructibleComponent>(TEXT("DestructibleMesh"));
-	this->DestructibleComponent->SetCanEverAffectNavigation(true);
-	this->SetRootComponent(this->DestructibleComponent);
+	this->Mesh = CreateDefaultSubobject<UGeometryCollectionComponent>(TEXT("Mesh"));
+	this->Mesh->Simulating = false;
+	this->Mesh->SetCanEverAffectNavigation(true);
+	this->SetRootComponent(this->Mesh);
 
 	this->SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Radius"));
 	this->SphereComponent->SetupAttachment(this->GetRootComponent());
 	this->SphereComponent->SetSphereRadius(this->Radius, false);
 	this->SphereComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	this->SphereComponent->SetCanEverAffectNavigation(false);
+
+	this->FieldSystemSubclass = AExplosionFieldSystem::StaticClass();
 }
 
 // Called when the game starts or when spawned
@@ -99,10 +102,14 @@ void AExplodingBarrel::Explode(ABot* BotCauser)
 			}
 		}
 
-		if (this->DestructibleComponent)
+		if (this->Mesh)
 		{
-			this->DestructibleComponent->ApplyDamage(1, this->GetActorLocation(), FVector(0.0f, 0.0f, 1.0f), 10000.0f);
-			this->DestructibleComponent->SetCanEverAffectNavigation(false);
+			this->Mesh->Simulating = true;
+			FTransform Transform;
+			Transform.SetLocation(this->GetActorLocation());
+			this->FieldSystemActor = GetWorld()->SpawnActor<AExplosionFieldSystem>(this->FieldSystemSubclass, Transform);
+			this->FieldSystemActor->Explode();
+			this->Mesh->SetCanEverAffectNavigation(false);
 		}
 
 		this->bCanExplode = false;

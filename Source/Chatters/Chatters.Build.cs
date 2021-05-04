@@ -8,7 +8,7 @@ public class Chatters : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "PhysicsCore", "NavigationSystem", "SlateCore", "Slate", "UMG", "ApexDestruction" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "PhysicsCore", "NavigationSystem", "SlateCore", "Slate", "UMG", "ApexDestruction", "GeometryCollectionEngine", "FieldSystemEngine" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

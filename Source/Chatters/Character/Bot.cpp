@@ -562,7 +562,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition();
 
-			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, false);
+			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, true);
 
 			if (BulletHitResult.HitResult.bBlockingHit)
 			{
@@ -1158,9 +1158,9 @@ void ABot::OnGameSessionStarted()
 {
 	this->bReady = true;
 
-	//this->TestAimAt();
+	this->TestAimAt();
 
-	this->FindNewEnemyTarget();
+	//this->FindNewEnemyTarget();
 
 	//this->MoveToRandomLocation();
 }
