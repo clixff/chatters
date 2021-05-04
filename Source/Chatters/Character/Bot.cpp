@@ -562,7 +562,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition();
 
-			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, true);
+			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, false);
 
 			if (BulletHitResult.HitResult.bBlockingHit)
 			{
@@ -661,12 +661,12 @@ void ABot::AimAt(FVector Location)
 
 	/** Pitch rotation */
 
-	FRotator TempPitchRotation = UKismetMathLibrary::FindLookAtRotation(FVector(0.0f, 0.0f, SocketLocation.Z), AimLocationRotated);
+	FRotator TempPitchRotation = UKismetMathLibrary::FindLookAtRotation(FVector(0.0f, 0.0f, SocketLocation.Z + this->GunSocketRelativeLocation.Z), AimLocationRotated);
 
-	FVector TempPitchVector = FVector(this->GunSocketRelativeLocation.Z, 0.0f, 0.0f);
+	FVector TempPitchVector = FVector(SocketLocation.Z, 0.0f, 0.0f);
 	TempPitchVector = FRotator(0.0f, TempPitchRotation.Pitch, 0.0f).RotateVector(TempPitchVector);
 
-	float Pitch = FMath::Atan2(AimLocationRotated.Z - TempPitchVector.X, AimLocationRotated.X + TempPitchVector.Y);
+	float Pitch = FMath::Atan2(AimLocationRotated.Z - this->GunAnimationRotationPoint.Z - TempPitchVector.X, AimLocationRotated.X + TempPitchVector.Y);
 	Pitch = FMath::RadiansToDegrees(Pitch);
 
 	float PitchClamped = FMath::Clamp(Pitch, this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
@@ -886,7 +886,7 @@ void ABot::SetEquipment()
 							UFirearmWeaponItem* FirearmRef = Cast<UFirearmWeaponItem>(RandomEquipment.Weapon);
 							if (FirearmRef)
 							{
-								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation;
+								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation - this->GunAnimationRotationPoint;
 							}
 						}
 					}
@@ -1158,9 +1158,9 @@ void ABot::OnGameSessionStarted()
 {
 	this->bReady = true;
 
-	this->TestAimAt();
+	//this->TestAimAt();
 
-	//this->FindNewEnemyTarget();
+	this->FindNewEnemyTarget();
 
 	//this->MoveToRandomLocation();
 }
@@ -1265,6 +1265,34 @@ void ABot::TestAimingTick(float DeltaTime)
 		AimAtLocation = this->AimingTarget->GetActorLocation();
 	}
 
+	//
+
+	FVector BulletOut = this->GetFirearmOutBulletWorldPosition();
+	DrawDebugSphere(GetWorld(), BulletOut, 5.0f, 6, FColor(255, 0, 0), false, -1.0f);
+	DrawDebugLine(GetWorld(), this->GetActorLocation(), BulletOut, FColor(255, 0, 0), false, -1.0f);
+	DrawDebugLine(GetWorld(), this->GetActorLocation() + this->GunAnimationRotationPoint, BulletOut, FColor(0, 255, 0), false, -1.0f);
+
+	FVector BulletOutReal = this->WeaponMesh->GetSocketTransform(TEXT("OutBullet")).GetLocation();
+
+	float Pitch = UKismetMathLibrary::FindLookAtRotation(BulletOut, this->GetActorLocation()).Pitch;
+	float PitchReal = UKismetMathLibrary::FindLookAtRotation(BulletOutReal, this->GetActorLocation()).Pitch;
+
+	float AimingAngleScale = UKismetMathLibrary::NormalizeToRange(this->AimingAngle, ABot::MinAimRotationValue, ABot::MaxAimRotationValue);
+
+	float AimingPitch = FMath::Clamp(FMath::Lerp(this->MinAimingPitchRotation, this->MaxAimingPitchRotation, AimingAngleScale), this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
+
+	float Pitch_RotatingPoint = UKismetMathLibrary::FindLookAtRotation(BulletOut, this->GetActorLocation() + this->GunAnimationRotationPoint).Pitch;
+	float PitchReal_RotatingPoint = UKismetMathLibrary::FindLookAtRotation(BulletOutReal, this->GetActorLocation() + this->GunAnimationRotationPoint).Pitch;
+
+	UE_LOG(LogTemp, Display, TEXT("[TestAimingTick] BulletOutReal: %s"), *this->WeaponMesh->GetSocketLocation(TEXT("OutBullet")).ToString());
+	UE_LOG(LogTemp, Display, TEXT("[TestAimingTick] Pitch: %f. Real pitch: %f. Diff: %f"), Pitch, PitchReal, PitchReal - Pitch);
+	UE_LOG(LogTemp, Display, TEXT("[TestAimingTick] Rotating point pitch: %f. Real pitch: %f. Diff: %f"), Pitch_RotatingPoint, PitchReal_RotatingPoint, PitchReal_RotatingPoint - Pitch_RotatingPoint);
+	UE_LOG(LogTemp, Display, TEXT("[TestAimingTick] BulletOut dist: %f. Real dist: %f"), FVector::Dist(this->GetActorLocation(), BulletOut), FVector::Dist(this->GetActorLocation(), BulletOutReal));
+	UE_LOG(LogTemp, Display, TEXT("[TestAimingTick] Aiming pitch: %f. Diff with real: %f"), AimingPitch, PitchReal - AimingPitch);
+
+
+	//
+
 	this->bShouldApplyGunAnimation = true;
 	this->CombatAction = ECombatAction::Shooting;
 	const bool bMovingToRandomPointWhileAiming = false;
@@ -1344,7 +1372,12 @@ FVector ABot::GetFirearmOutBulletWorldPosition(FRotator GunRotation, bool bShoul
 		GunRotation = this->GetGunRotation();
 	}
 
-	FVector OutLocation = GunRotation.RotateVector(this->GunSocketRelativeLocation);
+	FVector TempVector = this->GunSocketRelativeLocation;
+	//TempVector.Z = 0;
+	FVector OutLocation = GunRotation.RotateVector(TempVector);
+	//OutLocation.Z += this->GunSocketRelativeLocation.Z + this->GunAnimationRotationPoint.Z;;
+	//OutLocation.Z += this->GunSocketRelativeLocation.Z;
+	OutLocation += this->GunAnimationRotationPoint;
 	OutLocation += this->GetActorLocation();
 
 	return OutLocation;
@@ -1407,12 +1440,12 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 
 		if (bDrawDebugLines)
 		{
-			DrawDebugLine(World, StartLocation, EndLocation, FColor(0, 0, 255), false, 0.5f);
-
 			if (HitResult.bBlockingHit)
 			{
 				DrawDebugSphere(World, HitResult.ImpactPoint, 15.0f, 6, FColor(0, 255, 0), false, 0.5f);
 			}
+
+			DrawDebugLine(World, StartLocation, HitResult.bBlockingHit ? HitResult.ImpactPoint : EndLocation, FColor(0, 0, 255), false, 0.5f);
 		}
 #endif
 

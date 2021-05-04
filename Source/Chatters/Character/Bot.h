@@ -251,6 +251,7 @@ private:
 
 	float TimeSinceStartedMovingInCombat = 0.0f;
 
+	FVector GunAnimationRotationPoint = FVector(0.0f, 0.0f, 10.094025);
 private:
 	FBotTarget Target;
 public:
