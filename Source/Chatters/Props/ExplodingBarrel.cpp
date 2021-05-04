@@ -11,10 +11,11 @@
 AExplodingBarrel::AExplodingBarrel()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	this->Mesh = CreateDefaultSubobject<UGeometryCollectionComponent>(TEXT("Mesh"));
-	this->Mesh->Simulating = false;
+	this->Mesh->Simulating = true;
+	this->Mesh->ObjectType = EObjectStateTypeEnum::Chaos_Object_Dynamic;
 	this->Mesh->SetCanEverAffectNavigation(true);
 	this->SetRootComponent(this->Mesh);
 
@@ -25,6 +26,10 @@ AExplodingBarrel::AExplodingBarrel()
 	this->SphereComponent->SetCanEverAffectNavigation(false);
 
 	this->FieldSystemSubclass = AExplosionFieldSystem::StaticClass();
+
+	this->AnchorField = this->CreateDefaultSubobject<UChildActorComponent>(TEXT("AnchorField"));
+	this->AnchorField->SetupAttachment(this->GetRootComponent());
+	this->AnchorField->SetChildActorClass(AAnchorField::StaticClass());
 }
 
 // Called when the game starts or when spawned
@@ -38,7 +43,14 @@ void AExplodingBarrel::BeginPlay()
 	{
 		GameSession->ExplodingBarrels.Add(this);
 	}
-	
+
+	AAnchorField* AnchorFieldActor = Cast<AAnchorField>(this->AnchorField->GetChildActor());
+
+	if (AnchorFieldActor)
+	{
+		this->Mesh->InitializationFields.Add(AnchorFieldActor);
+		this->Mesh->ReregisterComponent();
+	}
 }
 
 // Called every frame
@@ -46,6 +58,22 @@ void AExplodingBarrel::Tick(float DeltaTime)
 {
 	AActor::Tick(DeltaTime);
 
+	if (this->bShouldDestroy && this->Time < this->MaxTime)
+	{
+		this->Time += DeltaTime;
+
+		if (this->Time >= this->MaxTime)
+		{
+			this->Time = this->MaxTime;
+
+			if (this->FieldSystemActor)
+			{
+				this->FieldSystemActor->Destroy();
+			}
+
+			this->Destroy();
+		}
+	}
 }
 
 void AExplodingBarrel::Explode(ABot* BotCauser)
@@ -105,14 +133,18 @@ void AExplodingBarrel::Explode(ABot* BotCauser)
 		if (this->Mesh)
 		{
 			this->Mesh->Simulating = true;
-			FTransform Transform;
-			Transform.SetLocation(this->GetActorLocation());
-			this->FieldSystemActor = GetWorld()->SpawnActor<AExplosionFieldSystem>(this->FieldSystemSubclass, Transform);
-			this->FieldSystemActor->Explode();
+			//this->Mesh->ObjectType = EObjectStateTypeEnum::Chaos_Object_Dynamic;
 			this->Mesh->SetCanEverAffectNavigation(false);
 		}
 
 		this->bCanExplode = false;
+		this->bShouldDestroy = true;
+
+		FTransform Transform;
+		Transform.SetLocation(this->GetActorLocation());
+		this->FieldSystemActor = GetWorld()->SpawnActor<AExplosionFieldSystem>(this->FieldSystemSubclass, Transform);
+		this->FieldSystemActor->BreakChaosObject();
+		this->FieldSystemActor->ActivatePhysicsForce();
 	}
 }
 

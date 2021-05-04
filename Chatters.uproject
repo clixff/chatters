@@ -21,7 +21,8 @@
 				"UMG",
 				"ApexDestruction",
 				"GeometryCollectionEngine",
-				"FieldSystemEngine"
+				"FieldSystemEngine",
+				"Chaos"
 			]
 		},
 		{

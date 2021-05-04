@@ -25,7 +25,8 @@ AExplosionFieldSystem::~AExplosionFieldSystem()
 
 }
 
-void AExplosionFieldSystem::Explode()
+
+void AExplosionFieldSystem::BreakChaosObject()
 {
 	auto* FieldSystemComponentRef = this->GetFieldSystemComponent();
 	auto* FieldSystem = FieldSystemComponentRef->GetFieldSystem();
@@ -35,6 +36,17 @@ void AExplosionFieldSystem::Explode()
 	}
 
 	FieldSystemComponentRef->ApplyStrainField(true, this->GetActorLocation(), this->SphereComponent->GetScaledSphereRadius(), this->StrainMagnitude, 0);
+}
+
+void AExplosionFieldSystem::ActivatePhysicsForce()
+{
+	auto* FieldSystemComponentRef = this->GetFieldSystemComponent();
+	auto* FieldSystem = FieldSystemComponentRef->GetFieldSystem();
+
+	if (!FieldSystem)
+	{
+		return;
+	}
 
 	this->ForceRadialVector->SetRadialVector(this->ForceMagnitude, this->GetActorLocation());
 	this->ForceRadialFalloff->SetRadialFalloff(1.0f, 0.0f, 1.0f, 0.0f, this->SphereComponent->GetScaledSphereRadius(), this->GetActorLocation(), EFieldFalloffType::Field_Falloff_Linear);

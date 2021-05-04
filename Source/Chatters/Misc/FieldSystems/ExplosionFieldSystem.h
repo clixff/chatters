@@ -19,7 +19,9 @@ public:
 	AExplosionFieldSystem();
 	~AExplosionFieldSystem();
 
-	void Explode();
+	void BreakChaosObject();
+
+	void ActivatePhysicsForce();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		USphereComponent* SphereComponent = nullptr;

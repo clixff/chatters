@@ -10,6 +10,8 @@
 #include "../Misc/FieldSystems/ExplosionFieldSystem.h"
 #include "Components/SphereComponent.h"
 #include "GeometryCollection/GeometryCollectionComponent.h"
+#include "../Misc/FieldSystems/AnchorField.h"
+#include "Components/ChildActorComponent.h"
 #include "ExplodingBarrel.generated.h"
 
 class ABot;
@@ -49,7 +51,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 		USoundBase* ExplodingSound = nullptr;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UGeometryCollectionComponent* Mesh = nullptr;
 
 	UPROPERTY(VisibleAnywhere)
@@ -64,6 +66,18 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "FieldSystem")
 		TSubclassOf<AExplosionFieldSystem> FieldSystemSubclass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		UChildActorComponent* AnchorField = nullptr;
+
+	/** Seconds of a debris life */
+	UPROPERTY(EditDefaultsOnly)
+		float MaxTime = 7.0f;
+
+	UPROPERTY()
+		float Time = 0.0f;
+
+	bool bShouldDestroy = false;
 
 #if WITH_EDITOR  
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
