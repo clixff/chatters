@@ -44,6 +44,7 @@ void UFirearmWeaponInstance::Tick(float DeltaTime)
 			else if (this->Phase == EFirearmPhase::Reloading)
 			{
 				this->Phase = EFirearmPhase::IDLE;
+				this->bShouldPlayReloadingAnimation = false;
 				auto* FirearmRef = this->GetFirearmRef();
 
 				if (FirearmRef)
@@ -82,6 +83,7 @@ void UFirearmWeaponInstance::StartReloading()
 		this->Phase = EFirearmPhase::Reloading;
 		this->TimeoutValue = FirearmRef->ReloadingTime;
 		this->NumberOfBullets = 0;
+		this->bShouldPlayReloadingAnimation = true;
 	}
 }
 

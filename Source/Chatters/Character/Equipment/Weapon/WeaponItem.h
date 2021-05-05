@@ -44,8 +44,11 @@ public:
 		float TimeToPlayHitAnimation = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		UBlendSpace* IdleBlendSpace;
+		UBlendSpace* IdleBlendSpace = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		UBlendSpace1D* HitBlendSpace;
+		UBlendSpace1D* HitBlendSpace = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UAnimSequence* ReloadingAnimation = nullptr;
 };

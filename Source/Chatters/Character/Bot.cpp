@@ -351,6 +351,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	{
 		return;
 	}
+
 	auto* FirearmRef = FirearmInstance->GetFirearmRef();
 
 	auto* AIController = this->GetAIController();
@@ -365,56 +366,63 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		}
 	}
 
+	bool bReloading = FirearmInstance->Phase == EFirearmPhase::Reloading;
+
+
 	AExplodingBarrel* TargetBarrel = nullptr;
+	bool bCanShoot = FirearmInstance->CanShoot();
 
-	if (this->Target.TargetType == ETargetType::ExplodingBarrel)
+	if (!bReloading)
 	{
-		auto* Barrel = Cast<AExplodingBarrel>(this->Target.Actor);
-
-		if (!Barrel || !Barrel->bCanExplode)
+		if (this->Target.TargetType == ETargetType::ExplodingBarrel)
 		{
-			this->Target.TargetType = ETargetType::None;
-			this->Target.Actor = nullptr;
-			this->FindNewEnemyTarget();
+			auto* Barrel = Cast<AExplodingBarrel>(this->Target.Actor);
+
+			if (!Barrel || !Barrel->bCanExplode)
+			{
+				this->Target.TargetType = ETargetType::None;
+				this->Target.Actor = nullptr;
+				this->FindNewEnemyTarget();
+			}
+			else
+			{
+				TargetBarrel = Cast<AExplodingBarrel>(this->Target.Actor);
+			}
 		}
 		else
 		{
-			TargetBarrel = Cast<AExplodingBarrel>(this->Target.Actor);
-		}
-	}
-	else
-	{
-		auto* GameSessionObject = this->GetGameSession();
+			auto* GameSessionObject = this->GetGameSession();
 
-		if (GameSessionObject)
-		{
-			int32 ExplodingBarrelsNum = GameSessionObject->ExplodingBarrels.Num();
-
-			if (ExplodingBarrelsNum)
+			if (GameSessionObject)
 			{
-				for (int32 i = 0; i < ExplodingBarrelsNum; i++)
+				int32 ExplodingBarrelsNum = GameSessionObject->ExplodingBarrels.Num();
+
+				if (ExplodingBarrelsNum)
 				{
-					auto* Barrel = GameSessionObject->ExplodingBarrels[i];
-
-					if (!Barrel)
+					for (int32 i = 0; i < ExplodingBarrelsNum; i++)
 					{
-						continue;
-					}
+						auto* Barrel = GameSessionObject->ExplodingBarrels[i];
 
-					FVector BarrelLocation = Barrel->GetActorLocation();
-
-					float Dist = FVector::Dist(BarrelLocation, ActorLocation);
-
-					if (Dist <= FirearmRef->MaxDistance && Dist > Barrel->Radius)
-					{
-						auto BotsInRadius = Barrel->GetBotsInRadius();
-
-						if (BotsInRadius.Num())
+						if (!Barrel)
 						{
-							this->Target.Actor = Barrel;
-							this->Target.TargetType = ETargetType::ExplodingBarrel;
-							TargetBarrel = Barrel;
-							break;
+							continue;
+						}
+
+						FVector BarrelLocation = Barrel->GetActorLocation();
+
+						float Dist = FVector::Dist(BarrelLocation, ActorLocation);
+
+						if (Dist <= FirearmRef->MaxDistance && Dist > Barrel->Radius)
+						{
+							auto BotsInRadius = Barrel->GetBotsInRadius();
+
+							if (BotsInRadius.Num())
+							{
+								this->Target.Actor = Barrel;
+								this->Target.TargetType = ETargetType::ExplodingBarrel;
+								TargetBarrel = Barrel;
+								break;
+							}
 						}
 					}
 				}
@@ -427,9 +435,6 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		return;
 	}
 
-	bool bCanShoot = FirearmInstance->CanShoot();
-	bool bReloading = FirearmInstance->Phase == EFirearmPhase::Reloading;
-
 	FVector AimTargetLocation = FVector(0.0f);
 
 	if (this->Target.TargetType == ETargetType::Bot)
@@ -441,9 +446,13 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		AimTargetLocation = this->Target.Actor->GetActorLocation();
 	}
 
-	this->AimAt(AimTargetLocation);
+	if (!bReloading)
+	{
+		this->AimAt(AimTargetLocation);
 
-	this->SmoothRotatingTick(DeltaTime);
+		this->SmoothRotatingTick(DeltaTime);
+	}
+
 
 	AActor* HitActor = nullptr;
 
@@ -1170,6 +1179,16 @@ bool ABot::ShouldPlayWeaponHitAnimation()
 	}
 
 	return this->WeaponInstance->bShouldPlayHitAnimation;
+}
+
+bool ABot::ShouldPlayWeaponReloadingAnimation()
+{
+	if (!this->WeaponInstance)
+	{
+		return false;
+	}
+
+	return this->WeaponInstance->bShouldPlayReloadingAnimation;
 }
 
 void ABot::OnGameSessionStarted(ESessionMode SessionMode)

@@ -31,6 +31,8 @@ public:
 
 	float HitAnimationTime = 0.0f;
 
+	bool bShouldPlayReloadingAnimation = false;
+
 	UPROPERTY()
 		ACharacter* BotOwner = nullptr;
 

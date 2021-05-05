@@ -304,4 +304,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		bool ShouldPlayWeaponHitAnimation();
+
+	UFUNCTION(BlueprintCallable)
+		bool ShouldPlayWeaponReloadingAnimation();
 };
