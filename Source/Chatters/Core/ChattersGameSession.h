@@ -10,7 +10,9 @@
 #include "../Misc/Misc.h"
 #include "../Character/Equipment/EquipmentList.h"
 #include "../Props/ExplodingBarrel.h"
+#include "../Misc/Misc.h"
 #include "ChattersGameSession.generated.h"
+
 
 UENUM(BlueprintType)
 enum class ESessionType : uint8
@@ -21,7 +23,7 @@ enum class ESessionType : uint8
 	Generated	UMETA(DisplayName = "Generated"),
 
 	/**
-	 * Spawn twitch viewers with 
+	 * Spawn twitch viewers
 	 */
 	Twitch	UMETA(DisplayName = "Twitch")
 };
@@ -63,6 +65,9 @@ public:
 		int32 MaxPlayers = 25;
 
 	USessionWidget* GetSessionWidget();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		ESessionMode SessionMode = ESessionMode::Combat;
 public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<ABot> BotSubclass;

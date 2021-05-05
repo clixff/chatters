@@ -562,7 +562,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition();
 
-			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, false);
+			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, this->bTestAiming);
 
 			if (BulletHitResult.HitResult.bBlockingHit)
 			{
@@ -1157,13 +1157,23 @@ UWeaponItem* ABot::GetWeaponRef()
 	}
 }
 
-void ABot::OnGameSessionStarted()
+float ABot::GetGunPitchRotation()
+{
+	return this->GetGunRotation().Pitch;
+}
+
+void ABot::OnGameSessionStarted(ESessionMode SessionMode)
 {
 	this->bReady = true;
 
-	//this->TestAimAt();
-
-	this->FindNewEnemyTarget();
+	if (SessionMode == ESessionMode::TestAiming)
+	{
+		this->TestAimAt();
+	}
+	else
+	{
+		this->FindNewEnemyTarget();
+	}
 
 	//this->MoveToRandomLocation();
 }

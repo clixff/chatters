@@ -106,6 +106,11 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 	if (this->SessionType == ESessionType::Generated)
 	{
+		if (this->SessionMode == ESessionMode::TestAiming)
+		{
+			this->MaxPlayers = 1;
+		}
+
 		for (int32 i = 0; i < this->MaxPlayers; i++)
 		{
 			auto Name = FString::Printf(TEXT("Bot_%d"), i+1);
@@ -184,7 +189,7 @@ void UChattersGameSession::Start()
 
 			if (Bot)
 			{
-				Bot->OnGameSessionStarted();
+				Bot->OnGameSessionStarted(this->SessionMode);
 			}
 		}
 	}

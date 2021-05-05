@@ -16,7 +16,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Particles/ParticleSystem.h"
 #include "../Props/ExplodingBarrel.h"
+#include "../Misc/Misc.h"
 #include "Bot.generated.h"
+
 
 UENUM(BlueprintType)
 enum class EYawRotatingType : uint8
@@ -134,7 +136,7 @@ public:
 
 	void Say(FString Message);
 
-	void OnGameSessionStarted();
+	void OnGameSessionStarted(ESessionMode SessionMode);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool bPlayerAttached = false;
@@ -159,6 +161,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		FVector AimAtTestLocation;
+
 private:
 	bool bReady = false;
 
@@ -293,4 +296,9 @@ public:
 	UPROPERTY()
 		int32 Kills = 0;
 
+	UFUNCTION(BlueprintCallable)
+		float GetGunPitchRotation();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		float AimingCenterBoneRotation = 2.918813f;
 };

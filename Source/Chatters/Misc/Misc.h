@@ -10,3 +10,9 @@ enum class EAttachCameraToBotType : uint8
 	PrevBot
 };
 
+UENUM(BlueprintType)
+enum class ESessionMode : uint8
+{
+	Combat,
+	TestAiming
+};
