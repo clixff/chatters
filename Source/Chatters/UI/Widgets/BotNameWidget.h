@@ -66,6 +66,10 @@ public:
 
 	void UpdateChatBubbleMessage(FString Message);
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText KillsNumber;
+
+	void UpdateKillsNumber(int32 Kills);
 public:
 	void ShowDamageNumber(int32 DamageNumber, bool bCritical = false);
 

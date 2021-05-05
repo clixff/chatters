@@ -37,7 +37,8 @@ public:
 
 	void UpdateSpectatorBotHealth(int32 HealthPoints);
 
-	FText SpectatorBotKillsText;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText SpectatorBotKillsText;
 
 	void UpdateSpectatorBotKills(int32 NumberOfKills);
 public:

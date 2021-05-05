@@ -1117,6 +1117,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 	if (Killer && Killer != this)
 	{
 		Killer->Kills++;
+		auto* NameWidgetRef = Killer->GetNameWidget();
+		if (NameWidgetRef)
+		{
+			NameWidgetRef->UpdateKillsNumber(Killer->Kills);
+		}
 	}
 
 	auto* GameSessionObject = this->GetGameSession();

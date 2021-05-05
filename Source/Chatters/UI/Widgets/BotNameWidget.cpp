@@ -243,6 +243,22 @@ void UBotNameWidget::UpdateChatBubbleMessage(FString Message)
 	}
 }
 
+void UBotNameWidget::UpdateKillsNumber(int32 Kills)
+{
+	FString KillsString = FString::Printf(TEXT("%d"), Kills);
+
+	this->KillsNumber = FText::FromString(KillsString);
+
+	if (Kills >= 2)
+	{
+		auto* KillsWrapper = this->GetWidgetFromName(TEXT("Kills_Wrapper"));
+		if (KillsWrapper)
+		{
+			KillsWrapper->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+}
+
 void UBotNameWidget::ShowDamageNumber(int32 DamageNumber, bool bCritical)
 {
 	FString DamageNumberWidgetName = FString::Printf(TEXT("Damage_Number_%d"), this->DamageNumbers);
