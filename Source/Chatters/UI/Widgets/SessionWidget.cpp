@@ -41,8 +41,15 @@ void USessionWidget::UpdateSpectatorBotName(FString BotName)
 void USessionWidget::UpdateSpectatorBotHealth(int32 HealthPoints)
 {
 	FString HealthText = FString::Printf(TEXT("%d"), HealthPoints);
-	
+
 	this->SpectatorBotHealthPoints = FText::FromString(HealthText);
+}
+
+void USessionWidget::UpdateSpectatorBotKills(int32 NumberOfKills)
+{
+	FString BotKillsString = FString::Printf(TEXT("%d"), NumberOfKills);
+
+	this->SpectatorBotKillsText = FText::FromString(BotKillsString);
 }
 
 void USessionWidget::OnKill(FString KillerName, FString VictimName)
@@ -51,7 +58,7 @@ void USessionWidget::OnKill(FString KillerName, FString VictimName)
 	{
 		this->KillFeedSubclass = UKillFeedElement::StaticClass();
 	}
-	
+
 	if (!this->KillFeedContainer)
 	{
 		FName KillFeedContainerName = FName(TEXT("KillFeed_Container"));

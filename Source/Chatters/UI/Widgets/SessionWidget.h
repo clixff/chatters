@@ -9,7 +9,7 @@
 #include "SessionWidget.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class CHATTERS_API USessionWidget : public UCustomWidgetBase
@@ -37,10 +37,13 @@ public:
 
 	void UpdateSpectatorBotHealth(int32 HealthPoints);
 
+	FText SpectatorBotKillsText;
+
+	void UpdateSpectatorBotKills(int32 NumberOfKills);
 public:
 	// Kill feed
 
-	UPROPERTY(EditDefaultsOnly, Category="KillFeed")
+	UPROPERTY(EditDefaultsOnly, Category = "KillFeed")
 		TSubclassOf<UKillFeedElement> KillFeedSubclass;
 
 	UPROPERTY()

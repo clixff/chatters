@@ -37,14 +37,14 @@ enum class ECombatAction : uint8
 UENUM(BlueprintType)
 enum class ECombatStyle : uint8
 {
-	/** 
+	/**
 	 * When in gunfight, stands at one place and shoots
 	 */
 	Defense,
 	/**
-	 * When in gunfight, moving around target and shoots 
+	 * When in gunfight, moving around target and shoots
 	 */
-	Attack
+	 Attack
 };
 
 UENUM()
@@ -103,7 +103,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -111,7 +111,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
-	UPROPERTY(VisibleAnywhere, Category="Bot")
+	UPROPERTY(VisibleAnywhere, Category = "Bot")
 		FString DisplayName = FString();
 
 	int32 ID;
@@ -137,7 +137,7 @@ public:
 	void OnGameSessionStarted();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		 bool bPlayerAttached = false;
+		bool bPlayerAttached = false;
 
 	UPROPERTY(BlueprintReadOnly)
 		bool bAlive = true;
@@ -204,12 +204,12 @@ private:
 
 	void FirearmCombatTick(float DeltaTime, float TargetDist);
 
-	void Shoot();
+	void Shoot(bool bBulletOffset = true);
 
 	void AimAt(FVector Location);
 
 	void TestAimAt();
-	
+
 	bool bTestAiming = false;
 
 	UPROPERTY(EditAnywhere)
@@ -220,7 +220,7 @@ private:
 
 	static const float MinAimRotationValue;
 	static const float MaxAimRotationValue;
-	
+
 	AActor* AimingTarget = nullptr;
 
 	FVector GunSocketRelativeLocation;
@@ -247,10 +247,11 @@ private:
 
 	FRotator GetGunRotation();
 
-	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset);
+	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset, bool bDrawDebugLines = false);
 
 	float TimeSinceStartedMovingInCombat = 0.0f;
 
+	FVector GunAnimationRotationPoint = FVector(0.0f, 0.0f, 10.094025);
 private:
 	FBotTarget Target;
 public:
@@ -288,4 +289,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool bShouldApplyGunAnimation = false;
+
+	UPROPERTY()
+		int32 Kills = 0;
+
 };
