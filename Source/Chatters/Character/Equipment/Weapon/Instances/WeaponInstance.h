@@ -27,6 +27,10 @@ public:
 
 	float TimeoutValue = 0.0f;
 
+	bool bShouldPlayHitAnimation = false;
+
+	float HitAnimationTime = 0.0f;
+
 	UPROPERTY()
 		ACharacter* BotOwner = nullptr;
 

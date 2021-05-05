@@ -94,6 +94,8 @@ void UFirearmWeaponInstance::OnShoot()
 		this->Phase = EFirearmPhase::Shooting;
 		this->TimeoutValue = FirearmRef->ShootTime;
 		this->NumberOfBullets -= 1;
-
 	}
+
+	this->bShouldPlayHitAnimation = true;
+	this->HitAnimationTime = 0.0f;
 }

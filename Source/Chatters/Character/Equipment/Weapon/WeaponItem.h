@@ -6,6 +6,8 @@
 #include "../EquipmentItem.h"
 #include "GameFramework/Character.h"
 #include "Animation/BlendSpace.h"
+#include "Animation/AnimSequence.h"
+#include "Animation/BlendSpace1D.h"
 #include "WeaponItem.generated.h"
 	
 UENUM(BlueprintType)
@@ -38,6 +40,12 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		EWeaponType Type = EWeaponType::None;
 
+	UPROPERTY(EditDefaultsOnly)
+		float TimeToPlayHitAnimation = 0.5f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		UBlendSpace* IdleBlendSpace;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UBlendSpace1D* HitBlendSpace;
 };

@@ -1162,6 +1162,16 @@ float ABot::GetGunPitchRotation()
 	return this->GetGunRotation().Pitch;
 }
 
+bool ABot::ShouldPlayWeaponHitAnimation()
+{
+	if (!this->WeaponInstance)
+	{
+		return false;
+	}
+
+	return this->WeaponInstance->bShouldPlayHitAnimation;
+}
+
 void ABot::OnGameSessionStarted(ESessionMode SessionMode)
 {
 	this->bReady = true;

@@ -15,7 +15,18 @@ UWeaponInstance::~UWeaponInstance()
 
 void UWeaponInstance::Tick(float DeltaTime)
 {
-
+    if (this->WeaponRef)
+    {
+        if (this->bShouldPlayHitAnimation)
+        {
+            this->HitAnimationTime += DeltaTime;
+            if (this->HitAnimationTime >= this->WeaponRef->TimeToPlayHitAnimation)
+            {
+                this->HitAnimationTime = 0.0f;
+                this->bShouldPlayHitAnimation = false;
+            }
+        }
+    }
 }
 
 void UWeaponInstance::Init()

@@ -301,4 +301,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		float AimingCenterBoneRotation = 2.918813f;
+
+	UFUNCTION(BlueprintCallable)
+		bool ShouldPlayWeaponHitAnimation();
 };
