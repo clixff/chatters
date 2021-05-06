@@ -316,4 +316,6 @@ public:
 	FLinearColor GetTeamColor();
 
 	void UpdateNameColor();
+
+	void StopMovement();
 };

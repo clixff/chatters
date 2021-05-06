@@ -117,10 +117,5 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<USessionWidget> SessionWidgetClass;
 
-	float NewRoundTimeout = 0.0f;
-
-	/** In seconds */
-	float NewRoundMaxDelay = 2.0f;
-
-	bool bStartNewRound = false;
+	int32 RoundNumber = 1;
 };

@@ -79,6 +79,8 @@ public:
 
 	/** Can be nullptr */
 	static APlayerController* GetPlayerController();
+
+	static FName CoreStringTablePath;
 private:
 	static UChattersGameInstance* Singleton;
 

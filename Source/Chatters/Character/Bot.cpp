@@ -1133,7 +1133,6 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	if (GameSessionObject)
 	{
-		GameSessionObject->OnBotDied(this->ID);
 		auto* SessionWidget = GameSessionObject->GetSessionWidget();
 		if (SessionWidget)
 		{
@@ -1149,6 +1148,8 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 			}
 			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor());
 		}
+
+		GameSessionObject->OnBotDied(this->ID);
 	}
 }
 
@@ -1591,4 +1592,22 @@ void ABot::UpdateNameColor()
 	{
 		NameWidgetRef->NicknameColor = this->GetTeamColor();
 	}
+}
+
+void ABot::StopMovement()
+{
+	auto* AiController = this->GetAIController();
+
+	if (AiController)
+	{
+		AiController->StopMovement();
+	}
+
+	this->bMovingToRandomCombatLocation = false;
+	this->bMovingToRandomLocation = false;
+	this->CombatAction = ECombatAction::IDLE;
+	
+	this->Target.Actor = nullptr;
+	this->Target.Bot = nullptr;
+	this->Target.TargetType = ETargetType::None;
 }

@@ -2,6 +2,8 @@
 
 
 #include "SessionWidget.h"
+#include "Internationalization/Text.h"
+#include "../../Core/ChattersGameInstance.h"
 #include "Blueprint/WidgetTree.h"
 
 void USessionWidget::UpdateAliveBotsText(int32 NumberOfAlive, int32 MaxPlayers)
@@ -50,6 +52,26 @@ void USessionWidget::UpdateSpectatorBotKills(int32 NumberOfKills)
 	FString BotKillsString = FString::Printf(TEXT("%d"), NumberOfKills);
 
 	this->SpectatorBotKillsText = FText::FromString(BotKillsString);
+}
+
+void USessionWidget::PlayNewRoundAnimation(int32 RoundNumber)
+{
+	if (!this->NewRoundAnimationRef)
+	{
+		return;
+	}
+
+	//FString NewRoundString = FString::Printf(TEXT("Раунд %d"), RoundNumber);
+	this->NewRoundText = FText::FromStringTable(UChattersGameInstance::CoreStringTablePath, TEXT("NewRound"));
+	this->NewRoundText = FText::Format(this->NewRoundText, RoundNumber);
+
+	UWidget* TextWidget = this->GetWidgetFromName(TEXT("NewRoundTextWidget"));
+	if (TextWidget)
+	{
+		TextWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	this->PlayAnimation(this->NewRoundAnimationRef, 0.0f, 1);
 }
 
 void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor)

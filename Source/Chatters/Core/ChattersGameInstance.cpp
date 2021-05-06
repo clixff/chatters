@@ -5,6 +5,7 @@
 
 
 UChattersGameInstance* UChattersGameInstance::Singleton = nullptr;
+FName UChattersGameInstance::CoreStringTablePath = TEXT("/Game/Blueprint/Misc/CoreStringTable");
 
 UChattersGameInstance::UChattersGameInstance()
 {

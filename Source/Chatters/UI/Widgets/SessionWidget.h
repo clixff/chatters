@@ -6,6 +6,7 @@
 #include "CustomWidgetBase.h"
 #include "KillFeedElement.h"
 #include "Components/VerticalBox.h"
+#include "Animation/WidgetAnimation.h"
 #include "SessionWidget.generated.h"
 
 /**
@@ -44,6 +45,14 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		FLinearColor SpectatorNicknameColor;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText NewRoundText;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		UWidgetAnimation* NewRoundAnimationRef = nullptr;
+
+	void PlayNewRoundAnimation(int32 RoundNumber);
 public:
 	// Kill feed
 

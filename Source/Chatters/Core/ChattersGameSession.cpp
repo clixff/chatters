@@ -194,7 +194,19 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 
 			if (this->GameModeType == ESessionGameMode::Teams && this->AliveBots.Num() > 1 && (this->BlueAlive == 0 || this->RedAlive == 0))
 			{
-				this->OnTeamsBattleEnd();
+
+				UWorld* World = this->GetWorld();
+
+				for (ABot* Bot : this->AliveBots)
+				{
+					Bot->StopMovement();
+				}
+
+				if (World)
+				{
+					FTimerHandle Timer;
+					World->GetTimerManager().SetTimer(Timer, this, &UChattersGameSession::OnTeamsBattleEnd, 5.0f, false);
+				}
 			}
 
 			break;
@@ -315,6 +327,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 	this->AvailableBotSpawnPoints = this->BotSpawnPoints;
 	this->AvailableExplodingBarrels = this->ExplodingBarrels;
 	this->bStarted = false;
+	this->RoundNumber++;
 
 	int32 AliveBotsNumber = 0;
 	this->RedAlive = 0;
@@ -391,6 +404,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 	{
 		this->SessionWidget->SetStartGameSessionTipVisibility(true);
 		this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
+		this->SessionWidget->PlayNewRoundAnimation(this->RoundNumber);
 	}
 }
 
