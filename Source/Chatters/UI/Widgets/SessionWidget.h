@@ -22,8 +22,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		FText AliveBotsText;
 
-	/** Hide "Press space" text */
-	void HideStartGameSessionTip();
+	/** "Press space" text */
+	void SetStartGameSessionTipVisibility(bool bVisible = false);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		FText SpectatorBotName;
@@ -41,6 +41,9 @@ public:
 		FText SpectatorBotKillsText;
 
 	void UpdateSpectatorBotKills(int32 NumberOfKills);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FLinearColor SpectatorNicknameColor;
 public:
 	// Kill feed
 
@@ -50,14 +53,13 @@ public:
 	UPROPERTY()
 		TArray<UKillFeedElement*> KillFeedElements;
 
-	void OnKill(FString KillerName, FString VictimName);
+	void OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor);
 
 	UPROPERTY(EditDefaultsOnly, Category = "KillFeed")
 		int32 MaxKillFeedElements = 7;
 
 	UPROPERTY()
 		UVerticalBox* KillFeedContainer = nullptr;
-
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
 };

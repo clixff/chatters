@@ -16,3 +16,21 @@ enum class ESessionMode : uint8
 	Combat,
 	TestAiming
 };
+
+UENUM(BlueprintType)
+enum class ESessionGameMode : uint8
+{
+	/** All against all */
+	Default,
+	Teams,
+	/** Bot with more kills in 2 minutes wins  */
+	Deathmatch
+};
+
+UENUM(BlueprintType)
+enum class EBotTeam : uint8
+{
+	White,
+	Blue,
+	Red
+};

@@ -67,6 +67,12 @@ void UKillFeedElement::StartDestroying()
 	}
 }
 
+void UKillFeedElement::SetNicknameColors(FLinearColor KillerColor, FLinearColor VictimColor)
+{
+	this->KillerNameColor = KillerColor;
+	this->VictimNameColor = VictimColor;
+}
+
 void UKillFeedElement::OnAnimationFinishedPlaying(UUMGSequencePlayer& Player)
 {
 	Super::OnAnimationFinishedPlaying(Player);

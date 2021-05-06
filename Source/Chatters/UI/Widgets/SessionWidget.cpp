@@ -10,14 +10,14 @@ void USessionWidget::UpdateAliveBotsText(int32 NumberOfAlive, int32 MaxPlayers)
 	this->AliveBotsText = FText::FromString(AliveBotsString);
 }
 
-void USessionWidget::HideStartGameSessionTip()
+void USessionWidget::SetStartGameSessionTipVisibility(bool bVisible)
 {
 	FName TipWidgetName = FName(TEXT("StartGameSessionTip_Wrapper"));
 	auto* TipWidget = this->GetWidgetFromName(TipWidgetName);
 
 	if (TipWidget)
 	{
-		TipWidget->SetVisibility(ESlateVisibility::Hidden);
+		TipWidget->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	}
 }
 
@@ -52,7 +52,7 @@ void USessionWidget::UpdateSpectatorBotKills(int32 NumberOfKills)
 	this->SpectatorBotKillsText = FText::FromString(BotKillsString);
 }
 
-void USessionWidget::OnKill(FString KillerName, FString VictimName)
+void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor)
 {
 	if (!this->KillFeedSubclass)
 	{
@@ -70,6 +70,8 @@ void USessionWidget::OnKill(FString KillerName, FString VictimName)
 	}
 
 	UKillFeedElement* KillFeedElement = this->WidgetTree->ConstructWidget<UKillFeedElement>(this->KillFeedSubclass, UKillFeedElement::GenerateName());
+
+	KillFeedElement->SetNicknameColors(KillerColor, VictimColor);
 
 	if (!KillFeedElement)
 	{

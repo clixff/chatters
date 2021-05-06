@@ -249,14 +249,14 @@ void UBotNameWidget::UpdateKillsNumber(int32 Kills)
 
 	this->KillsNumber = FText::FromString(KillsString);
 
-	if (Kills >= 2)
+	auto* KillsWrapper = this->GetWidgetFromName(TEXT("Kills_Wrapper"));
+
+	if (KillsWrapper)
 	{
-		auto* KillsWrapper = this->GetWidgetFromName(TEXT("Kills_Wrapper"));
-		if (KillsWrapper)
-		{
-			KillsWrapper->SetVisibility(ESlateVisibility::Visible);
-		}
+		KillsWrapper->SetVisibility(Kills < 2 ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
 	}
+
+
 }
 
 void UBotNameWidget::ShowDamageNumber(int32 DamageNumber, bool bCritical)

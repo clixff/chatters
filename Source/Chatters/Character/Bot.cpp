@@ -197,7 +197,7 @@ void ABot::FindNewEnemyTarget()
 		{
 			ABot* Bot = AliveBots[i];
 
-			if (!Bot || Bot->ID == this->ID || !Bot->bAlive)
+			if (!Bot || Bot->ID == this->ID || !Bot->bAlive || (this->Team != EBotTeam::White && Bot->Team == this->Team))
 			{
 				continue;
 			}
@@ -398,13 +398,13 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 			if (GameSessionObject)
 			{
-				int32 ExplodingBarrelsNum = GameSessionObject->ExplodingBarrels.Num();
+				int32 ExplodingBarrelsNum = GameSessionObject->AvailableExplodingBarrels.Num();
 
 				if (ExplodingBarrelsNum)
 				{
 					for (int32 i = 0; i < ExplodingBarrelsNum; i++)
 					{
-						auto* Barrel = GameSessionObject->ExplodingBarrels[i];
+						auto* Barrel = GameSessionObject->AvailableExplodingBarrels[i];
 
 						if (!Barrel)
 						{
@@ -419,12 +419,30 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 						{
 							auto BotsInRadius = Barrel->GetBotsInRadius();
 
-							if (BotsInRadius.Num())
+							if (!BotsInRadius.Num())
 							{
-								this->Target.Actor = Barrel;
-								this->Target.TargetType = ETargetType::ExplodingBarrel;
-								TargetBarrel = Barrel;
-								break;
+								continue;
+							}
+							else
+							{
+								bool bSetTarget = true;
+								for (int32 j = 0; j < BotsInRadius.Num(); j++)
+								{
+									auto* Bot = BotsInRadius[j];
+									if (this->Team != EBotTeam::White && this->Team == Bot->Team)
+									{
+										bSetTarget = false;
+										break;
+									}
+								}
+
+								if (bSetTarget)
+								{
+									this->Target.Actor = Barrel;
+									this->Target.TargetType = ETargetType::ExplodingBarrel;
+									TargetBarrel = Barrel;
+									break;
+								}
 							}
 						}
 					}
@@ -745,29 +763,13 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 		return nullptr;
 	}
 
-	auto& SpawnPoints = GameSessionObject->BotSpawnPoints;
-
-	if (!SpawnPoints.Num())
-	{
-		UE_LOG(LogTemp, Error, TEXT("[ABot::CreateBot] No spawn point found for bot ID %d"), IDToSet);
-		return nullptr;
-	}
-
-	int32 RandNumber = FMath::RandRange(0, SpawnPoints.Num() - 1);
-	auto* SpawnPoint = SpawnPoints[RandNumber];
-
-	if (!SpawnPoint)
-	{
-		return nullptr;
-	}
+	FTransform SpawnPoint = GameSessionObject->GetAvailableSpawnPoint();
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Name = FName(*FString::Printf(TEXT("Bot_%d"), IDToSet));
 	SpawnParams.bNoFail = true;
-	ABot* Bot = World->SpawnActor<ABot>(Subclass, SpawnPoint->GetActorLocation(), SpawnPoint->GetRotation(), SpawnParams);
+	ABot* Bot = World->SpawnActor<ABot>(Subclass, SpawnPoint.GetLocation(), FRotator(SpawnPoint.GetRotation()), SpawnParams);
 
-	SpawnPoint->Destroy();
-	SpawnPoints.RemoveAt(RandNumber, 1, true);
 
 	if (Bot)
 	{
@@ -1117,7 +1119,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		CharacterMovementComponent->bUseRVOAvoidance = false;
 	}
 
-	if (Killer && Killer != this)
+	if (Killer && Killer != this && (this->Team == EBotTeam::White || this->Team != Killer->Team))
 	{
 		Killer->Kills++;
 		auto* NameWidgetRef = Killer->GetNameWidget();
@@ -1145,7 +1147,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 					SessionWidget->UpdateSpectatorBotKills(Killer->Kills);
 				}
 			}
-			SessionWidget->OnKill(KillerName, this->DisplayName);
+			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor());
 		}
 	}
 }
@@ -1197,6 +1199,65 @@ bool ABot::ShouldPlayWeaponReloadingAnimation()
 	}
 
 	return this->WeaponInstance->bShouldPlayReloadingAnimation;
+}
+
+void ABot::ResetOnNewRound()
+{
+	this->HealthPoints = this->MaxHealthPoints;
+
+	this->AimingAngle = 50.0f;
+	
+	this->CombatAction = ECombatAction::IDLE;
+	this->bShouldApplyGunAnimation = false;
+	this->Target.Actor = nullptr;
+	this->Target.Bot = nullptr;
+	this->Target.TargetType = ETargetType::None;
+
+	auto* AIController = this->GetAIController();
+
+	if (AIController)
+	{
+		AIController->StopMovement();
+	}
+
+	this->bMovingToRandomCombatLocation = false;
+	this->bMovingToRandomLocation = false;
+	this->bAlive = true;
+	this->Kills = 0;
+
+	auto* NameWidgetRef = this->GetNameWidget();
+
+	if (NameWidgetRef)
+	{
+		NameWidgetRef->UpdateKillsNumber(this->Kills);
+		NameWidgetRef->UpdateHealth(this->GetHeathValue());
+	}
+
+	this->UpdateNameColor();
+	
+	this->SmoothRotation.bActive = false;
+
+	if (this->WeaponInstance && this->WeaponInstance->WeaponRef)
+	{
+		this->WeaponInstance->TimeoutValue = 0.0f;
+		this->WeaponInstance->HitAnimationTime = 0.0f;
+		this->WeaponInstance->bShouldPlayHitAnimation = false;
+		this->WeaponInstance->bShouldPlayReloadingAnimation = false;
+
+		if (this->WeaponInstance->WeaponRef->Type == EWeaponType::Firearm)
+		{
+			auto* FirearmInstance = Cast<UFirearmWeaponInstance>(this->WeaponInstance);
+			if (FirearmInstance)
+			{
+				auto* FireamRef = FirearmInstance->GetFirearmRef();
+				if (FireamRef)
+				{
+					FirearmInstance->NumberOfBullets = FireamRef->MaxNumberOfBullets;
+					FirearmInstance->Phase = EFirearmPhase::IDLE;
+				}
+			}
+		}
+	}
 }
 
 void ABot::OnGameSessionStarted(ESessionMode SessionMode)
@@ -1507,4 +1568,27 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 	}
 
 	return BulletHitResult;
+}
+
+FLinearColor ABot::GetTeamColor()
+{
+	switch (this->Team)
+	{
+	case EBotTeam::Blue:
+		return FLinearColor(0.121f, 0.635f, 0.796f);
+	case EBotTeam::Red:
+		return FLinearColor(0.533f, 0.054f, 0.054f);
+	default:
+		return FLinearColor(1.0f, 1.0f, 1.0f);
+	}
+}
+
+void ABot::UpdateNameColor()
+{
+	auto* NameWidgetRef = this->GetNameWidget();
+
+	if (NameWidgetRef)
+	{
+		NameWidgetRef->NicknameColor = this->GetTeamColor();
+	}
 }

@@ -70,6 +70,9 @@ public:
 		FText KillsNumber;
 
 	void UpdateKillsNumber(int32 Kills);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FLinearColor NicknameColor;
 public:
 	void ShowDamageNumber(int32 DamageNumber, bool bCritical = false);
 

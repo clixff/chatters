@@ -56,6 +56,14 @@ public:
 
 	bool bDestroying = false;
 
+	void SetNicknameColors(FLinearColor KillerColor, FLinearColor VictimColor);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FLinearColor KillerNameColor;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FLinearColor VictimNameColor;
+
 protected:
 	virtual void OnAnimationFinishedPlaying(UUMGSequencePlayer& Player) override;
 };

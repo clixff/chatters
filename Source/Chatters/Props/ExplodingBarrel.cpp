@@ -66,12 +66,12 @@ void AExplodingBarrel::Explode(ABot* BotCauser)
 
 		if (GameSession)
 		{
-			for (int32 i = 0; i < GameSession->ExplodingBarrels.Num(); i++)
+			for (int32 i = 0; i < GameSession->AvailableExplodingBarrels.Num(); i++)
 			{
-				auto* Barrel = GameSession->ExplodingBarrels[i];
+				auto* Barrel = GameSession->AvailableExplodingBarrels[i];
 				if (Barrel == this)
 				{
-					GameSession->ExplodingBarrels.RemoveAt(i, 1, true);
+					GameSession->AvailableExplodingBarrels.RemoveAt(i, 1, true);
 					break;
 				}
 			}

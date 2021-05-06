@@ -16,6 +16,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Particles/ParticleSystem.h"
 #include "../Props/ExplodingBarrel.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "../Misc/Misc.h"
 #include "Bot.generated.h"
 
@@ -162,6 +163,8 @@ public:
 	UPROPERTY(EditAnywhere)
 		FVector AimAtTestLocation;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		EBotTeam Team = EBotTeam::White;
 private:
 	bool bReady = false;
 
@@ -307,4 +310,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		bool ShouldPlayWeaponReloadingAnimation();
+
+	void ResetOnNewRound();
+
+	FLinearColor GetTeamColor();
+
+	void UpdateNameColor();
 };

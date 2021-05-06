@@ -78,6 +78,12 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		TArray<ABot*> AliveBots;
 
+	UPROPERTY(VisibleAnywhere)
+		int32 BlueAlive = 0;
+
+	UPROPERTY(VisibleAnywhere)
+		int32 RedAlive = 0;
+
 	/** Equipment lists for all levels */
 	UPROPERTY(EditDefaultsOnly)
 		TMap<FString, UEquipmentList*> EquipmentListsForLevels;
@@ -90,8 +96,20 @@ public:
 		TArray<ABotSpawnPoint*> BotSpawnPoints;
 
 	UPROPERTY()
+		TArray<ABotSpawnPoint*> AvailableBotSpawnPoints;
+
+	UPROPERTY()
 		TArray<AExplodingBarrel*> ExplodingBarrels;
 
+	UPROPERTY()
+		TArray<AExplodingBarrel*> AvailableExplodingBarrels;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		ESessionGameMode GameModeType = ESessionGameMode::Default;
+	
+	void OnTeamsBattleEnd();
+
+	FTransform GetAvailableSpawnPoint();
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;
@@ -99,4 +117,10 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<USessionWidget> SessionWidgetClass;
 
+	float NewRoundTimeout = 0.0f;
+
+	/** In seconds */
+	float NewRoundMaxDelay = 2.0f;
+
+	bool bStartNewRound = false;
 };

@@ -13,7 +13,6 @@
 				"CoreUObject",
 				"UMG",
 				"AIModule",
-				"UnrealEd",
 				"PhysicsCore",
 				"NavigationSystem",
 				"SlateCore",
@@ -24,7 +23,7 @@
 		},
 		{
 			"Name": "ChattersEditorModule",
-			"Type": "Runtime",
+			"Type": "Editor",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",

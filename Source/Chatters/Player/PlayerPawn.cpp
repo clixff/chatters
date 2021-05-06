@@ -206,6 +206,7 @@ void APlayerPawn::SetSpectatorMenuVisibiliy(bool bVisible)
 				SessionWidget->UpdateSpectatorBotName(this->BotToAttach->DisplayName);
 				SessionWidget->UpdateSpectatorBotHealth(this->BotToAttach->HealthPoints);
 				SessionWidget->UpdateSpectatorBotKills(this->BotToAttach->Kills);
+				SessionWidget->SpectatorNicknameColor = this->BotToAttach->GetTeamColor();
 			}
 
 			SessionWidget->SetSpectatorWidgetVisibility(bVisible);
