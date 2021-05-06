@@ -328,7 +328,10 @@ void ABot::CombatTick(float DeltaTime)
 					}
 					else
 					{
-						this->MoveToTarget();
+						if (!this->ShouldPlayWeaponReloadingAnimation())
+						{
+							this->MoveToTarget();
+						}
 					}
 				}
 			}
