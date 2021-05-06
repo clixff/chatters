@@ -6,7 +6,15 @@
 #include "CustomWidgetBase.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Animation/WidgetAnimation.h"
+#include "Engine/Texture2D.h"
 #include "KillFeedElement.generated.h"
+
+
+USTRUCT(BlueprintType
+	struct FKillFeedIcon
+{
+
+};
 
 /**
  * 

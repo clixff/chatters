@@ -92,19 +92,6 @@ void ABot::Tick(float DeltaTime)
 
 		}
 
-		//if (this->bMovingToRandomLocation)
-		//{
-		//	float DistToTarget = FVector::Dist(this->GetActorLocation(), this->RandomLocationTarget);
-
-		//	if (DistToTarget <= 150.0f)
-		//	{
-		//		this->ApplyDamage(50);
-		//		this->bMovingToRandomLocation = false;
-		//		this->SayRandomMessage();
-		//		this->MoveToRandomLocation();
-		//	}
-		//}
-
 		auto* NameWidgetObject = this->GetNameWidget();
 
 		if (NameWidgetObject)
@@ -513,7 +500,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		{
 			if (CharacterMovementComponent)
 			{
-				CharacterMovementComponent->MaxWalkSpeed = 250.0f;
+				CharacterMovementComponent->MaxWalkSpeed = FirearmRef->MaxWalkSpeed;
 			}
 			this->bMovingToRandomCombatLocation = true;
 			this->bUseControllerRotationYaw = false;
@@ -626,11 +613,11 @@ void ABot::Shoot(bool bBulletOffset)
 							if (CriticalHitChance < 1)
 							{
 								bCriticalHit = true;
+								this->SayRandomMessage();
 							}
 
 							FVector ImpulseVector = this->GetActorForwardVector() * FirearmRef->ImpulseForce;
 							BotToDamage->ApplyDamage(FirearmInstance->GetDamage(), this, WeaponType, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
-							this->SayRandomMessage();
 
 							if (BotToDamage->BloodParticle)
 							{
@@ -652,7 +639,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			if (FirearmRef->ShootSound)
 			{
-				UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutBulletLocation, FMath::RandRange(0.5f, 0.7f));
+				UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutBulletLocation, FMath::RandRange(0.7f, 0.85f));
 			}
 
 			if (FirearmRef->ShotParticle)
@@ -957,6 +944,11 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		return;
 	}
 
+	if (BoneHit == TEXT("head_"))
+	{
+		bCritical = true;
+	}
+
 	if (bCritical)
 	{
 		Damage *= 2;
@@ -970,6 +962,23 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	{
 		this->HealthPoints = 0;
 		this->OnDead(ByBot, WeaponType, ImpulseVector, ImpulseLocation, BoneHit);
+	}
+	else
+	{
+		/** If damage by enemy */
+		if ((this->Team == EBotTeam::White || this->Team != ByBot->Team) && ByBot != this && ByBot->bAlive)
+		{
+			/** If bot is not target already */
+			if (!this->Target.Bot || this->Target.Bot != ByBot)
+			{
+				/** If the current target is not aiming at us */
+				if (this->Target.Bot->Target.Bot != this)
+				{
+					/** Set the damager as new target */
+					this->SetNewEnemyTarget(this->Target.Bot);
+				}
+			}
+		}
 	}
 
 	UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);

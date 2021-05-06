@@ -51,4 +51,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		UAnimSequence* ReloadingAnimation = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		float MaxWalkSpeed = 250.0f;
 };
