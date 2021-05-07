@@ -60,6 +60,10 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAction("LeftMouseClick", IE_Pressed, this, &APlayerPawnController::OnLeftMouseClick);
 	this->InputComponent->BindAction("RightMouseClick", IE_Pressed, this, &APlayerPawnController::OnRightMouseClick);
+
+	this->InputComponent->BindAction("Slomo", IE_Pressed, this, &APlayerPawnController::OnSlowmoStart);
+	this->InputComponent->BindAction("Slomo", IE_Released, this, &APlayerPawnController::OnSlowmoEnd);
+
 ;}
 
 void APlayerPawnController::BeginPlay()
@@ -319,4 +323,14 @@ void APlayerPawnController::AttachPlayerToAliveBot(EAttachCameraToBotType Type)
 			}
 		}
 	}
+}
+
+void APlayerPawnController::OnSlowmoStart()
+{
+	this->ConsoleCommand(TEXT("slomo 0.1"));
+}
+
+void APlayerPawnController::OnSlowmoEnd()
+{
+	this->ConsoleCommand(TEXT("slomo 1.0"));
 }

@@ -165,6 +165,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		EBotTeam Team = EBotTeam::White;
+
+	UBotNameWidget* GetNameWidget();
+
+	void SayRandomMessage();
 private:
 	bool bReady = false;
 
@@ -178,11 +182,7 @@ private:
 
 	UBotNameWidget* NameWidget = nullptr;
 
-	UBotNameWidget* GetNameWidget();
-
 	FString ChatBubbleMessage;
-
-	void SayRandomMessage();
 
 	bool bHatAttached = false;
 
@@ -260,6 +260,8 @@ private:
 	FVector GunAnimationRotationPoint = FVector(0.0f, 0.0f, 10.094025);
 private:
 	FBotTarget Target;
+
+	float SecondsSinceLastBarrelsCheck = 0.0f;
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
@@ -318,4 +320,7 @@ public:
 	void UpdateNameColor();
 
 	void StopMovement();
+
+	/** Check for bots around */
+	bool CanExplodeBarrel(AExplodingBarrel* Barrel);
 };

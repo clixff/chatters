@@ -74,7 +74,7 @@ void USessionWidget::PlayNewRoundAnimation(int32 RoundNumber)
 	this->PlayAnimation(this->NewRoundAnimationRef, 0.0f, 1);
 }
 
-void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor)
+void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon)
 {
 	if (!this->KillFeedSubclass)
 	{
@@ -93,12 +93,13 @@ void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor
 
 	UKillFeedElement* KillFeedElement = this->WidgetTree->ConstructWidget<UKillFeedElement>(this->KillFeedSubclass, UKillFeedElement::GenerateName());
 
-	KillFeedElement->SetNicknameColors(KillerColor, VictimColor);
-
 	if (!KillFeedElement)
 	{
 		return;
 	}
+
+	KillFeedElement->SetNicknameColors(KillerColor, VictimColor);
+	KillFeedElement->SetIcon(Icon);
 
 	UVerticalBoxSlot* VerticalBoxSlot = Cast<UVerticalBoxSlot>(KillFeedContainer->AddChildToVerticalBox(KillFeedElement));
 

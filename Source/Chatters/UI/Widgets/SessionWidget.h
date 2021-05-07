@@ -62,7 +62,7 @@ public:
 	UPROPERTY()
 		TArray<UKillFeedElement*> KillFeedElements;
 
-	void OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor);
+	void OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon);
 
 	UPROPERTY(EditDefaultsOnly, Category = "KillFeed")
 		int32 MaxKillFeedElements = 7;

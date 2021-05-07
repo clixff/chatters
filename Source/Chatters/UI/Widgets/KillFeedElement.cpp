@@ -2,6 +2,8 @@
 
 
 #include "KillFeedElement.h"
+#include "Components/Image.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Animation/UMGSequencePlayer.h"
 
 int32 UKillFeedElement::NumberOfElements = 0;
@@ -71,6 +73,35 @@ void UKillFeedElement::SetNicknameColors(FLinearColor KillerColor, FLinearColor 
 {
 	this->KillerNameColor = KillerColor;
 	this->VictimNameColor = VictimColor;
+}
+
+void UKillFeedElement::SetIcon(FKillFeedIcon& Icon)
+{
+	if (Icon.IconType == EKillFeedIconType::Explosion)
+	{
+		Icon = this->ExplosionIcon;
+	}
+
+	if (!Icon.Texture)
+	{
+		return;
+	}
+
+	auto* ImageWidget = Cast<UImage>(this->GetWidgetFromName(TEXT("Icon")));
+
+	if (!ImageWidget)
+	{
+		return;
+	}
+
+	ImageWidget->SetBrushFromTexture(Icon.Texture, false);
+
+	auto* CanvasSlot = Cast<UCanvasPanelSlot>(ImageWidget->Slot);
+
+	if (CanvasSlot)
+	{
+		CanvasSlot->SetSize(FVector2D(Icon.SizeX, Icon.SizeY));
+	}
 }
 
 void UKillFeedElement::OnAnimationFinishedPlaying(UUMGSequencePlayer& Player)

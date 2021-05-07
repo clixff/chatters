@@ -11,6 +11,7 @@
 #include "../Character/Equipment/EquipmentList.h"
 #include "../Props/ExplodingBarrel.h"
 #include "../Misc/Misc.h"
+#include "../Combat/FirearmProjectile.h"
 #include "ChattersGameSession.generated.h"
 
 
@@ -110,6 +111,9 @@ public:
 	void OnTeamsBattleEnd();
 
 	FTransform GetAvailableSpawnPoint();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		TSubclassOf<AFirearmProjectile> FirearmProjectileSubClass = AFirearmProjectile::StaticClass();
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;

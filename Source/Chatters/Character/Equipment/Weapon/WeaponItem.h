@@ -8,6 +8,7 @@
 #include "Animation/BlendSpace.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/BlendSpace1D.h"
+#include "../../../UI/Widgets//KillFeedElement.h"
 #include "WeaponItem.generated.h"
 	
 UENUM(BlueprintType)
@@ -54,4 +55,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		float MaxWalkSpeed = 250.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		FKillFeedIcon KillFeedIcon;
 };

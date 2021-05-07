@@ -13,6 +13,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "NavigationSystem.h"
 #include "AI/Navigation/NavigationTypes.h"
+#include "../UI/Widgets/KillFeedElement.h"
+#include "../Combat/FirearmProjectile.h"
 #include "../Core/ChattersGameSession.h"
 
 const float ABot::MinAimRotationValue = 0.0f;
@@ -364,27 +366,57 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	if (!bReloading)
 	{
+		const float MinTimeToFindNewBarrel = 5.0f;
+
 		if (this->Target.TargetType == ETargetType::ExplodingBarrel)
 		{
 			auto* Barrel = Cast<AExplodingBarrel>(this->Target.Actor);
+			bool bFindNewTarget = false;
 
 			if (!Barrel || !Barrel->bCanExplode)
+			{
+				bFindNewTarget = true;
+			}
+			else
+			{
+				bFindNewTarget = false;
+
+				this->SecondsSinceLastBarrelsCheck += DeltaTime;
+
+				if (this->SecondsSinceLastBarrelsCheck >= MinTimeToFindNewBarrel)
+				{
+					this->SecondsSinceLastBarrelsCheck = 0.0f;
+
+					bool bCanExplode = this->CanExplodeBarrel(Barrel);
+					if (!bCanExplode)
+					{
+						bFindNewTarget = true;
+					}
+				}
+			}
+
+			if (bFindNewTarget)
 			{
 				this->Target.TargetType = ETargetType::None;
 				this->Target.Actor = nullptr;
 				this->FindNewEnemyTarget();
+				this->SecondsSinceLastBarrelsCheck = 0.0f;
 			}
 			else
 			{
-				TargetBarrel = Cast<AExplodingBarrel>(this->Target.Actor);
+				TargetBarrel = Barrel;
 			}
 		}
 		else
 		{
 			auto* GameSessionObject = this->GetGameSession();
 
-			if (GameSessionObject)
+			this->SecondsSinceLastBarrelsCheck += DeltaTime;
+
+
+			if (GameSessionObject && this->SecondsSinceLastBarrelsCheck >= MinTimeToFindNewBarrel)
 			{
+				this->SecondsSinceLastBarrelsCheck = 0.0f;
 				int32 ExplodingBarrelsNum = GameSessionObject->AvailableExplodingBarrels.Num();
 
 				if (ExplodingBarrelsNum)
@@ -404,32 +436,14 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 						if (Dist <= FirearmRef->MaxDistance && Dist > Barrel->Radius)
 						{
-							auto BotsInRadius = Barrel->GetBotsInRadius();
+							bool bCanExplode = this->CanExplodeBarrel(Barrel);
 
-							if (!BotsInRadius.Num())
+							if (bCanExplode)
 							{
-								continue;
-							}
-							else
-							{
-								bool bSetTarget = true;
-								for (int32 j = 0; j < BotsInRadius.Num(); j++)
-								{
-									auto* Bot = BotsInRadius[j];
-									if (this->Team != EBotTeam::White && this->Team == Bot->Team)
-									{
-										bSetTarget = false;
-										break;
-									}
-								}
-
-								if (bSetTarget)
-								{
-									this->Target.Actor = Barrel;
-									this->Target.TargetType = ETargetType::ExplodingBarrel;
-									TargetBarrel = Barrel;
-									break;
-								}
+								this->Target.Actor = Barrel;
+								this->Target.TargetType = ETargetType::ExplodingBarrel;
+								TargetBarrel = Barrel;
+								break;
 							}
 						}
 					}
@@ -577,65 +591,21 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FirearmInstance->OnShoot();
 
-			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition();
+			FRotator GunRotation = this->GetGunRotation();
+
+			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition(GunRotation, false);
 
 			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, this->bTestAiming);
 
-			if (BulletHitResult.HitResult.bBlockingHit)
-			{
-				if (BulletHitResult.BotToDamage)
-				{
-					ABot* BotToDamage = BulletHitResult.BotToDamage;
+			FTransform ProjectileTransform;
+			ProjectileTransform.SetLocation(OutBulletLocation);
 
-					if (BotToDamage->ID != this->ID)
-					{
-						int32 ChanceOfMiss = FMath::RandRange(0, 9);
-						bool bMiss = false;
+			auto* FirearmProjectile = World->SpawnActor<AFirearmProjectile>(this->GetGameSession()->FirearmProjectileSubClass, ProjectileTransform);
 
-						if (ChanceOfMiss < 1)
-						{
-							bMiss = true;
-						}
+			FVector EndLocation = BulletHitResult.HitResult.bBlockingHit ? BulletHitResult.HitResult.ImpactPoint : BulletHitResult.HitResult.TraceEnd;
 
-						if (bMiss)
-						{
-							auto* TargetNameWidget = BotToDamage->GetNameWidget();
-							if (TargetNameWidget)
-							{
-								TargetNameWidget->ShowDamageNumber(-1, false);
-							}
-						}
-						else
-						{
-							int32 CriticalHitChance = FMath::RandRange(0, 9);
-							bool bCriticalHit = false;
-
-							if (CriticalHitChance < 1)
-							{
-								bCriticalHit = true;
-								this->SayRandomMessage();
-							}
-
-							FVector ImpulseVector = this->GetActorForwardVector() * FirearmRef->ImpulseForce;
-							BotToDamage->ApplyDamage(FirearmInstance->GetDamage(), this, WeaponType, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
-
-							if (BotToDamage->BloodParticle)
-							{
-								FTransform BloodParticleTransform;
-								BloodParticleTransform.SetLocation(BulletHitResult.HitResult.ImpactPoint);
-								FRotator TestRot = UKismetMathLibrary::FindLookAtRotation(OutBulletLocation, BulletHitResult.HitResult.ImpactPoint);
-								TestRot.Pitch += 90.0f;
-								BloodParticleTransform.SetRotation(FQuat(TestRot));
-								UGameplayStatics::SpawnEmitterAtLocation(World, BotToDamage->BloodParticle, BloodParticleTransform, true);
-							}
-						}
-					}
-				}
-				else if (BulletHitResult.ExplodingBarrel)
-				{
-					BulletHitResult.ExplodingBarrel->Explode(this);
-				}
-			}
+			FirearmProjectile->Init(OutBulletLocation, EndLocation, BulletHitResult, FirearmInstance, this->GetActorForwardVector());
+			FirearmProjectile->BotCauser = this;
 
 			if (FirearmRef->ShootSound)
 			{
@@ -1155,7 +1125,22 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 					SessionWidget->UpdateSpectatorBotKills(Killer->Kills);
 				}
 			}
-			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor());
+
+			FKillFeedIcon KillFeedIcon;
+
+			if (WeaponType == EWeaponType::Explosion)
+			{
+				KillFeedIcon.IconType = EKillFeedIconType::Explosion;
+			}
+			else
+			{
+				if (Killer->WeaponInstance && Killer->WeaponInstance->WeaponRef)
+				{
+					KillFeedIcon = Killer->WeaponInstance->WeaponRef->KillFeedIcon;
+				}
+			}
+
+			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon);
 		}
 
 		GameSessionObject->OnBotDied(this->ID);
@@ -1619,4 +1604,33 @@ void ABot::StopMovement()
 	this->Target.Actor = nullptr;
 	this->Target.Bot = nullptr;
 	this->Target.TargetType = ETargetType::None;
+}
+
+bool ABot::CanExplodeBarrel(AExplodingBarrel* Barrel)
+{
+	auto BotsInRadius = Barrel->GetBotsInRadius();
+
+	if (!BotsInRadius.Num())
+	{
+		return false;
+	}
+
+
+	if (this->Team == EBotTeam::White)
+	{
+		return true;
+	}
+
+
+	for (auto Bot : BotsInRadius)
+	{
+		/** Do not explode barrel if there's an ally nearby */
+		if (Bot->Team == this->Team)
+		{
+			return false;
+		}
+	}
+
+
+	return true;
 }

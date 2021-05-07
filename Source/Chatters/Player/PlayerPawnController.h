@@ -94,4 +94,7 @@ private:
 
 	void AttachPlayerToAliveBot(EAttachCameraToBotType Type);
 
+	void OnSlowmoStart();
+	void OnSlowmoEnd();
+
 };

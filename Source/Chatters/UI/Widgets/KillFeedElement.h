@@ -9,11 +9,26 @@
 #include "Engine/Texture2D.h"
 #include "KillFeedElement.generated.h"
 
-
-USTRUCT(BlueprintType
-	struct FKillFeedIcon
+UENUM(BlueprintType)
+enum class EKillFeedIconType : uint8
 {
+	Default,
+	Explosion
+};
 
+USTRUCT(BlueprintType)
+struct FKillFeedIcon
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+		UTexture2D* Texture = nullptr;
+	UPROPERTY(EditAnywhere)
+		float SizeX = 8.0f;
+	UPROPERTY(EditAnywhere)
+		float SizeY = 8.0f;
+
+	EKillFeedIconType IconType = EKillFeedIconType::Default;
 };
 
 /**
@@ -72,6 +87,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		FLinearColor VictimNameColor;
 
+	void SetIcon(FKillFeedIcon& Icon);
+public:
+	UPROPERTY(EditDefaultsOnly, Category="Icons")
+		FKillFeedIcon ExplosionIcon;
 protected:
 	virtual void OnAnimationFinishedPlaying(UUMGSequencePlayer& Player) override;
 };
