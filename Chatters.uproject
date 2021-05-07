@@ -18,7 +18,8 @@
 				"SlateCore",
 				"Slate",
 				"UMG",
-				"ApexDestruction"
+				"ApexDestruction",
+				"Niagara"
 			]
 		},
 		{

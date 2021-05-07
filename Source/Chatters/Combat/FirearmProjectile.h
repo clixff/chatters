@@ -7,7 +7,15 @@
 #include "../Props/ExplodingBarrel.h"
 #include "../Character/Bot.h"
 #include "../Character/Equipment/Weapon/Instances/FirearmWeaponInstance.h"
+#include "NiagaraComponent.h"
 #include "FirearmProjectile.generated.h"
+
+enum class ETraceLengthAction : uint8
+{
+	Reduce,
+	Increase,
+	Ignore
+};
 
 UCLASS()
 class CHATTERS_API AFirearmProjectile : public AActor
@@ -51,4 +59,30 @@ public:
 	FVector CauserForwardVector;
 	UFirearmWeaponItem* FirearmRef = nullptr;
 	UFirearmWeaponInstance* FirearmInstance = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintREadOnly)
+		UNiagaraComponent* Trace = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		float TraceMaxLength = 700.0f;
+
+	void SetTraceLocation();
+
+	float DistanceScale = 0.0f;
+
+	ETraceLengthAction TraceLengthAction = ETraceLengthAction::Increase;
+
+	UPROPERTY(EditDEfaultsOnly)
+		float TraceLengthSpeed = 1000.0f;
+
+	float TraceLength = 0.0f;
+
+	void UpdateTraceLength();
+
+	void UpdateTraceOpacity();
+
+	float Opacity = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float TraceLengthMaxOpacity = 500.0f;
 };

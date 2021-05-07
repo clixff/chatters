@@ -209,6 +209,11 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 				}
 			}
 
+			if (this->AliveBots.Num() == 1)
+			{
+				this->AliveBots[0]->StopMovement();
+			}
+
 			break;
 		}
 	}

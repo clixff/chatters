@@ -65,7 +65,7 @@ void AFirearmProjectile::Tick(float DeltaTime)
 		}
 	}
 
-	if (this->BulletHitResult.HitResult.bBlockingHit || (this->TraceLengthAction == ETraceLengthAction::Increase && this->DistanceScale < 0.8f))
+	if (this->BulletHitResult.HitResult.bBlockingHit || this->TraceLengthAction == ETraceLengthAction::Increase)
 	{
 		this->Opacity = FMath::Clamp(this->TraceLength / this->TraceLengthMaxOpacity, 0.0f, 1.0f);
 	}
@@ -73,7 +73,7 @@ void AFirearmProjectile::Tick(float DeltaTime)
 	{
 		if (this->DistanceScale >= 0.8f)
 		{
-			this->Opacity = ((1.0f - this->DistanceScale) / (1.0f - 0.8f));
+			this->Opacity = 1.0f - ((1.0f - this->DistanceScale) / (1.0f - 0.8f));
 		}
 	}
 
