@@ -600,7 +600,10 @@ void ABot::Shoot(bool bBulletOffset)
 			FTransform ProjectileTransform;
 			ProjectileTransform.SetLocation(OutBulletLocation);
 
-			auto* FirearmProjectile = World->SpawnActor<AFirearmProjectile>(this->GetGameSession()->FirearmProjectileSubClass, ProjectileTransform);
+			FActorSpawnParameters ProjectileSpawnParams;
+			ProjectileSpawnParams.Name = AFirearmProjectile::GenerateName();
+		
+			auto* FirearmProjectile = World->SpawnActor<AFirearmProjectile>(this->GetGameSession()->FirearmProjectileSubClass, ProjectileTransform, ProjectileSpawnParams);
 
 			FVector EndLocation = BulletHitResult.HitResult.bBlockingHit ? BulletHitResult.HitResult.ImpactPoint : BulletHitResult.HitResult.TraceEnd;
 

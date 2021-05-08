@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
+uint32 AFirearmProjectile::TotalNumberOfProjectiles = 0;
 
 // Sets default values
 AFirearmProjectile::AFirearmProjectile()
@@ -76,9 +77,6 @@ void AFirearmProjectile::Tick(float DeltaTime)
 			this->Opacity = ((1.0f - this->DistanceScale) / (1.0f - 0.8f));
 		}
 	}
-
-
-	UE_LOG(LogTemp, Display, TEXT("[AFirearmProjectile] Trace length is %f. Opacity is %f. DistScale is %f. "), this->TraceLength, this->Opacity, this->DistanceScale);
 
 	this->UpdateTraceLength();
 	this->UpdateTraceOpacity();
@@ -197,5 +195,12 @@ void AFirearmProjectile::UpdateTraceOpacity()
 	{
 		this->Trace->SetVariableFloat(TEXT("TraceOpacity"), this->Opacity);
 	}
+}
+
+FName AFirearmProjectile::GenerateName()
+{
+	FString NewNameString = FString::Printf(TEXT("Firearm_Projectile_%d"), AFirearmProjectile::TotalNumberOfProjectiles);
+	AFirearmProjectile::TotalNumberOfProjectiles++;
+	return FName(*NewNameString);
 }
 

@@ -85,4 +85,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		float TraceLengthMaxOpacity = 500.0f;
+
+	static uint32 TotalNumberOfProjectiles;
+
+	static FName GenerateName();
 };
