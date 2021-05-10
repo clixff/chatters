@@ -2,6 +2,7 @@
 
 
 #include "FirearmWeaponInstance.h"
+#include "../../../Bot.h"
 
 UFirearmWeaponInstance::UFirearmWeaponInstance()
 {
@@ -84,6 +85,16 @@ void UFirearmWeaponInstance::StartReloading()
 		this->TimeoutValue = FirearmRef->ReloadingTime;
 		this->NumberOfBullets = 0;
 		this->bShouldPlayReloadingAnimation = true;
+	}
+
+	if (this->BotOwner)
+	{
+		ABot* Bot = Cast<ABot>(this->BotOwner);
+
+		if (Bot)
+		{
+			Bot->StopMovement();
+		}
 	}
 }
 

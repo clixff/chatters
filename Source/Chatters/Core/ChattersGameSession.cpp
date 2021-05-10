@@ -199,7 +199,7 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 
 				for (ABot* Bot : this->AliveBots)
 				{
-					Bot->StopMovement();
+					Bot->StopMovementAfterRound();
 				}
 
 				if (World)
@@ -211,7 +211,12 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 
 			if (this->AliveBots.Num() == 1)
 			{
-				this->AliveBots[0]->StopMovement();
+				auto* BotWinner = this->AliveBots[0];
+				BotWinner->StopMovementAfterRound();
+				if (this->SessionWidget)
+				{
+					this->SessionWidget->PlayWinnerAnimation(BotWinner->DisplayName, BotWinner->GetTeamColor());
+				}
 			}
 
 			break;

@@ -53,6 +53,14 @@ public:
 		UWidgetAnimation* NewRoundAnimationRef = nullptr;
 
 	void PlayNewRoundAnimation(int32 RoundNumber);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		UWidgetAnimation* WinnerAnimation = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText WinnerNameText;
+
+	void PlayWinnerAnimation(FString BotName, FLinearColor BotTeamColor);
 public:
 	// Kill feed
 

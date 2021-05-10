@@ -208,6 +208,8 @@ void ABot::FindNewEnemyTarget()
 void ABot::SetNewEnemyTarget(ABot* TargetBot)
 {
 	this->bSmoothRotatingBeforeMoving = false;
+	this->SecondsAimingWithoutHitting = 0.0f;
+	this->DefenderSecondsWithoutMoving = 0.0f;
 
 	if (!TargetBot)
 	{
@@ -519,11 +521,63 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		}
 	}
 
-	/** Moving around target */
+	if (HitActor != this->Target.Actor)
+	{
+		this->SecondsAimingWithoutHitting += DeltaTime;
+	}
+	else
+	{
+		this->SecondsAimingWithoutHitting = 0.0f;
+	}
+
+	bool bCanFindNewPlace = this->CombatStyle == ECombatStyle::Attack;
+
+	if (this->SecondsAimingWithoutHitting >= this->MaxSecondsAimingWithoutHitting && this->CombatStyle == ECombatStyle::Defense)
+	{
+		/** Allow defenders find new place if, for example, they aiming at wall  */
+		bCanFindNewPlace = true;
+		this->SecondsAimingWithoutHitting = 0.0f;
+	}
+
+	if (this->CombatStyle == ECombatStyle::Defense)
+	{
+		if (this->bMovingToRandomCombatLocation)
+		{
+			this->DefenderSecondsWithoutMoving = 0.0f;
+		}
+		else
+		{
+			this->DefenderSecondsWithoutMoving += DeltaTime;
+
+			/** Allow defenders to move after 20 seconds */
+			if (this->DefenderSecondsWithoutMoving >= this->DefenderMaxSecondsWithoutMoving)
+			{
+				bCanFindNewPlace = true;
+			}
+		}
+	}
+
+	/** Moving around target */		
+
 	float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
 
+	if (this->bMovingToRandomCombatLocation && (DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 7.0f))
+	{
+		this->bMovingToRandomCombatLocation = false;
+		
+		if (AIController)
+		{
+			AIController->StopMovement();
+		}
+	}
+
+	if (this->bMovingToRandomCombatLocation)
+	{
+		bCanFindNewPlace = false;
+	}
+
 	/** If the bot can shoot and not reloading, find new location for it */
-	if (this->CombatStyle == ECombatStyle::Attack && !bCanActuallyShoot && !bReloading && (!this->bMovingToRandomCombatLocation || DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 7.0f))
+	if (bCanFindNewPlace && !bCanActuallyShoot && !bReloading)
 	{
 		FVector NewRandomLocation;
 		bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->Target.Actor->GetActorLocation(), NewRandomLocation, FirearmRef->MaxDistance);
@@ -539,6 +593,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 			this->bMovingToRandomCombatLocation = true;
 			this->bUseControllerRotationYaw = false;
 			this->CombatRandomLocation = NewRandomLocation;
+			this->DefenderSecondsWithoutMoving = 0.0f;
 
 			if (AIController)
 			{
@@ -1323,7 +1378,7 @@ void ABot::SmoothRotatingTick(float DeltaTime)
 		bool bYawEnd = false;
 		bool bPitchEnd = false;
 
-		const float YawSpeed = 180.0f;
+		const float YawSpeed = 270.0f;
 		const float PitchSpeed = 180.0f;
 
 		if (this->SmoothRotation.YawType == EYawRotatingType::Clockwise)
@@ -1603,6 +1658,16 @@ void ABot::UpdateNameColor()
 	}
 }
 
+void ABot::StopMovementAfterRound()
+{
+	this->StopMovement();
+	this->CombatAction = ECombatAction::IDLE;
+	
+	this->Target.Actor = nullptr;
+	this->Target.Bot = nullptr;
+	this->Target.TargetType = ETargetType::None;
+}
+
 void ABot::StopMovement()
 {
 	auto* AiController = this->GetAIController();
@@ -1614,11 +1679,6 @@ void ABot::StopMovement()
 
 	this->bMovingToRandomCombatLocation = false;
 	this->bMovingToRandomLocation = false;
-	this->CombatAction = ECombatAction::IDLE;
-	
-	this->Target.Actor = nullptr;
-	this->Target.Bot = nullptr;
-	this->Target.TargetType = ETargetType::None;
 }
 
 bool ABot::CanExplodeBarrel(AExplodingBarrel* Barrel)

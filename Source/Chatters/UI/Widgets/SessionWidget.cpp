@@ -74,6 +74,32 @@ void USessionWidget::PlayNewRoundAnimation(int32 RoundNumber)
 	this->PlayAnimation(this->NewRoundAnimationRef, 0.0f, 1);
 }
 
+void USessionWidget::PlayWinnerAnimation(FString BotName, FLinearColor BotTeamColor)
+{
+	UCanvasPanel* WinnerWrapper = Cast<UCanvasPanel>(this->GetWidgetFromName(TEXT("Winner_Wrapper")));
+
+	if (!WinnerWrapper)
+	{
+		return;
+	}
+
+	WinnerWrapper->SetVisibility(ESlateVisibility::Visible);
+
+	this->WinnerNameText = FText::FromString(BotName);
+
+	UTextBlock* WinnerNameTextWidget = Cast<UTextBlock>(this->GetWidgetFromName(TEXT("Winner_BotName")));
+
+	if (WinnerNameTextWidget)
+	{
+		//WinnerNameTextWidget->SetColorAndOpacity(BotTeamColor);
+	}
+
+	if (this->WinnerAnimation)
+	{
+		this->PlayAnimation(this->WinnerAnimation, 0.0f, 1);
+	}
+}
+
 void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon)
 {
 	if (!this->KillFeedSubclass)

@@ -260,6 +260,15 @@ private:
 	FVector GunAnimationRotationPoint = FVector(0.0f, 0.0f, 10.094025);
 
 	bool bSmoothRotatingBeforeMoving = false;
+
+	float SecondsAimingWithoutHitting = 0.0f;
+	float MaxSecondsAimingWithoutHitting = 5.0f;
+
+	UPROPERTY(VisibleAnywhere)
+		float DefenderSecondsWithoutMoving = 0.0f;
+	/** Allow defender to move after 20s */
+	float DefenderMaxSecondsWithoutMoving = 10.0f;
+
 private:
 	FBotTarget Target;
 
@@ -321,6 +330,8 @@ public:
 
 	void UpdateNameColor();
 
+	void StopMovementAfterRound();
+	
 	void StopMovement();
 
 	/** Check for bots around */
