@@ -212,6 +212,10 @@
 		{
 			"Name": "ChaosSolverPlugin",
 			"Enabled": false
+		},
+		{
+			"Name": "Volumetrics",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [

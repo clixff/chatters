@@ -960,7 +960,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 				if (this->Target.Bot->Target.Bot != this)
 				{
 					/** Set the damager as new target */
-					this->SetNewEnemyTarget(this->Target.Bot);
+					this->SetNewEnemyTarget(ByBot);
 				}
 			}
 		}
