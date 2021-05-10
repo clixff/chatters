@@ -207,6 +207,8 @@ void ABot::FindNewEnemyTarget()
 
 void ABot::SetNewEnemyTarget(ABot* TargetBot)
 {
+	this->bSmoothRotatingBeforeMoving = false;
+
 	if (!TargetBot)
 	{
 		this->Target.TargetType = ETargetType::None;
@@ -220,6 +222,7 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 	this->Target.TargetType = ETargetType::Bot;
 	this->Target.Actor = TargetBot;
 	this->Target.Bot = TargetBot;
+
 
 	this->CombatAction = ECombatAction::IDLE;
 
@@ -319,7 +322,24 @@ void ABot::CombatTick(float DeltaTime)
 					{
 						if (!this->ShouldPlayWeaponReloadingAnimation())
 						{
-							this->MoveToTarget();
+
+							if (!this->bSmoothRotatingBeforeMoving)
+							{
+								this->AimAt(this->Target.Actor->GetActorLocation());
+								this->bSmoothRotatingBeforeMoving = true;
+							}
+							else
+							{
+								if (this->SmoothRotation.bActive)
+								{
+									this->SmoothRotatingTick(DeltaTime);
+								}
+								else
+								{
+									this->MoveToTarget();
+
+								}
+							}
 						}
 					}
 				}
@@ -541,16 +561,9 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		}
 	}
 
-	if (bMovingToRandomCombatLocation)
+	if (this->bMovingToRandomCombatLocation)
 	{
 		this->TimeSinceStartedMovingInCombat += DeltaTime;
-		//DrawDebugSphere(GetWorld(), this->CombatRandomLocation, 20.0f, 12, FColor(0, 0, 255), false, -1.0f);
-		//DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->GetActorLocation(), FColor(255, 255, 255), false, -1.0f);
-
-		//if (this->TargetTo)
-		//{
-		//	DrawDebugLine(GetWorld(), this->CombatRandomLocation, this->TargetTo->GetActorLocation(), FColor(255, 0, 0), false, -1.0f);
-		//}
 	}
 
 	this->CombatAction = ECombatAction::Shooting;
@@ -562,7 +575,6 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	{
 		this->Shoot(true);
 	}
-
 }
 
 void ABot::Shoot(bool bBulletOffset)
@@ -1311,7 +1323,7 @@ void ABot::SmoothRotatingTick(float DeltaTime)
 		bool bYawEnd = false;
 		bool bPitchEnd = false;
 
-		const float YawSpeed = 360.0f;
+		const float YawSpeed = 180.0f;
 		const float PitchSpeed = 180.0f;
 
 		if (this->SmoothRotation.YawType == EYawRotatingType::Clockwise)
