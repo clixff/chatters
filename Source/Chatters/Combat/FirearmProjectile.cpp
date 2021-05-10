@@ -18,6 +18,11 @@ AFirearmProjectile::AFirearmProjectile()
 
 }
 
+AFirearmProjectile::~AFirearmProjectile()
+{
+
+}
+
 // Called when the game starts or when spawned
 void AFirearmProjectile::BeginPlay()
 {
@@ -62,7 +67,7 @@ void AFirearmProjectile::Tick(float DeltaTime)
 		if (this->TraceLength <= 0.0f)
 		{
 			this->TraceLength = 0.0f;
-			this->Destroy();
+			this->DestroyActor();
 		}
 	}
 
@@ -110,7 +115,7 @@ void AFirearmProjectile::OnEnd()
 
 	if (!this->BulletHitResult.HitResult.bBlockingHit)
 	{
-		this->Destroy();
+		this->DestroyActor();
 	}
 
 	if (!this->BotCauser || !this->FirearmRef || (BulletHitResult.BotToDamage && !BulletHitResult.BotToDamage->bAlive))
@@ -202,5 +207,15 @@ FName AFirearmProjectile::GenerateName()
 	FString NewNameString = FString::Printf(TEXT("Firearm_Projectile_%d"), AFirearmProjectile::TotalNumberOfProjectiles);
 	AFirearmProjectile::TotalNumberOfProjectiles++;
 	return FName(*NewNameString);
+}
+
+void AFirearmProjectile::DestroyActor()
+{
+	if (this->Trace && this->Trace->IsValidLowLevel())
+	{
+		this->Trace->DestroyComponent();
+	}
+
+	this->Destroy();
 }
 

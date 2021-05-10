@@ -26,6 +26,7 @@ public:
 	// Sets default values for this actor's properties
 	AFirearmProjectile();
 
+	~AFirearmProjectile();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -89,4 +90,6 @@ public:
 	static uint32 TotalNumberOfProjectiles;
 
 	static FName GenerateName();
+
+	void DestroyActor();
 };
