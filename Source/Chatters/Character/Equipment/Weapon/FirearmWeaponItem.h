@@ -48,4 +48,5 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Particle")
 		FVector ParticleScale = FVector(1.0f);
+
 };

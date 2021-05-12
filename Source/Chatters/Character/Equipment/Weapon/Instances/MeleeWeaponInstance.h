@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "WeaponInstance.h"
+#include "../MeleeWeaponItem.h"
 #include "MeleeWeaponInstance.generated.h"
 
 /**
@@ -13,5 +14,17 @@ UCLASS()
 class CHATTERS_API UMeleeWeaponInstance : public UWeaponInstance
 {
 	GENERATED_BODY()
+public:
+	virtual void Tick(float DeltaTIme) override;
+
+	UMeleeWeaponItem* GetMeleeRef();
+
+	EMeleePhase Phase = EMeleePhase::IDLE;
+
+	void OnHit();
 	
+	UPROPERTY()
+		TArray<AActor*> BotsHit;
+
+	bool CanHit();
 };

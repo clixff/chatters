@@ -6,6 +6,13 @@
 #include "WeaponItem.h"
 #include "MeleeWeaponItem.generated.h"
 
+UENUM()
+enum class EMeleePhase : uint8
+{
+	IDLE,
+	Hit
+};
+
 /**
  * 
  */
@@ -16,4 +23,10 @@ class CHATTERS_API UMeleeWeaponItem : public UWeaponItem
 public:
 	UMeleeWeaponItem();
 	~UMeleeWeaponItem();
+
+	UPROPERTY(EditDefaultsOnly)
+		FTransform CollisionTransform;
+
+	UPROPERTY(EditDefaultsOnly)
+		float HitTimeout = 2.5f;
 };

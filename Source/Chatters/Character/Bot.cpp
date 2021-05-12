@@ -46,6 +46,11 @@ ABot::ABot()
 	this->WeaponMesh->SetupAttachment(this->GetMesh(), FName(TEXT("R_arm_4")));
 	this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 
+	this->MeleeCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("MeleeCollsion"));;
+	this->MeleeCollision->SetupAttachment(this->WeaponMesh);
+	this->MeleeCollision->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	this->MeleeCollision->OnComponentBeginOverlap.AddDynamic(this, &ABot::MeleeCollisionBeginOverlap);
+
 	this->NameWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameWidget"));
 	this->NameWidgetComponent->SetupAttachment(this->GetMesh());
 	this->NameWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
@@ -210,6 +215,8 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 	this->bSmoothRotatingBeforeMoving = false;
 	this->SecondsAimingWithoutHitting = 0.0f;
 	this->DefenderSecondsWithoutMoving = 0.0f;
+	this->bMovingToRandomLocation = false;
+	this->TimeSinceStartedMovingInCombat = 0.0f;
 
 	if (!TargetBot)
 	{
@@ -228,13 +235,19 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 
 	this->CombatAction = ECombatAction::IDLE;
 
-	if (this->Target.Bot && this->Target.Bot->CombatStyle == ECombatStyle::Defense)
+	if (this->Target.Bot)
 	{
-		this->CombatStyle = ECombatStyle::Attack;
-	}
-	else
-	{
-		this->CombatStyle = ECombatStyle::Defense;
+		EWeaponType EnemyWeaponType = this->Target.Bot->GetWeaponType();
+
+		if (this->Target.Bot->CombatStyle == ECombatStyle::Defense || EnemyWeaponType == EWeaponType::Melee)
+		{
+			this->CombatStyle = ECombatStyle::Attack;
+		}
+		else
+		{
+			this->CombatStyle = ECombatStyle::Defense;
+
+		}
 	}
 }
 
@@ -281,7 +294,7 @@ void ABot::CombatTick(float DeltaTime)
 
 				EWeaponType WeaponType = this->WeaponInstance->WeaponRef->Type;
 
-				float MaxDist = 100.0f;
+				float MaxDist = 150.0f;
 
 				if (WeaponType == EWeaponType::Firearm)
 				{
@@ -294,11 +307,21 @@ void ABot::CombatTick(float DeltaTime)
 
 				this->bShouldApplyGunAnimation = (TargetDist <= MaxDist + 100.0f);
 
+				if (WeaponType == EWeaponType::Melee)
+				{
+					this->bShouldApplyGunAnimation = (TargetDist <= 400.0f);
+					MaxDist = 400.0f;
+				}
+
 				if (TargetDist <= MaxDist)
 				{
 					if (WeaponType == EWeaponType::Firearm)
 					{
 						this->FirearmCombatTick(DeltaTime, TargetDist);
+					}
+					else if (WeaponType == EWeaponType::Melee)
+					{
+						this->MeleeCombatTick(DeltaTime, TargetDist);
 					}
 				}
 				else
@@ -306,6 +329,11 @@ void ABot::CombatTick(float DeltaTime)
 					if (CharacterMovementComponent)
 					{
 						CharacterMovementComponent->MaxWalkSpeed = 600.0f;
+
+						if (WeaponType == EWeaponType::Melee && this->bShouldApplyGunAnimation)
+						{
+							CharacterMovementComponent->MaxWalkSpeed = this->WeaponInstance->WeaponRef->MaxWalkSpeed;
+						}
 					}
 
 					this->bUseControllerRotationYaw = true;
@@ -632,6 +660,92 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	}
 }
 
+void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
+{
+	EWeaponType WeaponType = EWeaponType::Melee;
+
+	auto* MeleeInstance = Cast<UMeleeWeaponInstance>(this->WeaponInstance);
+
+	if (!MeleeInstance)
+	{
+		return;
+	}
+
+	FVector AimTargetLocation = this->Target.Bot->GetMesh()->GetSocketTransform(TEXT("spine_5")).GetLocation();
+
+	this->AimAt(AimTargetLocation);
+	this->SmoothRotatingTick(DeltaTime);
+
+	auto* AIController = this->GetAIController();
+
+	const float MaxDist = 120.0f;
+
+	if (this->bMovingToRandomCombatLocation)
+	{
+		this->TimeSinceStartedMovingInCombat += DeltaTime;
+
+		if (TargetDist < MaxDist)
+		{
+			if (AIController)
+			{
+				AIController->StopMovement();
+				this->bMovingToRandomCombatLocation = false;
+			}
+		}
+	}
+
+
+	if ((!this->bMovingToRandomCombatLocation || this->TimeSinceStartedMovingInCombat >= 1.0f) && (TargetDist > MaxDist || TargetDist < 0.0f))
+	{
+		
+		if (AIController)
+		{
+			FVector EndLocation = FRotator(0.0f, this->GetActorRotation().Yaw * -1.0f, 0.0f).RotateVector(FVector(MaxDist + 50.0f, 0.0f, 0.0f));
+			EndLocation += this->Target.Actor->GetActorLocation();
+			AIController->MoveToLocation(EndLocation);
+			this->bMovingToRandomCombatLocation = true;
+			this->TimeSinceStartedMovingInCombat = 0.0f;
+			this->bUseControllerRotationYaw = false;
+		}
+
+		auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
+
+		if (CharacterMovementComponent)
+		{
+			CharacterMovementComponent->MaxWalkSpeed = MeleeInstance->WeaponRef->MaxWalkSpeed;
+		}
+	}
+
+
+	this->CombatAction = ECombatAction::Shooting;
+
+	if (!MeleeInstance->CanHit())
+	{
+		return;
+	}
+
+	FVector StartTraceLocation = this->GetMesh()->GetSocketTransform(TEXT("spine_5"), ERelativeTransformSpace::RTS_Actor).GetLocation();
+
+	FVector EndTraceLocation = StartTraceLocation + this->GetGunRotation().RotateVector(FVector(MaxDist, 0.0f, 0.0f));
+
+	StartTraceLocation += this->GetActorLocation();
+	EndTraceLocation += this->GetActorLocation();
+
+	FHitResult HitResult;
+
+	FCollisionQueryParams TraceParams;
+	TraceParams.AddIgnoredActor(this);
+
+	GetWorld()->LineTraceSingleByChannel(HitResult, StartTraceLocation, EndTraceLocation, ECollisionChannel::ECC_GameTraceChannel3, TraceParams);
+
+	DrawDebugLine(GetWorld(), StartTraceLocation, EndTraceLocation, FColor(255, 0, 0), false, -1.0f, 0, 1.0f);
+
+	if (HitResult.bBlockingHit && HitResult.GetActor() == this->Target.Actor)
+	{
+		this->MeleeHit();
+	}
+}
+
 void ABot::Shoot(bool bBulletOffset)
 {
 	if (this->WeaponInstance && this->WeaponInstance->WeaponRef)
@@ -691,6 +805,33 @@ void ABot::Shoot(bool bBulletOffset)
 				UGameplayStatics::SpawnEmitterAtLocation(World, FirearmRef->ShotParticle, ParticleTransform, true);
 			}
 		}
+	}
+}
+
+void ABot::MeleeHit()
+{
+	if (this->WeaponInstance)
+	{
+		auto* MeleeInstance = Cast<UMeleeWeaponInstance>(this->WeaponInstance);
+
+		if (!MeleeInstance)
+		{
+			return;
+		}
+
+		auto* MeleeRef = MeleeInstance->GetMeleeRef();
+
+		if (!MeleeRef)
+		{
+			return;
+		}
+
+		if (!MeleeInstance->CanHit())
+		{
+			return;
+		}
+
+		MeleeInstance->OnHit();
 	}
 }
 
@@ -782,6 +923,56 @@ UCharacterMovementComponent* ABot::GetCharacterMovementComponent()
 	return Cast<UCharacterMovementComponent>(this->GetMovementComponent());
 }
 
+
+void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+ 	if (OtherActor == this)
+	{
+		return;
+	}
+
+	auto* MeleeInstance = Cast<UMeleeWeaponInstance>(this->WeaponInstance);
+
+	if (!MeleeInstance)
+	{
+		return;
+	}
+
+
+	if (!MeleeInstance->bShouldPlayHitAnimation)
+	{
+		return;
+	}
+
+	auto* BotHit = Cast<ABot>(OtherActor);
+
+	if (!BotHit)
+	{
+		return;
+	}
+
+	//if (BotHit->GetMesh() != OtherComp || BotHit->HeadMesh != OtherComp)
+	//{
+	//	return;
+	//}
+
+	if (MeleeInstance->BotsHit.Contains(BotHit))
+	{
+		return;
+	}
+
+	MeleeInstance->BotsHit.Add(BotHit);
+
+	int32 RandNumber = FMath::RandRange(0, 9);
+	bool bCritical = false;
+
+	if (RandNumber == 0)
+	{
+		bCritical = true;
+	}
+
+	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, FVector(), FVector(), NAME_None, bCritical);
+}
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
 {
@@ -928,6 +1119,19 @@ void ABot::SetEquipment()
 							if (FirearmRef)
 							{
 								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation - this->GunAnimationRotationPoint;
+							}
+						}
+						else if (WeaponType == EWeaponType::Melee)
+						{
+							auto* MeleeRef = Cast<UMeleeWeaponItem>(RandomEquipment.Weapon);
+							if (MeleeRef)
+							{
+								this->GunSocketRelativeLocation = FVector(0.0f, 0.0f, 50.0f) - this->GunAnimationRotationPoint;
+
+								if (this->MeleeCollision)
+								{
+									this->MeleeCollision->SetRelativeTransform(MeleeRef->CollisionTransform);
+								}
 							}
 						}
 					}
@@ -1108,6 +1312,18 @@ void ABot::SayRandomMessage()
 	Message = FString(RawMessage);
 
 	this->Say(Message);
+}
+
+EWeaponType ABot::GetWeaponType()
+{
+	auto* WeaponRef = this->GetWeaponRef();
+
+	if (!WeaponRef)
+	{
+		return EWeaponType::None;
+	}
+
+	return WeaponRef->Type;
 }
 
 void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit)

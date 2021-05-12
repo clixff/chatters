@@ -18,6 +18,7 @@
 #include "../Props/ExplodingBarrel.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "../Misc/Misc.h"
+#include "Components/BoxComponent.h"
 #include "Bot.generated.h"
 
 
@@ -169,6 +170,8 @@ public:
 	UBotNameWidget* GetNameWidget();
 
 	void SayRandomMessage();
+
+	EWeaponType GetWeaponType();
 private:
 	bool bReady = false;
 
@@ -210,7 +213,11 @@ private:
 
 	void FirearmCombatTick(float DeltaTime, float TargetDist);
 
+	void MeleeCombatTick(float DeltaTime, float TargetDist);
+
 	void Shoot(bool bBulletOffset = true);
+
+	void MeleeHit();
 
 	void AimAt(FVector Location);
 
@@ -269,6 +276,10 @@ private:
 	/** Allow defender to move after 20s */
 	float DefenderMaxSecondsWithoutMoving = 10.0f;
 
+	UFUNCTION(BlueprintCallable)
+		void MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+
 private:
 	FBotTarget Target;
 
@@ -291,6 +302,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		UStaticMeshComponent* WeaponMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		UBoxComponent* MeleeCollision = nullptr;
 
 	void OnDead(ABot* Killer = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None);
 
