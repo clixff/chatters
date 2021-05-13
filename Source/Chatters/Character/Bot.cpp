@@ -49,7 +49,7 @@ ABot::ABot()
 	this->MeleeCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("MeleeCollsion"));;
 	this->MeleeCollision->SetupAttachment(this->WeaponMesh);
 	this->MeleeCollision->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-	this->MeleeCollision->OnComponentBeginOverlap.AddDynamic(this, &ABot::MeleeCollisionBeginOverlap);
+	//this->MeleeCollision->OnComponentBeginOverlap.AddDynamic(this, &ABot::MeleeCollisionBeginOverlap);
 
 	this->NameWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NameWidget"));
 	this->NameWidgetComponent->SetupAttachment(this->GetMesh());
@@ -671,6 +671,8 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 		return;
 	}
 
+	auto* MeleeRef = MeleeInstance->GetMeleeRef();
+
 	FVector AimTargetLocation = this->Target.Bot->GetMesh()->GetSocketTransform(TEXT("spine_5")).GetLocation();
 
 	this->AimAt(AimTargetLocation);
@@ -678,18 +680,18 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 
 	auto* AIController = this->GetAIController();
 
-	const float MaxDist = 120.0f;
+	const float MaxDist = MeleeRef->MaxDistance;
 
 	if (this->bMovingToRandomCombatLocation)
 	{
 		this->TimeSinceStartedMovingInCombat += DeltaTime;
 
-		if (TargetDist < MaxDist)
+		if (TargetDist <= MaxDist)
 		{
 			if (AIController)
 			{
-				AIController->StopMovement();
-				this->bMovingToRandomCombatLocation = false;
+				//AIController->StopMovement();
+				//this->bMovingToRandomCombatLocation = false;
 			}
 		}
 	}
@@ -700,7 +702,7 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 		
 		if (AIController)
 		{
-			FVector EndLocation = FRotator(0.0f, this->GetActorRotation().Yaw * -1.0f, 0.0f).RotateVector(FVector(MaxDist + 50.0f, 0.0f, 0.0f));
+			FVector EndLocation = FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).RotateVector(FVector(MaxDist, 0.0f, 0.0f));
 			EndLocation += this->Target.Actor->GetActorLocation();
 			AIController->MoveToLocation(EndLocation);
 			this->bMovingToRandomCombatLocation = true;
@@ -719,6 +721,8 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 
 	this->CombatAction = ECombatAction::Shooting;
 
+	//UE_LOG(LogTemp, Display, TEXT("[MeleeCombatTick] Can melee hit: %d. bShouldPlayHitAnimation: %d"),  MeleeInstance->CanHit(), MeleeInstance->bShouldPlayHitAnimation);
+
 	if (!MeleeInstance->CanHit())
 	{
 		return;
@@ -726,7 +730,7 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 
 	FVector StartTraceLocation = this->GetMesh()->GetSocketTransform(TEXT("spine_5"), ERelativeTransformSpace::RTS_Actor).GetLocation();
 
-	FVector EndTraceLocation = StartTraceLocation + this->GetGunRotation().RotateVector(FVector(MaxDist, 0.0f, 0.0f));
+	FVector EndTraceLocation = StartTraceLocation + this->GetGunRotation().RotateVector(FVector(MaxDist + 25.0f, 0.0f, 0.0f));
 
 	StartTraceLocation += this->GetActorLocation();
 	EndTraceLocation += this->GetActorLocation();
@@ -969,6 +973,35 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 	if (RandNumber == 0)
 	{
 		bCritical = true;
+	}
+
+
+	FTransform CollisionTransform = OverlappedComponent->GetComponentTransform();
+	FVector CollisionSize = (CollisionTransform.GetScale3D() * 32.0f);
+
+	if (this->MeleeCollision)
+	{
+		CollisionSize = this->MeleeCollision->GetScaledBoxExtent();
+	}
+
+	TArray<AActor*> TraceActorsToIgnore;
+	TraceActorsToIgnore.Add(this);
+	FHitResult HitResult;
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesCollision;
+
+	ObjectTypesCollision.Add(UEngineTypes::ConvertToObjectType(this->GetMesh()->GetCollisionObjectType()));
+
+	UKismetSystemLibrary::BoxTraceSingleForObjects(GetWorld(), CollisionTransform.GetLocation(), OtherActor->GetActorLocation(), CollisionSize, FRotator(CollisionTransform.GetRotation()), ObjectTypesCollision, true, TraceActorsToIgnore, EDrawDebugTrace::Type::ForDuration, HitResult, true, FLinearColor::Red, FLinearColor::Green, 3.0f);
+
+	if (BotHit->BloodParticle && HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
+	{
+		FTransform BloodParticleTransform;
+		BloodParticleTransform.SetLocation(HitResult.ImpactPoint);
+		FRotator TestRot = UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), HitResult.ImpactPoint);
+		TestRot.Pitch += 90.0f;
+		BloodParticleTransform.SetRotation(FQuat(TestRot));
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BotHit->BloodParticle, BloodParticleTransform, true);
 	}
 
 	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, FVector(), FVector(), NAME_None, bCritical);

@@ -16,6 +16,7 @@ void UMeleeWeaponInstance::Tick(float DeltaTime)
 			this->TimeoutValue = 0.0f;
 			this->Phase = EMeleePhase::IDLE;
 			this->bShouldPlayHitAnimation = false;
+			
 		}
 	}
 }

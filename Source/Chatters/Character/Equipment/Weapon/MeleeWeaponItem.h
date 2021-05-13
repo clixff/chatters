@@ -29,4 +29,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		float HitTimeout = 2.5f;
+
+	UPROPERTY(EditDefaultsOnly)
+		float MaxDistance = 150.0f;
 };
