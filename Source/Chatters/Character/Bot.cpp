@@ -742,7 +742,7 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, StartTraceLocation, EndTraceLocation, ECollisionChannel::ECC_GameTraceChannel3, TraceParams);
 
-	DrawDebugLine(GetWorld(), StartTraceLocation, EndTraceLocation, FColor(255, 0, 0), false, -1.0f, 0, 1.0f);
+	//DrawDebugLine(GetWorld(), StartTraceLocation, EndTraceLocation, FColor(255, 0, 0), false, -1.0f, 0, 1.0f);
 
 	if (HitResult.bBlockingHit && HitResult.GetActor() == this->Target.Actor)
 	{
@@ -836,6 +836,11 @@ void ABot::MeleeHit()
 		}
 
 		MeleeInstance->OnHit();
+
+		if (MeleeRef->HitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), MeleeRef->HitSound, this->WeaponMesh->GetComponentLocation(), FMath::RandRange(0.7f, 0.85f));
+		}
 	}
 }
 
@@ -948,6 +953,8 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 		return;
 	}
 
+	auto* MeleeRef = MeleeInstance->GetMeleeRef();
+
 	auto* BotHit = Cast<ABot>(OtherActor);
 
 	if (!BotHit)
@@ -992,7 +999,7 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	ObjectTypesCollision.Add(UEngineTypes::ConvertToObjectType(this->GetMesh()->GetCollisionObjectType()));
 
-	UKismetSystemLibrary::BoxTraceSingleForObjects(GetWorld(), CollisionTransform.GetLocation(), OtherActor->GetActorLocation(), CollisionSize, FRotator(CollisionTransform.GetRotation()), ObjectTypesCollision, true, TraceActorsToIgnore, EDrawDebugTrace::Type::ForDuration, HitResult, true, FLinearColor::Red, FLinearColor::Green, 3.0f);
+	UKismetSystemLibrary::BoxTraceSingleForObjects(GetWorld(), CollisionTransform.GetLocation(), OtherActor->GetActorLocation(), CollisionSize, FRotator(CollisionTransform.GetRotation()), ObjectTypesCollision, true, TraceActorsToIgnore, EDrawDebugTrace::Type::None, HitResult, true, FLinearColor::Red, FLinearColor::Green, 3.0f);
 
 	if (BotHit->BloodParticle && HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
 	{
@@ -1005,6 +1012,11 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 	}
 
 	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, FVector(), FVector(), NAME_None, bCritical);
+
+	if (MeleeInstance->BotsHit.Num() == 1 && MeleeRef->DamageSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), MeleeRef->DamageSound, this->WeaponMesh->GetComponentLocation(), FMath::RandRange(0.7f, 0.85f));
+	}
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)

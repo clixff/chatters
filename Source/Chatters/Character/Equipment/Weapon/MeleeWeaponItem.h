@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "WeaponItem.h"
+#include "Sound/SoundBase.h"
 #include "MeleeWeaponItem.generated.h"
 
 UENUM()
@@ -32,4 +33,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		float MaxDistance = 150.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		USoundBase* HitSound = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		USoundBase* DamageSound = nullptr;
 };
