@@ -1031,8 +1031,8 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), MeleeRef->DamageSound, this->WeaponMesh->GetComponentLocation(), FMath::RandRange(0.7f, 0.85f));
 	}
 
-	MeleeInstance->bShouldPlayHitAnimation = false;
-	MeleeInstance->HitAnimationTime = 0.0f;
+	//MeleeInstance->bShouldPlayHitAnimation = false;
+	//MeleeInstance->HitAnimationTime = 0.0f;
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
@@ -1196,6 +1196,18 @@ void ABot::SetEquipment()
 							}
 						}
 					}
+				}
+			}
+
+			if (RandomEquipment.Costume && this->GetMesh() && RandomEquipment.Costume->SkeletalMesh)
+			{
+				this->GetMesh()->SetSkeletalMeshWithoutResettingAnimation(RandomEquipment.Costume->SkeletalMesh);
+
+				TArray<UMaterialInterface*> Materials = RandomEquipment.Costume->GetRandomMaterials();
+
+				for (int32 i = 0; i < Materials.Num(); i++)
+				{
+					this->GetMesh()->SetMaterial(i, Materials[i]);
 				}
 			}
 		}

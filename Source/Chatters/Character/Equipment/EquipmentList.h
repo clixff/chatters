@@ -8,6 +8,7 @@
 #include "HatItem.h"
 #include "BeardStyle.h"
 #include "Weapon/WeaponItem.h"
+#include "CostumeItem.h"
 #include "EquipmentList.generated.h"
 
 USTRUCT(BlueprintType)
@@ -19,6 +20,7 @@ public:
 	UBeardStyle* BeardStyle = nullptr;
 	UMaterialInterface* FaceMaterial = nullptr;
 	UWeaponItem* Weapon = nullptr;
+	UCostumeItem* Costume = nullptr;
 };
 
 /**
@@ -42,6 +44,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		TArray<UWeaponItem*> Weapons;
+
+	UPROPERTY(EditDefaultsOnly)
+		TArray<UCostumeItem*> Costumes;
 
 	FRandomEquipment GetRandomEquipment();
 };

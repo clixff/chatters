@@ -69,3 +69,15 @@ UObject* UFirearmWeaponFactory::FactoryCreateNew(UClass* InClass, UObject* InPar
 {
 	return NewObject<UFirearmWeaponItem>(InParent, InClass, InName, Flags);
 }
+
+UCostumeItemFactory::UCostumeItemFactory(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	this->SupportedClass = UCostumeItem::StaticClass();
+}
+
+
+UObject* UCostumeItemFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
+{
+	return NewObject<UCostumeItem>(InParent, InClass, InName, Flags);
+}

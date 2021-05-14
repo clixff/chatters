@@ -53,5 +53,12 @@ FRandomEquipment UEquipmentList::GetRandomEquipment()
 		Equipment.Weapon = this->Weapons[RandomIndex];
 	}
 
+	int32 NumberOfCostumes = this->Costumes.Num();
+	if (NumberOfCostumes)
+	{
+		RandomIndex = FMath::RandRange(0, NumberOfCostumes - 1);
+		Equipment.Costume = this->Costumes[RandomIndex];
+	}
+
 	return Equipment;
 }

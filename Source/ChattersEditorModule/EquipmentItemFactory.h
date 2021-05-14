@@ -13,6 +13,7 @@
 #include "../Chatters/Character/Equipment/BeardStyle.h"
 #include "../Chatters/Character/Equipment/Weapon/MeleeWeaponItem.h"
 #include "../Chatters/Character/Equipment/Weapon/FirearmWeaponItem.h"
+#include "../Chatters/Character/Equipment/CostumeItem.h"
 #include "EquipmentItemFactory.generated.h"
 
 /**
@@ -116,4 +117,23 @@ public:
 	virtual FText GetName() const override { return NSLOCTEXT("ChattersEditorModule", "EquipmentFirearmWeapon", "Firearm Weapon Asset"); }
 	virtual FColor GetTypeColor() const override { return FColor(212, 76, 133); }
 	virtual UClass* GetSupportedClass() const override { return UFirearmWeaponItem::StaticClass(); };
+};
+
+UCLASS()
+class CHATTERSEDITORMODULE_API UCostumeItemFactory : public UEquipmentItemFactory
+{
+	GENERATED_BODY()
+public:
+
+	UCostumeItemFactory(const FObjectInitializer& ObjectInitializer);
+
+	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;
+};
+
+class CHATTERSEDITORMODULE_API FCostumeItemAssetActions : public FEquipmentItemAssetActions
+{
+public:
+	virtual FText GetName() const override { return NSLOCTEXT("ChattersEditorModule", "EquipmentCostumeItem", "Costume Item Asset"); }
+	virtual FColor GetTypeColor() const override { return FColor(126, 121, 69); }
+	virtual UClass* GetSupportedClass() const override { return UCostumeItem::StaticClass(); };
 };
