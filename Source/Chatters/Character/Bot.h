@@ -172,6 +172,8 @@ public:
 	void SayRandomMessage();
 
 	EWeaponType GetWeaponType();
+
+	bool IsEnemy(ABot* BotToCheck);
 private:
 	bool bReady = false;
 

@@ -697,7 +697,7 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 	}
 
 
-	if ((!this->bMovingToRandomCombatLocation || this->TimeSinceStartedMovingInCombat >= 1.0f) && (TargetDist > MaxDist || TargetDist < 0.0f))
+	if ((!this->bMovingToRandomCombatLocation || this->TimeSinceStartedMovingInCombat >= 1.0f) && !MeleeInstance->bShouldPlayHitAnimation)
 	{
 		
 		if (AIController)
@@ -744,9 +744,22 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 
 	//DrawDebugLine(GetWorld(), StartTraceLocation, EndTraceLocation, FColor(255, 0, 0), false, -1.0f, 0, 1.0f);
 
-	if (HitResult.bBlockingHit && HitResult.GetActor() == this->Target.Actor)
+	float BotSpeed = this->GetSpeed();
+
+	if (HitResult.bBlockingHit && this->IsEnemy(Cast<ABot>(HitResult.GetActor())))
 	{
-		this->MeleeHit();
+		if (BotSpeed < 5.0f)
+		{
+			this->MeleeHit();
+		}
+		else
+		{
+			this->bMovingToRandomCombatLocation = false;
+			if (AIController)
+			{
+				AIController->StopMovement();
+			}
+		}
 	}
 }
 
@@ -1017,6 +1030,9 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), MeleeRef->DamageSound, this->WeaponMesh->GetComponentLocation(), FMath::RandRange(0.7f, 0.85f));
 	}
+
+	MeleeInstance->bShouldPlayHitAnimation = false;
+	MeleeInstance->HitAnimationTime = 0.0f;
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
@@ -1369,6 +1385,28 @@ EWeaponType ABot::GetWeaponType()
 	}
 
 	return WeaponRef->Type;
+}
+
+bool ABot::IsEnemy(ABot* BotToCheck)
+{
+	if (!BotToCheck)
+	{
+		return false;
+	}
+
+	if (BotToCheck == this)
+	{
+		return false;
+	}
+
+	if (this->Team == EBotTeam::White)
+	{
+		return true;
+	}
+	else
+	{
+		return this->Team != BotToCheck->Team;
+	}
 }
 
 void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit)
