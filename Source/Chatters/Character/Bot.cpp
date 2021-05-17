@@ -549,7 +549,16 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		}
 	}
 
-	if (HitActor != this->Target.Actor)
+	bool bObstacleBetweenBots = false;
+
+	/** Check if there's an obstacle between bots */
+	if (bCanActuallyShoot)
+	{
+		bObstacleBetweenBots = !this->TraceToTargetResult();
+		bCanActuallyShoot = !bObstacleBetweenBots;
+	}
+
+	if (HitActor != this->Target.Actor || bObstacleBetweenBots)
 	{
 		this->SecondsAimingWithoutHitting += DeltaTime;
 	}
@@ -1033,6 +1042,42 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	//MeleeInstance->bShouldPlayHitAnimation = false;
 	//MeleeInstance->HitAnimationTime = 0.0f;
+}
+
+bool ABot::TraceToTargetResult()
+{
+	if (!this->Target.Actor)
+	{
+		return false;
+	}
+
+
+	FVector StartLocation = this->GetMesh()->GetSocketLocation(TEXT("spine_5"));
+	FVector EndLocation = this->Target.Actor->GetActorLocation();
+
+	if (this->Target.Bot)
+	{
+		EndLocation = this->Target.Bot->GetMesh()->GetSocketLocation(TEXT("spine_5"));
+	}
+
+	FCollisionQueryParams TraceParams;
+	TraceParams.AddIgnoredActor(this);
+
+	FHitResult HitResult;
+	this->GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3, TraceParams);
+
+	auto* HitActor = HitResult.GetActor();
+
+	if (HitResult.bBlockingHit && HitActor == this->Target.Actor)
+	{
+		return true;
+	}
+
+	//FVector DebugEndLocation = HitResult.bBlockingHit ? HitResult.ImpactPoint : HitResult.TraceEnd;
+
+	//DrawDebugLine(GetWorld(), StartLocation, DebugEndLocation, FColor::Red, false, -1.0f);
+	
+	return false;
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
