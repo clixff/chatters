@@ -191,7 +191,7 @@ void ABot::FindNewEnemyTarget()
 		{
 			ABot* Bot = AliveBots[i];
 
-			if (!Bot || Bot->ID == this->ID || !Bot->bAlive || (this->Team != EBotTeam::White && Bot->Team == this->Team))
+			if (!Bot || Bot->ID == this->ID || !Bot->bAlive || !this->IsEnemy(Bot))
 			{
 				continue;
 			}
@@ -1283,7 +1283,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	else
 	{
 		/** If damage by enemy */
-		if ((this->Team == EBotTeam::White || this->Team != ByBot->Team) && ByBot != this && ByBot->bAlive)
+		if (this->IsEnemy(ByBot) && ByBot->bAlive)
 		{
 			/** If bot is not target already */
 			if (!this->Target.Bot || this->Target.Bot != ByBot)
@@ -1479,7 +1479,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		CharacterMovementComponent->bUseRVOAvoidance = false;
 	}
 
-	if (Killer && Killer != this && (this->Team == EBotTeam::White || this->Team != Killer->Team))
+	if (Killer && this->IsEnemy(Killer))
 	{
 		Killer->Kills++;
 		auto* NameWidgetRef = Killer->GetNameWidget();

@@ -89,6 +89,11 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	this->AvailableBotSpawnPoints = this->BotSpawnPoints;
 	this->AvailableExplodingBarrels = this->ExplodingBarrels;
 
+	if (this->AvailableBotSpawnPoints.Num() < this->MaxPlayers)
+	{
+		this->MaxPlayers = this->AvailableBotSpawnPoints.Num();
+	}
+
 	auto* EquipmentList = this->EquipmentListsForLevels.Find(LevelName);
 
 	if (EquipmentList && *EquipmentList)
@@ -428,7 +433,7 @@ FTransform UChattersGameSession::GetAvailableSpawnPoint()
 	if (SpawnPoint)
 	{
 		SpawnPointTransform.SetLocation(SpawnPoint->GetActorLocation());
-		SpawnPointTransform.SetRotation(FQuat(SpawnPoint->GetActorRotation()));
+		SpawnPointTransform.SetRotation(FQuat(SpawnPoint->GetRotation()));
 		this->AvailableBotSpawnPoints.RemoveAt(RandNumber, 1, true);
 	}
 

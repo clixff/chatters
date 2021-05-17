@@ -47,6 +47,11 @@ void APlayerPawn::Tick(float DeltaTime)
 		this->UpdateBotNicknameWidgetsSize();
 	}
 
+	if (this->bAttachedToBot)
+	{
+		this->SetActorRotation(FRotator(0.0f));
+	}
+
 }
 
 void APlayerPawn::AttachToBot(ABot* Bot)
@@ -61,7 +66,7 @@ void APlayerPawn::AttachToBot(ABot* Bot)
 		this->BotToAttach = Bot;
 		this->BotToAttach->bPlayerAttached = true;
 
-		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, true);
+		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, true);
 		this->AttachToActor(this->BotToAttach, TransformRules);
 
 		if (!this->bAttachedToBot)
