@@ -1055,7 +1055,7 @@ bool ABot::TraceToTargetResult()
 	FVector StartLocation = this->GetMesh()->GetSocketLocation(TEXT("spine_5"));
 	FVector EndLocation = this->Target.Actor->GetActorLocation();
 
-	if (this->Target.Bot)
+	if (this->Target.Bot && this->Target.TargetType == ETargetType::Bot)
 	{
 		EndLocation = this->Target.Bot->GetMesh()->GetSocketLocation(TEXT("spine_5"));
 	}
@@ -1075,7 +1075,7 @@ bool ABot::TraceToTargetResult()
 
 	//FVector DebugEndLocation = HitResult.bBlockingHit ? HitResult.ImpactPoint : HitResult.TraceEnd;
 
-	//DrawDebugLine(GetWorld(), StartLocation, DebugEndLocation, FColor::Red, false, -1.0f);
+	//DrawDebugLine(GetWorld(), StartLocation, DebugEndLocation, FColor::Red, false, 0.5f);
 	
 	return false;
 }

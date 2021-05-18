@@ -74,4 +74,10 @@ private:
 	void SetSpectatorMenuVisibiliy(bool bVisible);
 
 	UChattersGameSession* GetGameSession();
+
+	FVector GetAttachedCameraWorldLocation(float Distance, FRotator CameraRotation);
+
+	bool IsBotVisibleFromCamera(float Distance, FRotator CameraRotation);
+
+	FRotator FindNewAcceptableCameraRotation(FRotator StartRotation);
 };

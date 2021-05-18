@@ -5,6 +5,7 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "../Core/ChattersGameInstance.h"
 #include "../Misc/MathHelper.h"
+#include "DrawDebugHelpers.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PlayerPawnController.h"
 
@@ -95,6 +96,11 @@ void APlayerPawn::AttachToBot(ABot* Bot)
 				this->CameraBoom->SetRelativeRotation(CameraBoomRotation);
 			}
 		}
+
+		/** Check is bot visible from camera */
+
+		FRotator RotationToSet = this->FindNewAcceptableCameraRotation(this->CameraBoom->GetRelativeRotation());
+		this->CameraBoom->SetRelativeRotation(RotationToSet);
 
 		this->bAttachedToBot = true;
 		this->SetSpectatorMenuVisibiliy(true);
@@ -234,4 +240,88 @@ UChattersGameSession* APlayerPawn::GetGameSession()
 	}
 
 	return this->GameSession;
+}
+
+FVector APlayerPawn::GetAttachedCameraWorldLocation(float Distance, FRotator CameraRotation)
+{
+	CameraRotation.Pitch *= -1.0f;
+	CameraRotation.Yaw += 180.0f;
+	FVector CameraVector = CameraRotation.Vector() * Distance;
+	
+	FVector BotLocation = FVector(0.0f);
+
+	if (this->BotToAttach)
+	{
+		BotLocation = this->BotToAttach->GetActorLocation();
+	}
+
+	return BotLocation + CameraVector;
+}
+
+bool APlayerPawn::IsBotVisibleFromCamera(float Distance, FRotator CameraRotation)
+{
+	if (!this->BotToAttach)
+	{
+		return false;
+	}
+
+	FVector CameraLocation = this->GetAttachedCameraWorldLocation(Distance, CameraRotation);
+
+	FVector BotLocation = this->BotToAttach->GetActorLocation();
+	 
+	FHitResult HitResult;
+	this->GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, BotLocation, ECollisionChannel::ECC_Camera);
+
+	//FVector TraceEndLocation = HitResult.bBlockingHit ? HitResult.ImpactPoint : HitResult.TraceEnd;
+
+	//DrawDebugLine(GetWorld(), CameraLocation, TraceEndLocation, FColor::Red, false, 7.0f);
+
+	auto* HitActor = HitResult.GetActor();
+
+	if (!(HitResult.bBlockingHit && HitActor == this->BotToAttach))
+	{
+		return false;
+	}
+
+	/** Trace from bot to camera */
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this->BotToAttach);
+	this->GetWorld()->LineTraceSingleByChannel(HitResult, BotLocation, CameraLocation, ECollisionChannel::ECC_Camera, Params);
+
+	/** Return as visible if there's no collision between bot and camera */
+	return !HitResult.bBlockingHit;
+}
+
+FRotator APlayerPawn::FindNewAcceptableCameraRotation(FRotator StartRotation)
+{
+	FRotator RotationToSet = StartRotation;
+	float StartYawRotation = FMath::Fmod(RotationToSet.Yaw + 360.0f, 360.0f);
+
+	const float CheckVisibilityAngleAddition = 360.0f / 20.0f;
+	const int32 MaxChecks = int32(360.0f / CheckVisibilityAngleAddition);
+
+	float Distance = this->CameraBoom->TargetArmLength;
+
+	for (int32 i = 0; i < MaxChecks; i++)
+	{
+		float YawRotation = StartYawRotation + (CheckVisibilityAngleAddition * i);
+		YawRotation = FMath::Fmod(YawRotation + 360.0f, 360.0f);
+
+		FRotator RotationToCheck = StartRotation;
+		RotationToCheck.Yaw = YawRotation;
+
+		/** Check is bot visible from camera */
+		bool bVisible = this->IsBotVisibleFromCamera(Distance, RotationToCheck);
+
+		UE_LOG(LogTemp, Display, TEXT("[APlayerPawn] Checking camera yaw %f. Bot visible: %d. # %d"), YawRotation, bVisible, i);
+
+		if (bVisible)
+		{
+			RotationToSet = RotationToCheck;
+			break;
+		}
+	}
+
+	return RotationToSet;
 }
