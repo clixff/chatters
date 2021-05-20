@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc.generated.h"
 
 enum class EAttachCameraToBotType : uint8
 {
@@ -35,3 +36,43 @@ enum class EBotTeam : uint8
 	Red
 };
 
+USTRUCT(BlueprintType)
+struct FManualTimer
+{
+	GENERATED_BODY()
+public:
+	FManualTimer()
+	{
+
+	}
+
+	FManualTimer(float MaxSeconds)
+	{
+		this->Max = MaxSeconds;
+	}
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		float Current = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float Max = 10.0f;
+
+	void Add(float DeltaTime)
+	{
+		this->Current += DeltaTime;
+		if (this->Current > this->Max)
+		{
+			this->Current = this->Max;
+		}
+	}
+
+	bool IsEnded()
+	{
+		return this->Current >= this->Max;
+	}
+
+	void Reset()
+	{
+		this->Current = 0.0f;
+	}
+};

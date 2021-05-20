@@ -281,7 +281,9 @@ private:
 	UFUNCTION(BlueprintCallable)
 		void MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	bool TraceToTargetResult();
+	bool TraceToTargetResult(bool bIgnoreBots = false);
+
+	FManualTimer CombatTickTimeout = FManualTimer(0.25f);
 private:
 	FBotTarget Target;
 

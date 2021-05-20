@@ -17,6 +17,12 @@
 #include "../Combat/FirearmProjectile.h"
 #include "../Core/ChattersGameSession.h"
 
+DECLARE_STATS_GROUP(TEXT("BOTS_Game"), STATGROUP_BOTS, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("CombatTick Time"), STAT_StatsCombatTick, STATGROUP_BOTS);
+DECLARE_CYCLE_STAT(TEXT("FirearmCombatTick Time"), STAT_StatsFirearmCombatTick, STATGROUP_BOTS);
+DECLARE_CYCLE_STAT(TEXT("MeleeCombatTick Time"), STAT_StatsMeleeCombatTick, STATGROUP_BOTS);
+
+
 const float ABot::MinAimRotationValue = 0.0f;
 const float ABot::MaxAimRotationValue = 100.0f;
 
@@ -94,7 +100,13 @@ void ABot::Tick(float DeltaTime)
 			}
 			else
 			{
-				this->CombatTick(DeltaTime);
+				//this->CombatTickTimeout.Add(DeltaTime);
+
+				//if (this->CombatTickTimeout.IsEnded())
+				//{
+					this->CombatTick(DeltaTime);
+				//	this->CombatTickTimeout.Reset();
+				//}
 			}
 
 		}
@@ -270,13 +282,15 @@ void ABot::MoveToTarget()
 	this->CombatAction = ECombatAction::Moving;
 	FVector TargetLocation = this->Target.Actor->GetActorLocation();
 
-	AIController->MoveToLocation(TargetLocation);
+	AIController->MoveToNewLocation(TargetLocation);
 
 	this->AimingAngle = 50.0f;
 }
 
 void ABot::CombatTick(float DeltaTime)
 {
+	SCOPE_CYCLE_COUNTER(STAT_StatsCombatTick);
+
 	if (this->WeaponInstance->WeaponRef)
 	{
 		if (this->Target.Actor && this->Target.TargetType != ETargetType::None)
@@ -313,7 +327,31 @@ void ABot::CombatTick(float DeltaTime)
 					MaxDist = 400.0f;
 				}
 
+				bool bActivateCombatTick = false;
+
 				if (TargetDist <= MaxDist)
+				{
+					//bActivateCombatTick = true;
+					if (TargetDist <= 150.0f)
+					{
+						bActivateCombatTick = true;
+					}
+					else
+					{
+						bool bObstacleBetweenBots = !this->TraceToTargetResult(true);
+						if (!bObstacleBetweenBots)
+						{
+							bActivateCombatTick = true;
+						}
+					}
+				}
+
+				if (WeaponType == EWeaponType::Firearm)
+				{
+					this->bShouldApplyGunAnimation = bActivateCombatTick;
+				}
+
+				if (bActivateCombatTick)
 				{
 					if (WeaponType == EWeaponType::Firearm)
 					{
@@ -330,7 +368,7 @@ void ABot::CombatTick(float DeltaTime)
 					{
 						CharacterMovementComponent->MaxWalkSpeed = 600.0f;
 
-						if (WeaponType == EWeaponType::Melee && this->bShouldApplyGunAnimation)
+						if (this->bShouldApplyGunAnimation)
 						{
 							CharacterMovementComponent->MaxWalkSpeed = this->WeaponInstance->WeaponRef->MaxWalkSpeed;
 						}
@@ -381,6 +419,8 @@ void ABot::CombatTick(float DeltaTime)
 
 void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 {
+	SCOPE_CYCLE_COUNTER(STAT_StatsFirearmCombatTick);
+
 	EWeaponType WeaponType = EWeaponType::Firearm;
 
 	auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
@@ -400,7 +440,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	if (this->CombatAction == ECombatAction::Moving)
 	{
-		UE_LOG(LogTemp, Display, TEXT("[ABot] Stop moving"));
+		//UE_LOG(LogTemp, Display, TEXT("[ABot] Stop moving"));
 
 		if (AIController)
 		{
@@ -551,12 +591,12 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	bool bObstacleBetweenBots = false;
 
-	/** Check if there's an obstacle between bots */
-	if (bCanActuallyShoot)
-	{
-		bObstacleBetweenBots = !this->TraceToTargetResult();
-		bCanActuallyShoot = !bObstacleBetweenBots;
-	}
+	///** Check if there's an obstacle between bots */
+	//if (bCanActuallyShoot)
+	//{
+	//	bObstacleBetweenBots = !this->TraceToTargetResult();
+	//	bCanActuallyShoot = !bObstacleBetweenBots;
+	//}
 
 	if (HitActor != this->Target.Actor || bObstacleBetweenBots)
 	{
@@ -634,7 +674,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 			if (AIController)
 			{
-				AIController->MoveToLocation(NewRandomLocation);
+				AIController->MoveToNewLocation(NewRandomLocation);
 			}
 		}
 		else
@@ -671,6 +711,8 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 {
+	SCOPE_CYCLE_COUNTER(STAT_StatsMeleeCombatTick);
+
 	EWeaponType WeaponType = EWeaponType::Melee;
 
 	auto* MeleeInstance = Cast<UMeleeWeaponInstance>(this->WeaponInstance);
@@ -713,7 +755,7 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 		{
 			FVector EndLocation = FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).RotateVector(FVector(MaxDist, 0.0f, 0.0f));
 			EndLocation += this->Target.Actor->GetActorLocation();
-			AIController->MoveToLocation(EndLocation);
+			AIController->MoveToNewLocation(EndLocation);
 			this->bMovingToRandomCombatLocation = true;
 			this->TimeSinceStartedMovingInCombat = 0.0f;
 			this->bUseControllerRotationYaw = false;
@@ -1044,7 +1086,7 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 	//MeleeInstance->HitAnimationTime = 0.0f;
 }
 
-bool ABot::TraceToTargetResult()
+bool ABot::TraceToTargetResult(bool bIgnoreBots)
 {
 	if (!this->Target.Actor)
 	{
@@ -1064,11 +1106,18 @@ bool ABot::TraceToTargetResult()
 	TraceParams.AddIgnoredActor(this);
 
 	FHitResult HitResult;
-	this->GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3, TraceParams);
+	
+	ECollisionChannel Channel = bIgnoreBots ? ECollisionChannel::ECC_GameTraceChannel5 : ECollisionChannel::ECC_GameTraceChannel3;
+
+	this->GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, Channel, TraceParams);
 
 	auto* HitActor = HitResult.GetActor();
 
-	if (HitResult.bBlockingHit && HitActor == this->Target.Actor)
+	if (bIgnoreBots && (!HitResult.bBlockingHit || HitActor == this->Target.Actor))
+	{
+		return true;
+	}
+	else if (!bIgnoreBots && HitResult.bBlockingHit && HitActor == this->Target.Actor)
 	{
 		return true;
 	}
@@ -1288,7 +1337,7 @@ void ABot::MoveToRandomLocation()
 
 		this->RandomLocationTarget = FVector(XPos, YPos, 97);
 
-		AIController->MoveToLocation(this->RandomLocationTarget);
+		AIController->MoveToNewLocation(this->RandomLocationTarget);
 		bMovingToRandomLocation = true;
 	}
 }
@@ -1343,7 +1392,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		}
 	}
 
-	UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);
+	//UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);
 
 	auto* NameWidgetObject = this->GetNameWidget();
 
@@ -1866,7 +1915,7 @@ void ABot::TestAimingTick(float DeltaTime)
 
 		if (AIController)
 		{
-			AIController->MoveToLocation(this->RandomPointToMoveWhileAiming);
+			AIController->MoveToNewLocation(this->RandomPointToMoveWhileAiming);
 		}
 
 	}

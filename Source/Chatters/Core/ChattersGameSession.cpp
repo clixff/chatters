@@ -165,6 +165,9 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 				}
 			}
 		}
+
+		//PlayerController->ConsoleCommand(TEXT("stat fps"), true);
+		//PlayerController->ConsoleCommand(TEXT("stat unit"), true);
 	}
 
 

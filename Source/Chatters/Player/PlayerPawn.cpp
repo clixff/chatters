@@ -45,7 +45,7 @@ void APlayerPawn::Tick(float DeltaTime)
 
 	if (this->bReady)
 	{
-		this->UpdateBotNicknameWidgetsSize();
+		this->UpdateBotNicknameWidgets();
 	}
 
 	if (this->bAttachedToBot)
@@ -150,7 +150,7 @@ void APlayerPawn::DetachFromBot()
 	}
 }
 
-void APlayerPawn::UpdateBotNicknameWidgetsSize()
+void APlayerPawn::UpdateBotNicknameWidgets()
 {
 	auto* GameSessionObject = this->GetGameSession();
 
@@ -196,6 +196,17 @@ void APlayerPawn::UpdateBotNicknameWidgetsSize()
 			float NewWidgetSize = FMath::Lerp(BotNameWidget->MaxWrapperScale, BotNameWidget->MinWrapperScale, DistanceAlpha);
 
 			BotNameWidget->UpdateSize(NewWidgetSize);
+
+
+			float const MinOpacityDistance = BotNameWidget->MaxOpacityDistance.GetLowerBoundValue();
+			float const MaxOpacityDistance = BotNameWidget->MaxOpacityDistance.GetUpperBoundValue();
+
+			float const ClampedOpacityDistnace = FMath::Clamp(DistanceFromBot, MinOpacityDistance, MaxOpacityDistance);
+			float const OpacityValue = 1.0f - UKismetMathLibrary::NormalizeToRange(ClampedOpacityDistnace, MinOpacityDistance, MaxOpacityDistance);
+			
+
+			BotNameWidget->UpdateOpacity(OpacityValue);
+
 		}
 
 	}

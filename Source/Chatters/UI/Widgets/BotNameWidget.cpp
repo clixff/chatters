@@ -100,20 +100,25 @@ void UBotNameWidget::SetHealthBarElementValue(int32 HealthBarElementID, float Va
 
 void UBotNameWidget::UpdateSize(float Size)
 {
-	if (Size < 0.0f)
-	{
-		Size = 0.0f;
-	}
-	else if (Size > 1.0f)
-	{
-		Size = 1.0f;
-	}
+	Size = FMath::Clamp(Size, 0.0f, 1.0f);
 
 	auto* WrapperWidget = this->GetWrapper();
 
 	if (WrapperWidget)
 	{
 		WrapperWidget->SetRenderScale(FVector2D(Size));
+	}
+}
+
+void UBotNameWidget::UpdateOpacity(float Opacity)
+{
+	Opacity = FMath::Clamp(Opacity, 0.0f, 1.0f);
+
+	auto* WrapperWidget = this->GetWrapper();
+
+	if (WrapperWidget)
+	{
+		WrapperWidget->SetRenderOpacity(Opacity);
 	}
 }
 

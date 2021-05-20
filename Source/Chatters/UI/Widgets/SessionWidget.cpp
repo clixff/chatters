@@ -100,6 +100,12 @@ void USessionWidget::PlayWinnerAnimation(FString BotName, FLinearColor BotTeamCo
 	}
 }
 
+void USessionWidget::SetFPS(int32 FPS)
+{
+	this->FPSText = FText::FromStringTable(UChattersGameInstance::CoreStringTablePath, TEXT("FPS"));
+	this->FPSText = FText::Format(this->FPSText, FPS);
+}
+
 void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon)
 {
 	if (!this->KillFeedSubclass)
@@ -173,4 +179,8 @@ void USessionWidget::NativeTick(const FGeometry& MyGeometry, float DeltaTime)
 			KillFeedElement->Tick(DeltaTime);
 		}
 	}
+
+	//float DeltaTimeFixed = FMath::FloorToInt(DeltaTime * 10000.0f) / 10000.0f;
+
+	this->SetFPS(FMath::RoundToInt(1.0f / DeltaTime));
 }

@@ -7,6 +7,7 @@
 #include "KillFeedElement.h"
 #include "Components/VerticalBox.h"
 #include "Animation/WidgetAnimation.h"
+#include "../../Misc/Misc.h"
 #include "SessionWidget.generated.h"
 
 /**
@@ -61,6 +62,13 @@ public:
 		FText WinnerNameText;
 
 	void PlayWinnerAnimation(FString BotName, FLinearColor BotTeamColor);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText FPSText;
+
+	void SetFPS(int32 FPS);
+
+
 public:
 	// Kill feed
 
@@ -79,4 +87,5 @@ public:
 		UVerticalBox* KillFeedContainer = nullptr;
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
+
 };

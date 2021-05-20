@@ -19,5 +19,5 @@ public:
 	~ABotController();
 
 public:
-	void MoveToLocation(FVector Location);
+	void MoveToNewLocation(FVector Location);
 };

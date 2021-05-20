@@ -69,7 +69,7 @@ public:
 	bool bAttachedToBot = false;
 
 private:
-	void UpdateBotNicknameWidgetsSize();
+	void UpdateBotNicknameWidgets();
 
 	void SetSpectatorMenuVisibiliy(bool bVisible);
 

@@ -50,6 +50,8 @@ public:
 
 	void UpdateSize(float Size);
 
+	void UpdateOpacity(float Opacity);
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		float MaxWrapperScale = 0.75f;
 
@@ -73,6 +75,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		FLinearColor NicknameColor;
+
+	UPROPERTY(EditDefaultsOnly)
+		FFloatRange MaxOpacityDistance = FFloatRange(2500.0f, 3000.0f);
+
 public:
 	void ShowDamageNumber(int32 DamageNumber, bool bCritical = false);
 
@@ -107,4 +113,5 @@ private:
 	UWidget* TempWidget = nullptr;
 
 	int32 DamageNumbers = 0;
+
 };

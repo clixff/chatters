@@ -22,6 +22,7 @@ public:
 	static T* CreateUserWidget(TSubclassOf<T> WidgetSubclass);
 
 	static APlayerController* GetPlayerController();
+
 };
 
 template<class T>
