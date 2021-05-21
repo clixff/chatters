@@ -180,7 +180,12 @@ void USessionWidget::NativeTick(const FGeometry& MyGeometry, float DeltaTime)
 		}
 	}
 
-	//float DeltaTimeFixed = FMath::FloorToInt(DeltaTime * 10000.0f) / 10000.0f;
+	FPSUpdateTimer.Add(DeltaTime);
 
-	this->SetFPS(FMath::RoundToInt(1.0f / DeltaTime));
+	if (FPSUpdateTimer.IsEnded())
+	{
+		this->SetFPS(FMath::RoundToInt(1.0f / DeltaTime));
+		FPSUpdateTimer.Reset();
+	}
+
 }

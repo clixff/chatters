@@ -92,4 +92,6 @@ public:
 	static FName GenerateName();
 
 	void DestroyActor();
+
+	bool bSimplified = false;
 };

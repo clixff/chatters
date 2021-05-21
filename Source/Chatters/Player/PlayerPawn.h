@@ -68,6 +68,12 @@ public:
 
 	bool bAttachedToBot = false;
 
+	float GetDistanceFromCamera(FVector Location);
+
+	/** Get singleton */
+	static APlayerPawn* Get();
+
+	void Init();
 private:
 	void UpdateBotNicknameWidgets();
 
@@ -80,4 +86,6 @@ private:
 	bool IsBotVisibleFromCamera(float Distance, FRotator CameraRotation);
 
 	FRotator FindNewAcceptableCameraRotation(FRotator StartRotation);
+
+	static APlayerPawn* Singleton;
 };

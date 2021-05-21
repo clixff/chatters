@@ -151,7 +151,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
 		if (PlayerPawn)
 		{
-			PlayerPawn->bReady = true;
+			PlayerPawn->Init();
 
 			if (this->Bots.Num() > 0)
 			{

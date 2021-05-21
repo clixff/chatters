@@ -88,4 +88,5 @@ public:
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
 
+	FManualTimer FPSUpdateTimer = FManualTimer(0.1f);
 };

@@ -3,6 +3,7 @@
 
 #include "FirearmProjectile.h"
 #include "Kismet/GameplayStatics.h"
+#include "../Player/PlayerPawn.h"
 #include "Kismet/KismetMathLibrary.h"
 
 uint32 AFirearmProjectile::TotalNumberOfProjectiles = 0;
@@ -44,47 +45,54 @@ void AFirearmProjectile::Tick(float DeltaTime)
 			this->OnEnd();
 		}
 
-		this->DistanceScale = this->Time / this->MaxTime;
-		
-		this->SetTraceLocation();
-	}
 
-	if (this->TraceLengthAction == ETraceLengthAction::Increase)
-	{
-		this->TraceLength += this->TraceLengthSpeed * DeltaTime;
-
-		this->TraceLength = this->DistanceScale * this->Distance;
-
-		if (this->TraceLength >= this->TraceMaxLength)
+		if (!this->bSimplified)
 		{
-			this->TraceLength = this->TraceMaxLength;
-			this->TraceLengthAction = ETraceLengthAction::Ignore;
-		}
-	}
-	else if (this->TraceLengthAction == ETraceLengthAction::Reduce && this->BulletHitResult.HitResult.bBlockingHit)
-	{
-		this->TraceLength -= this->TraceLengthSpeed * DeltaTime;
-		if (this->TraceLength <= 0.0f)
-		{
-			this->TraceLength = 0.0f;
-			this->DestroyActor();
+			this->DistanceScale = this->Time / this->MaxTime;
+
+			this->SetTraceLocation();
 		}
 	}
 
-	if (this->BulletHitResult.HitResult.bBlockingHit || (this->TraceLengthAction == ETraceLengthAction::Increase && this->DistanceScale < 0.8f))
+	if (!this->bSimplified)
 	{
-		this->Opacity = FMath::Clamp(this->TraceLength / this->TraceLengthMaxOpacity, 0.0f, 1.0f);
-	}
-	else
-	{
-		if (this->DistanceScale >= 0.8f)
+		if (this->TraceLengthAction == ETraceLengthAction::Increase)
 		{
-			this->Opacity = ((1.0f - this->DistanceScale) / (1.0f - 0.8f));
-		}
-	}
+			this->TraceLength += this->TraceLengthSpeed * DeltaTime;
 
-	this->UpdateTraceLength();
-	this->UpdateTraceOpacity();
+			this->TraceLength = this->DistanceScale * this->Distance;
+
+			if (this->TraceLength >= this->TraceMaxLength)
+			{
+				this->TraceLength = this->TraceMaxLength;
+				this->TraceLengthAction = ETraceLengthAction::Ignore;
+			}
+		}
+		else if (this->TraceLengthAction == ETraceLengthAction::Reduce && this->BulletHitResult.HitResult.bBlockingHit)
+		{
+			this->TraceLength -= this->TraceLengthSpeed * DeltaTime;
+			if (this->TraceLength <= 0.0f)
+			{
+				this->TraceLength = 0.0f;
+				this->DestroyActor();
+			}
+		}
+
+		if (this->BulletHitResult.HitResult.bBlockingHit || (this->TraceLengthAction == ETraceLengthAction::Increase && this->DistanceScale < 0.8f))
+		{
+			this->Opacity = FMath::Clamp(this->TraceLength / this->TraceLengthMaxOpacity, 0.0f, 1.0f);
+		}
+		else
+		{
+			if (this->DistanceScale >= 0.8f)
+			{
+				this->Opacity = ((1.0f - this->DistanceScale) / (1.0f - 0.8f));
+			}
+		}
+
+		this->UpdateTraceLength();
+		this->UpdateTraceOpacity();
+	}
 }
 
 void AFirearmProjectile::Init(FVector InitStartLocation, FVector InitEndLocation, FBulletHitResult HitResult, UFirearmWeaponInstance* FirearmInstanceRef, FVector BotForwardVector)
@@ -161,7 +169,11 @@ void AFirearmProjectile::OnEnd()
 					FVector ImpulseVector = this->CauserForwardVector * FirearmRef->ImpulseForce;
 					BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
 
-					if (BotToDamage->BloodParticle)
+					APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+					float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(BulletHitResult.HitResult.ImpactPoint) : 0.0f;
+
+					if (DistanceFromCamera <= 7000.0f && BotToDamage->BloodParticle)
 					{
 						FTransform BloodParticleTransform;
 						BloodParticleTransform.SetLocation(BulletHitResult.HitResult.ImpactPoint);

@@ -9,6 +9,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "PlayerPawnController.h"
 
+APlayerPawn* APlayerPawn::Singleton = nullptr;
+
 // Sets default values
 APlayerPawn::APlayerPawn()
 {
@@ -148,6 +150,12 @@ void APlayerPawn::DetachFromBot()
 		}
 		this->SetSpectatorMenuVisibiliy(false);
 	}
+}
+
+float APlayerPawn::GetDistanceFromCamera(FVector Location)
+{
+	FVector const CameraLocation = this->Camera->GetComponentLocation();
+	return FVector::Dist(CameraLocation, Location);
 }
 
 void APlayerPawn::UpdateBotNicknameWidgets()
@@ -335,4 +343,15 @@ FRotator APlayerPawn::FindNewAcceptableCameraRotation(FRotator StartRotation)
 	}
 
 	return RotationToSet;
+}
+
+APlayerPawn* APlayerPawn::Get()
+{
+	return APlayerPawn::Singleton;
+}
+
+void APlayerPawn::Init()
+{
+	this->bReady = true;
+	APlayerPawn::Singleton = this;
 }

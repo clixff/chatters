@@ -15,6 +15,7 @@
 #include "AI/Navigation/NavigationTypes.h"
 #include "../UI/Widgets/KillFeedElement.h"
 #include "../Combat/FirearmProjectile.h"
+#include "../Player/PlayerPawn.h"
 #include "../Core/ChattersGameSession.h"
 
 DECLARE_STATS_GROUP(TEXT("BOTS_Game"), STATGROUP_BOTS, STATCAT_Advanced);
@@ -859,18 +860,27 @@ void ABot::Shoot(bool bBulletOffset)
 			FirearmProjectile->Init(OutBulletLocation, EndLocation, BulletHitResult, FirearmInstance, this->GetActorForwardVector());
 			FirearmProjectile->BotCauser = this;
 
-			if (FirearmRef->ShootSound)
-			{
-				UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutBulletLocation, FMath::RandRange(0.7f, 0.85f));
-			}
+			APlayerPawn* PlayerPawn = APlayerPawn::Get();
 
-			if (FirearmRef->ShotParticle)
+			float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(OutBulletLocation) :  0.0f;
+
+			FirearmProjectile->bSimplified = DistanceFromCamera > 5000.0f;
+
+			if (DistanceFromCamera <= 7000.0f)
 			{
-				FTransform ParticleTransform;
-				ParticleTransform.SetLocation(OutBulletLocation);
-				ParticleTransform.SetRotation(FQuat(this->GetActorRotation()));
-				ParticleTransform.SetScale3D(FirearmRef->ParticleScale);
-				UGameplayStatics::SpawnEmitterAtLocation(World, FirearmRef->ShotParticle, ParticleTransform, true);
+				if (FirearmRef->ShootSound)
+				{
+					UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutBulletLocation, FMath::RandRange(0.7f, 0.85f));
+				}
+
+				if (FirearmRef->ShotParticle)
+				{
+					FTransform ParticleTransform;
+					ParticleTransform.SetLocation(OutBulletLocation);
+					ParticleTransform.SetRotation(FQuat(this->GetActorRotation()));
+					ParticleTransform.SetScale3D(FirearmRef->ParticleScale);
+					UGameplayStatics::SpawnEmitterAtLocation(World, FirearmRef->ShotParticle, ParticleTransform, true);
+				}
 			}
 		}
 	}
@@ -1065,7 +1075,11 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	UKismetSystemLibrary::BoxTraceSingleForObjects(GetWorld(), CollisionTransform.GetLocation(), OtherActor->GetActorLocation(), CollisionSize, FRotator(CollisionTransform.GetRotation()), ObjectTypesCollision, true, TraceActorsToIgnore, EDrawDebugTrace::Type::None, HitResult, true, FLinearColor::Red, FLinearColor::Green, 3.0f);
 
-	if (BotHit->BloodParticle && HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
+	APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+	float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(this->GetActorLocation()) : 0.0f;
+
+	if (DistanceFromCamera <= 7000.0f && BotHit->BloodParticle && HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
 	{
 		FTransform BloodParticleTransform;
 		BloodParticleTransform.SetLocation(HitResult.ImpactPoint);
@@ -1155,6 +1169,7 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 
 void ABot::OnFootstep()
 {
+
 	if (!this->bAlive)
 	{
 		return;
