@@ -82,6 +82,18 @@ public:
 	void SetTeamAliveNumber(EBotTeam Team, int32 Number);
 
 	void SetTeamsWrapperVisibility(bool bVisible);
+
+	bool bUpdateRoundTimer = false;
+
+	float RoundSecondsFloat = 0.0f;
+	int32 RoundSeconds = 0;
+
+	void SetRoundTimerVisibility(bool bVisible);
+
+	void UpdateRoundSeconds(float Seconds);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		FText RoundTimerText = FText::FromString(TEXT("0:00"));
 public:
 	// Kill feed
 

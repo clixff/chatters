@@ -109,6 +109,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	this->SessionWidget = UCustomWidgetBase::CreateUserWidget(this->SessionWidgetClass);
 
 	this->SessionWidget->SetTeamsWrapperVisibility(this->GameModeType == ESessionGameMode::Teams);
+	this->SessionWidget->UpdateRoundSeconds(0.0f);
 
 	if (!this->BotSubclass)
 	{
@@ -234,6 +235,7 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 				if (this->SessionWidget)
 				{
 					this->SessionWidget->PlayWinnerAnimation(BotWinner->DisplayName, BotWinner->GetTeamColor());
+					this->SessionWidget->bUpdateRoundTimer = false;
 				}
 			}
 
@@ -253,6 +255,8 @@ void UChattersGameSession::Start()
 		{
 			this->SessionWidget->SetStartGameSessionTipVisibility(false);
 			this->SessionWidget->SetPlayCommandVisibility(false);
+			this->SessionWidget->bUpdateRoundTimer = true;
+			this->SessionWidget->SetRoundTimerVisibility(true);
 		}
 
 		for (int32 i = 0; i < this->Bots.Num(); i++)
@@ -438,6 +442,8 @@ void UChattersGameSession::OnTeamsBattleEnd()
 		this->SessionWidget->SetStartGameSessionTipVisibility(true);
 		this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
 		this->SessionWidget->PlayNewRoundAnimation(this->RoundNumber);
+		this->SessionWidget->UpdateRoundSeconds(0.0f);
+		this->SessionWidget->bUpdateRoundTimer = false;
 	}
 }
 

@@ -143,6 +143,45 @@ void USessionWidget::SetTeamsWrapperVisibility(bool bVisible)
 	}
 }
 
+void USessionWidget::SetRoundTimerVisibility(bool bVisible)
+{
+	auto* RoundTimerWidgdet = this->GetWidgetFromName(TEXT("RoundTimer"));
+
+	if (RoundTimerWidgdet)
+	{
+		RoundTimerWidgdet->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	}
+}
+
+void USessionWidget::UpdateRoundSeconds(float Seconds)
+{
+	this->RoundSecondsFloat = Seconds;
+	int32 RoundedSeconds = FMath::Floor(Seconds);
+
+	if (RoundedSeconds == this->RoundSeconds)
+	{
+		return;
+	}
+
+	this->RoundSeconds = RoundedSeconds;
+
+	int32 TotalMinutes = RoundedSeconds / 60;
+	int32 TotalSeconds = RoundedSeconds % 60;
+
+	auto SecondsText = TotalSeconds < 10 ? TEXT("%d") : TEXT("%d");
+
+	FString SecondsString = FString::FromInt(TotalSeconds);
+
+	if (TotalSeconds < 10)
+	{
+		SecondsString = FString(TEXT("0")) + SecondsString;
+	}
+
+	FString RoundTimerString = FString::Printf(TEXT("%d:%s"), TotalMinutes, *SecondsString);
+
+	this->RoundTimerText = FText::FromString(RoundTimerString);
+}
+
 void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon)
 {
 	if (!this->KillFeedSubclass)
@@ -225,4 +264,9 @@ void USessionWidget::NativeTick(const FGeometry& MyGeometry, float DeltaTime)
 		FPSUpdateTimer.Reset();
 	}
 
+	if (this->bUpdateRoundTimer)
+	{
+		this->RoundSecondsFloat += DeltaTime;
+		this->UpdateRoundSeconds(RoundSecondsFloat);
+	}
 }
