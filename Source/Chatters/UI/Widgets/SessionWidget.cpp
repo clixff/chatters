@@ -106,6 +106,43 @@ void USessionWidget::SetFPS(int32 FPS)
 	this->FPSText = FText::Format(this->FPSText, FPS);
 }
 
+void USessionWidget::SetPlayCommandVisibility(bool bVisible)
+{
+	this->bPlayCommandVisible = bVisible;
+
+	auto* PlayCommandTextWidget = this->GetWidgetFromName(TEXT("PlayCommand"));
+	
+	if (PlayCommandTextWidget)
+	{
+		PlayCommandTextWidget->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	}
+}
+
+void USessionWidget::SetTeamAliveNumber(EBotTeam Team, int32 Number)
+{
+	FString AliveString = FString::Printf(TEXT("%d"), Number);
+	FText AliveText = FText::FromString(AliveString);
+
+	if (Team == EBotTeam::Blue)
+	{
+		this->BlueTeamAlive = AliveText;
+	}
+	else if (Team == EBotTeam::Red)
+	{
+		this->RedTeamAlive = AliveText;
+	}
+}
+
+void USessionWidget::SetTeamsWrapperVisibility(bool bVisible)
+{
+	auto* TeamsWrapperWidget = this->GetWidgetFromName(TEXT("TeamsAliveWrapper"));
+
+	if (TeamsWrapperWidget)
+	{
+		TeamsWrapperWidget->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	}
+}
+
 void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon)
 {
 	if (!this->KillFeedSubclass)

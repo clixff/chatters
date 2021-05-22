@@ -68,7 +68,20 @@ public:
 
 	void SetFPS(int32 FPS);
 
+	UPROPERTY(BlueprintReadOnly)
+		bool bPlayCommandVisible = true;
 
+	void SetPlayCommandVisibility(bool bVisible);
+
+	UPROPERTY(BlueprintReadOnly)
+		FText BlueTeamAlive;
+
+	UPROPERTY(BlueprintReadOnly)
+		FText RedTeamAlive;
+
+	void SetTeamAliveNumber(EBotTeam Team, int32 Number);
+
+	void SetTeamsWrapperVisibility(bool bVisible);
 public:
 	// Kill feed
 

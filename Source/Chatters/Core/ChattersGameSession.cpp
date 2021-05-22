@@ -108,6 +108,8 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 	this->SessionWidget = UCustomWidgetBase::CreateUserWidget(this->SessionWidgetClass);
 
+	this->SessionWidget->SetTeamsWrapperVisibility(this->GameModeType == ESessionGameMode::Teams);
+
 	if (!this->BotSubclass)
 	{
 		this->BotSubclass = ABot::StaticClass();
@@ -115,6 +117,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 	if (this->SessionType == ESessionType::Generated)
 	{
+		this->SessionWidget->SetPlayCommandVisibility(false);
 		if (this->SessionMode == ESessionMode::TestAiming)
 		{
 			this->MaxPlayers = 1;
@@ -144,6 +147,9 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 			}
 		}
 	}
+
+	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
+	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
 
 	auto* PlayerController = World->GetFirstPlayerController();
 	if (PlayerController)
@@ -189,10 +195,14 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 			if (AliveBot->Team == EBotTeam::Blue)
 			{
 				this->BlueAlive--;
+				this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
+
 			}
 			else if (AliveBot->Team == EBotTeam::Red)
 			{
 				this->RedAlive--;
+				this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
+
 			}
 
 			if (this->SessionWidget)
@@ -242,6 +252,7 @@ void UChattersGameSession::Start()
 		if (this->SessionWidget)
 		{
 			this->SessionWidget->SetStartGameSessionTipVisibility(false);
+			this->SessionWidget->SetPlayCommandVisibility(false);
 		}
 
 		for (int32 i = 0; i < this->Bots.Num(); i++)
@@ -386,6 +397,10 @@ void UChattersGameSession::OnTeamsBattleEnd()
 			AliveBotsNumber++;
 		}
 	}
+
+	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
+	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
+
 
 	auto* World = GetWorld();
 
