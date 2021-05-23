@@ -1108,7 +1108,9 @@ bool ABot::TraceToTargetResult(bool bIgnoreBots)
 	}
 
 
-	FVector StartLocation = this->GetMesh()->GetSocketLocation(TEXT("spine_5"));
+	//FVector StartLocation = this->GetMesh()->GetSocketLocation(TEXT("spine_5"));
+	FVector StartLocation = this->GetActorLocation() + FVector(0.0f, 0.0f, 40.0f);
+	
 	FVector EndLocation = this->Target.Actor->GetActorLocation();
 
 	if (this->Target.Bot && this->Target.TargetType == ETargetType::Bot)
