@@ -1600,6 +1600,16 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		}
 	}
 
+	if (Killer && Killer != this && this->bPlayerAttached)
+	{
+		APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+		if (PlayerPawn)
+		{
+			PlayerPawn->AttachToBot(Killer);
+		}
+	}
+
 	auto* GameSessionObject = this->GetGameSession();
 
 	if (GameSessionObject)
