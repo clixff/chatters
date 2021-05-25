@@ -39,4 +39,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		USoundBase* DamageSound = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		FFloatRange AnimationTimeToDamage = FFloatRange(0.0f, 1.0f);
 };

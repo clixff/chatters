@@ -89,6 +89,7 @@ void ABot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+
 	if (this->bAlive)
 	{
 		if (this->WeaponInstance)
@@ -119,6 +120,23 @@ void ABot::Tick(float DeltaTime)
 			NameWidgetObject->Tick(DeltaTime);
 		}
 
+		/** If not moving */
+		if (this->bReady && !this->bShouldApplyGunAnimation && this->GetActorLocation() == this->LastTickLocation)
+		{
+			this->SecondsWithoutMoving.Add(DeltaTime);
+
+			if (this->SecondsWithoutMoving.IsEnded())
+			{
+				this->SecondsWithoutMoving.Reset();
+				this->FindNewEnemyTarget();
+			}
+		}
+		else
+		{
+			this->SecondsWithoutMoving.Current = 0.0f;
+		}
+
+		this->LastTickLocation = this->GetActorLocation();
 	}
 	else
 	{
@@ -317,10 +335,15 @@ void ABot::CombatTick(float DeltaTime)
 					if (FirearmInstance && FirearmInstance->GetFirearmRef())
 					{
 						MaxDist = FirearmInstance->GetFirearmRef()->MaxDistance;
+
+						if (this->CombatAction == ECombatAction::Moving)
+						{
+							MaxDist -= 150.0f;
+						}
 					}
 				}
 
-				this->bShouldApplyGunAnimation = (TargetDist <= MaxDist + 100.0f);
+				//this->bShouldApplyGunAnimation = (TargetDist <= MaxDist + 100.0f);
 
 				if (WeaponType == EWeaponType::Melee)
 				{
@@ -782,7 +805,7 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 
 	FVector StartTraceLocation = this->GetMesh()->GetSocketTransform(TEXT("spine_5"), ERelativeTransformSpace::RTS_Actor).GetLocation();
 
-	FVector EndTraceLocation = StartTraceLocation + this->GetGunRotation().RotateVector(FVector(MaxDist + 25.0f, 0.0f, 0.0f));
+	FVector EndTraceLocation = StartTraceLocation + this->GetGunRotation().RotateVector(FVector(MaxDist, 0.0f, 0.0f));
 
 	StartTraceLocation += this->GetActorLocation();
 	EndTraceLocation += this->GetActorLocation();
@@ -908,6 +931,8 @@ void ABot::MeleeHit()
 		{
 			return;
 		}
+
+		this->SetMeleeCollisionEnabled(false);
 
 		MeleeInstance->OnHit();
 
@@ -1041,7 +1066,7 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 	//	return;
 	//}
 
-	if (MeleeInstance->BotsHit.Contains(BotHit))
+	if (MeleeInstance->BotsHit.Contains(BotHit) || MeleeInstance->BotsHit.Num())
 	{
 		return;
 	}
@@ -2098,6 +2123,7 @@ void ABot::StopMovementAfterRound()
 	this->Target.Actor = nullptr;
 	this->Target.Bot = nullptr;
 	this->Target.TargetType = ETargetType::None;
+	this->bReady = false;
 }
 
 void ABot::StopMovement()
@@ -2140,4 +2166,12 @@ bool ABot::CanExplodeBarrel(AExplodingBarrel* Barrel)
 
 
 	return true;
+}
+
+void ABot::SetMeleeCollisionEnabled(bool bEnabled)
+{
+	if (this->MeleeCollision)
+	{
+		this->MeleeCollision->SetCollisionEnabled(bEnabled ? ECollisionEnabled::Type::QueryOnly : ECollisionEnabled::Type::NoCollision);
+	}
 }

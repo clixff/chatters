@@ -28,7 +28,7 @@ void ABotController::MoveToNewLocation(FVector Location)
 
 	//UE_LOG(LogTemp, Display, TEXT("[ABotController] Moving bot from %s to %s. Distance: %f m"), *(PawnLocation.ToString()), *(Location.ToString()), Distance);
 
-	this->MoveToLocation(Location, 20.0f, true, true, true, true);
+	this->MoveToLocation(Location, 5.0f, false, true, true, true);
 
 	//UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, Location);
 }

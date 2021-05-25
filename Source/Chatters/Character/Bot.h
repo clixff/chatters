@@ -284,6 +284,11 @@ private:
 	bool TraceToTargetResult(bool bIgnoreBots = false);
 
 	FManualTimer CombatTickTimeout = FManualTimer(0.25f);
+
+	UPROPERTY(VisibleAnywhere)
+		FManualTimer SecondsWithoutMoving = FManualTimer(3.0f);
+
+	FVector LastTickLocation;
 private:
 	FBotTarget Target;
 
@@ -354,4 +359,6 @@ public:
 
 	/** Check for bots around */
 	bool CanExplodeBarrel(AExplodingBarrel* Barrel);
+
+	void SetMeleeCollisionEnabled(bool bEnabled);
 };

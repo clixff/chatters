@@ -258,7 +258,7 @@ void UBotNameWidget::UpdateKillsNumber(int32 Kills)
 
 	if (KillsWrapper)
 	{
-		KillsWrapper->SetVisibility(Kills < 2 ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+		KillsWrapper->SetVisibility(Kills < 1 ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
 	}
 
 

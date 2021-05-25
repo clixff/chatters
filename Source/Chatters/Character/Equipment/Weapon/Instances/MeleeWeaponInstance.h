@@ -27,4 +27,11 @@ public:
 		TArray<AActor*> BotsHit;
 
 	bool CanHit();
+
+	bool bCollisionEnabled = false;
+
+	void SetCollisionEnabled(bool bEnabled);
+
+	float TimeToEnableCollision = 0.0f;
+	float TimeToDisableCollision = 1.0f;
 };
