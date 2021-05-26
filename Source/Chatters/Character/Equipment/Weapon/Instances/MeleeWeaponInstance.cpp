@@ -60,9 +60,6 @@ void UMeleeWeaponInstance::OnHit()
 
 		this->TimeToEnableCollision = (1.0f - EnableCollisionTimePercent) * Ref->HitTimeout;
 		this->TimeToDisableCollision = (1.0f - DisableCollisionTimePercent) * Ref->HitTimeout;
-
-		UE_LOG(LogTemp, Display, TEXT("[UMeleeWeaponInstance] TimeToEnableCollision: %f, TimeToDisableCollision: %f"), this->TimeToEnableCollision, this->TimeToDisableCollision);
-
 	}
 }
 
