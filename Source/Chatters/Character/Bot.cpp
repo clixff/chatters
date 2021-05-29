@@ -62,6 +62,7 @@ ABot::ABot()
 	this->NameWidgetComponent->SetupAttachment(this->GetMesh());
 	this->NameWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	this->NameWidgetComponent->SetWidgetClass(UBotNameWidget::StaticClass());
+
 }
 
 ABot::~ABot()
@@ -152,6 +153,11 @@ void ABot::Tick(float DeltaTime)
 		if (this->bHatAttached && this->SecondsAfterDeath <= 25.0f)
 		{
 			this->TryDetachHat();
+		}
+
+		if (this->SecondsAfterDeath >= 4.0f && !this->bCheckedBloodDecalCreation)
+		{
+			this->CreateFloorBloodDecal();
 		}
 	}
 }
@@ -974,7 +980,7 @@ void ABot::AimAt(FVector Location)
 
 	float Pitch = FMath::Atan2(AimLocationRotated.Z - this->GunAnimationRotationPoint.Z - TempPitchVector.X, AimLocationRotated.X + TempPitchVector.Y);
 	Pitch = FMath::RadiansToDegrees(Pitch);
-
+	
 	float PitchClamped = FMath::Clamp(Pitch, this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
 	float PitchScale = UKismetMathLibrary::NormalizeToRange(PitchClamped, this->MinAimingPitchRotation, this->MaxAimingPitchRotation);
 
@@ -1168,6 +1174,39 @@ bool ABot::TraceToTargetResult(bool bIgnoreBots)
 	//DrawDebugLine(GetWorld(), StartLocation, DebugEndLocation, FColor::Red, false, 0.5f);
 	
 	return false;
+}
+
+void ABot::CreateFloorBloodDecal()
+{
+	this->bCheckedBloodDecalCreation = true;
+
+	if (!this->FloorBloodDecalSubclass)
+	{
+		return;
+	}
+
+	UWorld* WorldObject = this->GetWorld();
+	FVector PivotLocation = this->GetMesh()->GetSocketLocation(TEXT("spine_3"));
+	FVector DecalLocation = PivotLocation + FVector(0.0f, 0.0f, -50.0f);
+
+	
+	FCollisionObjectQueryParams CollisionParams;
+
+	CollisionParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+
+	FHitResult HitResult;
+	WorldObject->LineTraceSingleByObjectType(HitResult, PivotLocation, DecalLocation, CollisionParams);
+
+	if (!HitResult.bBlockingHit)
+	{
+		return;
+	}
+
+	FTransform DecalSpawnTransform;
+	DecalSpawnTransform.SetLocation(HitResult.ImpactPoint);
+	DecalSpawnTransform.SetRotation(FQuat(FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f)));
+
+	this->FloorBloodDecalActor = WorldObject->SpawnActor<AActor>(this->FloorBloodDecalSubclass, DecalSpawnTransform);
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
@@ -2173,5 +2212,13 @@ void ABot::SetMeleeCollisionEnabled(bool bEnabled)
 	if (this->MeleeCollision)
 	{
 		this->MeleeCollision->SetCollisionEnabled(bEnabled ? ECollisionEnabled::Type::QueryOnly : ECollisionEnabled::Type::NoCollision);
+	}
+}
+
+void ABot::Clear()
+{
+	if (this->FloorBloodDecalActor)
+	{
+		this->FloorBloodDecalActor->Destroy();
 	}
 }

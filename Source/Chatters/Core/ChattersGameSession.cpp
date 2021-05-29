@@ -376,6 +376,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 
 		if (!Bot->bAlive)
 		{
+			Bot->Clear();
 			Bot->Destroy();
 			continue;
 		}

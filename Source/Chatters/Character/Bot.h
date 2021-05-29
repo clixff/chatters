@@ -289,6 +289,14 @@ private:
 		FManualTimer SecondsWithoutMoving = FManualTimer(3.0f);
 
 	FVector LastTickLocation;
+	
+	/** If once checked the possibility to create the floor blood decal */
+	bool bCheckedBloodDecalCreation = false;
+
+	void CreateFloorBloodDecal();
+
+	UPROPERTY()
+		AActor* FloorBloodDecalActor = nullptr;
 private:
 	FBotTarget Target;
 
@@ -361,4 +369,10 @@ public:
 	bool CanExplodeBarrel(AExplodingBarrel* Barrel);
 
 	void SetMeleeCollisionEnabled(bool bEnabled);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		TSubclassOf<AActor> FloorBloodDecalSubclass = nullptr;
+
+	void Clear();
+
 };
