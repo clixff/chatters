@@ -19,6 +19,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "../Misc/Misc.h"
 #include "Components/BoxComponent.h"
+#include "../Misc/BloodDecal.h"
 #include "Bot.generated.h"
 
 
@@ -296,7 +297,7 @@ private:
 	void CreateFloorBloodDecal();
 
 	UPROPERTY()
-		AActor* FloorBloodDecalActor = nullptr;
+		ABloodDecal* FloorBloodDecalActor = nullptr;
 private:
 	FBotTarget Target;
 
@@ -371,8 +372,9 @@ public:
 	void SetMeleeCollisionEnabled(bool bEnabled);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		TSubclassOf<AActor> FloorBloodDecalSubclass = nullptr;
+		TSubclassOf<ABloodDecal> FloorBloodDecalSubclass = nullptr;
 
 	void Clear();
 
+	void RemoveBloodDecal();
 };
