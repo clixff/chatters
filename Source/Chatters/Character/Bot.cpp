@@ -334,6 +334,7 @@ void ABot::CombatTick(float DeltaTime)
 				EWeaponType WeaponType = this->WeaponInstance->WeaponRef->Type;
 
 				float MaxDist = 150.0f;
+				float RealMaxDist = MaxDist;
 
 				if (WeaponType == EWeaponType::Firearm)
 				{
@@ -341,6 +342,7 @@ void ABot::CombatTick(float DeltaTime)
 					if (FirearmInstance && FirearmInstance->GetFirearmRef())
 					{
 						MaxDist = FirearmInstance->GetFirearmRef()->MaxDistance;
+						RealMaxDist = MaxDist;
 
 						if (this->CombatAction == ECombatAction::Moving)
 						{
@@ -355,6 +357,7 @@ void ABot::CombatTick(float DeltaTime)
 				{
 					this->bShouldApplyGunAnimation = (TargetDist <= 400.0f);
 					MaxDist = 400.0f;
+					RealMaxDist = MaxDist;
 				}
 
 				bool bActivateCombatTick = false;
@@ -686,8 +689,13 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	/** If the bot can shoot and not reloading, find new location for it */
 	if (bCanFindNewPlace && !bCanActuallyShoot && !bReloading)
 	{
+		float MaxDistance = FirearmRef->MaxDistance - 150.0f;
+		if (MaxDistance < 150.0f)
+		{
+			MaxDistance = 150.0f;
+		}
 		FVector NewRandomLocation;
-		bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->Target.Actor->GetActorLocation(), NewRandomLocation, FirearmRef->MaxDistance);
+		bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->Target.Actor->GetActorLocation(), NewRandomLocation, MaxDistance);
 
 		this->TimeSinceStartedMovingInCombat = 0.0f;
 
