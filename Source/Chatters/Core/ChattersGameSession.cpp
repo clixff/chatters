@@ -173,6 +173,10 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 			}
 		}
 
+		/** Fix shadow distance bug */
+		PlayerController->ConsoleCommand(TEXT("r.Shadow.MaxCSMResolution 4096"), true);
+		PlayerController->ConsoleCommand(TEXT("r.Shadow.RadiusThreshold 0"), true);
+
 		//PlayerController->ConsoleCommand(TEXT("stat fps"), true);
 		//PlayerController->ConsoleCommand(TEXT("stat unit"), true);
 	}
