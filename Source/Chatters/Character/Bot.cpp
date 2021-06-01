@@ -407,10 +407,19 @@ void ABot::CombatTick(float DeltaTime)
 						}
 					}
 
-					this->bUseControllerRotationYaw = true;
+					//this->bUseControllerRotationYaw = true;
 
 					if (this->CombatAction == ECombatAction::Moving)
 					{
+						if (this->SmoothRotation.bActive)
+						{
+							this->SmoothRotatingTick(DeltaTime);
+						}
+						else
+						{
+							this->bUseControllerRotationYaw = true;
+						}
+
 						this->UpdateMovingTargetTimeout -= DeltaTime;
 
 						if (this->UpdateMovingTargetTimeout <= 0.0f)
@@ -424,23 +433,30 @@ void ABot::CombatTick(float DeltaTime)
 						if (!this->ShouldPlayWeaponReloadingAnimation())
 						{
 
-							if (!this->bSmoothRotatingBeforeMoving)
-							{
-								this->AimAt(this->Target.Actor->GetActorLocation());
-								this->bSmoothRotatingBeforeMoving = true;
-							}
-							else
-							{
-								if (this->SmoothRotation.bActive)
-								{
-									this->SmoothRotatingTick(DeltaTime);
-								}
-								else
-								{
-									this->MoveToTarget();
+							this->AimAt(this->Target.Actor->GetActorLocation());
+							this->bSmoothRotatingBeforeMoving = true;
+							this->bUseControllerRotationYaw = false;
+							this->SmoothRotatingTick(DeltaTime);
 
-								}
-							}
+							this->MoveToTarget();
+
+							//if (!this->bSmoothRotatingBeforeMoving)
+							//{
+							//	this->AimAt(this->Target.Actor->GetActorLocation());
+							//	this->bSmoothRotatingBeforeMoving = true;
+							//}
+							//else
+							//{
+							//	if (this->SmoothRotation.bActive)
+							//	{
+							//		this->SmoothRotatingTick(DeltaTime);
+							//	}
+							//	else
+							//	{
+							//		this->MoveToTarget();
+
+							//	}
+							//}
 						}
 					}
 				}
