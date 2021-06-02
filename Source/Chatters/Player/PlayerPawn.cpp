@@ -333,8 +333,6 @@ FRotator APlayerPawn::FindNewAcceptableCameraRotation(FRotator StartRotation)
 		/** Check is bot visible from camera */
 		bool bVisible = this->IsBotVisibleFromCamera(Distance, RotationToCheck);
 
-		UE_LOG(LogTemp, Display, TEXT("[APlayerPawn] Checking camera yaw %f. Bot visible: %d. # %d"), YawRotation, bVisible, i);
-
 		if (bVisible)
 		{
 			RotationToSet = RotationToCheck;

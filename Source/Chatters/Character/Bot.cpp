@@ -128,6 +128,16 @@ void ABot::Tick(float DeltaTime)
 
 			if (this->SecondsWithoutMoving.IsEnded())
 			{
+				FString OldTargetName = TEXT("nullptr");
+				float OldTargetDist = 0.0f;
+
+				if (this->Target.Actor)
+				{
+					OldTargetName = this->Target.Actor->GetName();
+					OldTargetDist = FVector::Dist(this->Target.Actor->GetActorLocation(), this->GetActorLocation());
+				}
+
+				UE_LOG(LogTemp, Warning, TEXT("[ABot] Bot %s stuck, finding new target. Combat Action was %d. Old target name is %s"), *this->DisplayName, int(this->CombatAction), *OldTargetName);
 				this->SecondsWithoutMoving.Reset();
 				this->FindNewEnemyTarget();
 			}
@@ -306,6 +316,11 @@ void ABot::MoveToTarget()
 	this->CombatAction = ECombatAction::Moving;
 	FVector TargetLocation = this->Target.Actor->GetActorLocation();
 
+	if (this->Target.TargetType == ETargetType::ExplodingBarrel)
+	{
+		UE_LOG(LogTemp, Display, TEXT("[ABot] Moving bot %s to exploding barrel. "), *this->DisplayName);
+	}
+
 	AIController->MoveToNewLocation(TargetLocation);
 
 	this->AimingAngle = 50.0f;
@@ -437,6 +452,15 @@ void ABot::CombatTick(float DeltaTime)
 							this->MoveToTarget();
 						}
 					}
+				}
+
+				if (this->bShouldApplyGunAnimation)
+				{
+					this->AimingTime.Add(DeltaTime);
+				}
+				else
+				{
+					this->AimingTime.Current = 0.0f;
 				}
 			}
 		}
@@ -603,7 +627,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		HitActor = BulletHitResult.HitResult.GetActor();
 	}
 
-	bool bCanActuallyShoot = bCanShoot && (HitActor == this->Target.Actor || HitActor == this->Target.Bot);
+	bool bCanActuallyShoot = bCanShoot && (HitActor == this->Target.Actor || HitActor == this->Target.Bot) && this->AimingTime.IsEnded();
 
 	/** If aiming at barrel */
 	if (TargetBarrel && HitActor == this->Target.Actor)

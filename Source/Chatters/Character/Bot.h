@@ -296,6 +296,8 @@ private:
 
 	UPROPERTY()
 		ABloodDecal* FloorBloodDecalActor = nullptr;
+
+	FManualTimer AimingTime = FManualTimer(0.2f);
 private:
 	FBotTarget Target;
 
