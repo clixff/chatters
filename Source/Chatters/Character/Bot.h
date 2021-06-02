@@ -269,8 +269,6 @@ private:
 
 	FVector GunAnimationRotationPoint = FVector(0.0f, 0.0f, 10.094025);
 
-	bool bSmoothRotatingBeforeMoving = false;
-
 	float SecondsAimingWithoutHitting = 0.0f;
 	float MaxSecondsAimingWithoutHitting = 5.0f;
 

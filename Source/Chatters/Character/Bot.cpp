@@ -249,7 +249,6 @@ void ABot::FindNewEnemyTarget()
 
 void ABot::SetNewEnemyTarget(ABot* TargetBot)
 {
-	this->bSmoothRotatingBeforeMoving = false;
 	this->SecondsAimingWithoutHitting = 0.0f;
 	this->DefenderSecondsWithoutMoving = 0.0f;
 	this->bMovingToRandomLocation = false;
@@ -430,33 +429,12 @@ void ABot::CombatTick(float DeltaTime)
 					}
 					else
 					{
-						if (!this->ShouldPlayWeaponReloadingAnimation())
+						if (!this->ShouldPlayWeaponReloadingAnimation() && !this->ShouldPlayWeaponHitAnimation())
 						{
-
 							this->AimAt(this->Target.Actor->GetActorLocation());
-							this->bSmoothRotatingBeforeMoving = true;
 							this->bUseControllerRotationYaw = false;
 							this->SmoothRotatingTick(DeltaTime);
-
 							this->MoveToTarget();
-
-							//if (!this->bSmoothRotatingBeforeMoving)
-							//{
-							//	this->AimAt(this->Target.Actor->GetActorLocation());
-							//	this->bSmoothRotatingBeforeMoving = true;
-							//}
-							//else
-							//{
-							//	if (this->SmoothRotation.bActive)
-							//	{
-							//		this->SmoothRotatingTick(DeltaTime);
-							//	}
-							//	else
-							//	{
-							//		this->MoveToTarget();
-
-							//	}
-							//}
 						}
 					}
 				}
