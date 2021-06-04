@@ -259,8 +259,8 @@ void ABot::FindNewEnemyTarget()
 
 void ABot::SetNewEnemyTarget(ABot* TargetBot)
 {
-	this->SecondsAimingWithoutHitting = 0.0f;
-	this->DefenderSecondsWithoutMoving = 0.0f;
+	this->SecondsAimingWithoutHitting.Reset();
+	this->DefenderSecondsWithoutMoving.Reset();
 	this->bMovingToRandomLocation = false;
 	this->TimeSinceStartedMovingInCombat = 0.0f;
 
@@ -651,34 +651,34 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	if (HitActor != this->Target.Actor || bObstacleBetweenBots)
 	{
-		this->SecondsAimingWithoutHitting += DeltaTime;
+		this->SecondsAimingWithoutHitting.Add(DeltaTime);
 	}
 	else
 	{
-		this->SecondsAimingWithoutHitting = 0.0f;
+		this->SecondsAimingWithoutHitting.Reset();
 	}
 
 	bool bCanFindNewPlace = this->CombatStyle == ECombatStyle::Attack;
 
-	if (this->SecondsAimingWithoutHitting >= this->MaxSecondsAimingWithoutHitting && this->CombatStyle == ECombatStyle::Defense)
+	if (this->SecondsAimingWithoutHitting.IsEnded() && this->CombatStyle == ECombatStyle::Defense)
 	{
 		/** Allow defenders find new place if, for example, they aiming at wall  */
 		bCanFindNewPlace = true;
-		this->SecondsAimingWithoutHitting = 0.0f;
+		this->SecondsAimingWithoutHitting.Reset();
 	}
 
 	if (this->CombatStyle == ECombatStyle::Defense)
 	{
 		if (this->bMovingToRandomCombatLocation)
 		{
-			this->DefenderSecondsWithoutMoving = 0.0f;
+			this->DefenderSecondsWithoutMoving.Reset();
 		}
 		else
 		{
-			this->DefenderSecondsWithoutMoving += DeltaTime;
+			this->DefenderSecondsWithoutMoving.Add(DeltaTime);
 
 			/** Allow defenders to move after 20 seconds */
-			if (this->DefenderSecondsWithoutMoving >= this->DefenderMaxSecondsWithoutMoving)
+			if (this->DefenderSecondsWithoutMoving.IsEnded())
 			{
 				bCanFindNewPlace = true;
 			}
@@ -726,7 +726,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 			this->bMovingToRandomCombatLocation = true;
 			this->bUseControllerRotationYaw = false;
 			this->CombatRandomLocation = NewRandomLocation;
-			this->DefenderSecondsWithoutMoving = 0.0f;
+			this->DefenderSecondsWithoutMoving.Reset();
 
 			if (AIController)
 			{

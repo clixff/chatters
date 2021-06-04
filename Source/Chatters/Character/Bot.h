@@ -269,11 +269,10 @@ private:
 
 	FVector GunAnimationRotationPoint = FVector(0.0f, 0.0f, 10.094025);
 
-	float SecondsAimingWithoutHitting = 0.0f;
-	float MaxSecondsAimingWithoutHitting = 5.0f;
+	FManualTimer SecondsAimingWithoutHitting = FManualTimer(5.0f);
 
 	UPROPERTY(VisibleAnywhere)
-		float DefenderSecondsWithoutMoving = 0.0f;
+		FManualTimer DefenderSecondsWithoutMoving = FManualTimer(10.0f);
 	/** Allow defender to move after 20s */
 	float DefenderMaxSecondsWithoutMoving = 10.0f;
 
