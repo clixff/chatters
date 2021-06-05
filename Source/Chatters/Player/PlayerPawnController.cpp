@@ -64,6 +64,9 @@ void APlayerPawnController::SetupInputComponent()
 	this->InputComponent->BindAction("Slomo", IE_Pressed, this, &APlayerPawnController::OnSlowmoStart);
 	this->InputComponent->BindAction("Slomo", IE_Released, this, &APlayerPawnController::OnSlowmoEnd);
 
+	this->InputComponent->BindAction("Esc", IE_Pressed, this, &APlayerPawnController::OnEscPressed);
+
+
 ;}
 
 void APlayerPawnController::BeginPlay()
@@ -85,6 +88,10 @@ void APlayerPawnController::MoveRight(float Value)
 
 void APlayerPawnController::TurnX(float Value)
 {
+	if (!this->bCanControl)
+	{
+		return;
+	}
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 
 	if (PlayerPawnActor && Value != 0.0f)
@@ -102,6 +109,11 @@ void APlayerPawnController::TurnX(float Value)
 
 void APlayerPawnController::TurnY(float Value)
 {
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 
 	if (PlayerPawnActor && Value != 0.0f)
@@ -119,6 +131,10 @@ void APlayerPawnController::TurnY(float Value)
 
 void APlayerPawnController::MovePawn(EAxis::Type Axis, float Value)
 {
+	if (!this->bCanControl)
+	{
+		return;
+	}
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 	if (PlayerPawnActor && Value != 0.0f)
 	{
@@ -151,6 +167,11 @@ void APlayerPawnController::OnShiftReleased()
 
 void APlayerPawnController::UpdateMaxMovementSpeed(float MaxSpeed)
 {
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 
 	if (PlayerPawnActor)
@@ -166,9 +187,14 @@ void APlayerPawnController::UpdateMaxMovementSpeed(float MaxSpeed)
 
 void APlayerPawnController::OnSpacePressed()
 {
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
 	auto* GameInstance = UChattersGameInstance::Get();
 
-	if (GameInstance)
+	if (GameInstance && !GameInstance->GetIsInMainMenu())
 	{
 		auto* GameSession = GameInstance->GetGameSession();
 		
@@ -192,6 +218,11 @@ void APlayerPawnController::OnMouseWheelDown()
 void APlayerPawnController::Zoom(float Value)
 {
 	if (Value == 0.0f)
+	{
+		return;
+	}
+
+	if (!this->bCanControl)
 	{
 		return;
 	}
@@ -252,6 +283,11 @@ void APlayerPawnController::RotateAttachedCamera(ERotationType Type, float Value
 		return;
 	}
 
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 
 	if (PlayerPawnActor)
@@ -300,6 +336,19 @@ void APlayerPawnController::OnRightMouseClick()
 
 void APlayerPawnController::AttachPlayerToAliveBot(EAttachCameraToBotType Type)
 {
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (!GameInstance || GameInstance->GetIsInMainMenu())
+	{
+		return;
+	}
+
+
 	auto* PlayerActor = this->GetPlayerPawn();
 
 	if (PlayerActor)
@@ -311,16 +360,11 @@ void APlayerPawnController::AttachPlayerToAliveBot(EAttachCameraToBotType Type)
 			AttachedToBotID = PlayerActor->BotToAttach->ID;
 		}
 
-		auto* GameInstance = UChattersGameInstance::Get();
+		auto* GameSession = GameInstance->GetGameSession();
 
-		if (GameInstance)
+		if (GameSession)
 		{
-			auto* GameSession = GameInstance->GetGameSession();
-
-			if (GameSession)
-			{
-				GameSession->AttachPlayerToAliveBot(Type, AttachedToBotID);
-			}
+			GameSession->AttachPlayerToAliveBot(Type, AttachedToBotID);
 		}
 	}
 }
@@ -333,4 +377,42 @@ void APlayerPawnController::OnSlowmoStart()
 void APlayerPawnController::OnSlowmoEnd()
 {
 	this->ConsoleCommand(TEXT("slomo 1.0"));
+}
+
+void APlayerPawnController::OnEscPressed()
+{
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	if (GameInstance->GetIsInMainMenu())
+	{
+
+	}
+	else
+	{
+		auto* GameSession = GameInstance->GetGameSession();
+
+		if (GameSession)
+		{
+			auto* PauseMenuWidget = GameSession->GetPauseMenuWidget();
+
+			if (!PauseMenuWidget || PauseMenuWidget->bAnimationPlaying)
+			{
+				return;
+			}
+
+			if (GameInstance->GetIsGamePaused())
+			{
+				PauseMenuWidget->OnEscPressed();
+			}
+			else
+			{
+				GameSession->PauseGame();
+			}
+		}
+	}
 }

@@ -7,6 +7,7 @@
 #include "../Character/Bot.h"
 #include "../Character/BotSpawnPoint.h"
 #include "../UI/Widgets/SessionWidget.h"
+#include "../UI/Widgets/PauseMenuWidget.h"
 #include "../Misc/Misc.h"
 #include "../Character/Equipment/EquipmentList.h"
 #include "../Props/ExplodingBarrel.h"
@@ -114,12 +115,24 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		TSubclassOf<AFirearmProjectile> FirearmProjectileSubClass = AFirearmProjectile::StaticClass();
+
+	UPauseMenuWidget* GetPauseMenuWidget();
+
+	void PauseGame();
+
+	void UnpauseGame();
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<USessionWidget> SessionWidgetClass;
+
+	UPROPERTY(VisibleAnywhere)
+		UPauseMenuWidget* PauseMenuWidget = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		TSubclassOf<UPauseMenuWidget> PauseMenuWidgetClass;
 
 	int32 RoundNumber = 1;
 };

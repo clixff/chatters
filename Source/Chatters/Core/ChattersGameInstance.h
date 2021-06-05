@@ -33,6 +33,8 @@ public:
 
 	void SetIsInMainMenu(bool bInMainMenu);
 
+	void ReturnToTheMainMenu();
+
 	/** 
 	 * Map manager: 
 	 */
@@ -73,6 +75,10 @@ public:
 
 	bool GetIsInMainMenu();
 
+	void SetIsGamePaused(bool bPauseStatus);
+
+	bool GetIsGamePaused();
+
 public:
 	/** Get Singleton */
 	static UChattersGameInstance* Get();
@@ -81,6 +87,8 @@ public:
 	static APlayerController* GetPlayerController();
 
 	static FName CoreStringTablePath;
+
+	static void SetUIControlMode(bool bAllowUIControl);
 private:
 	static UChattersGameInstance* Singleton;
 
@@ -96,4 +104,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Export)
 		UChattersGameSession* GameSession = nullptr;
+
+	bool bGamePaused = false;
 };

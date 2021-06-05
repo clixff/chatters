@@ -54,6 +54,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		float AttachedCameraMinPitchRotation = -70.0f;
 
+	bool bCanControl = true;
 protected:
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
@@ -96,5 +97,7 @@ private:
 
 	void OnSlowmoStart();
 	void OnSlowmoEnd();
+
+	void OnEscPressed();
 
 };

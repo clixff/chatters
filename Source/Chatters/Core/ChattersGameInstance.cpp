@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ChattersGameInstance.h"
+#include "../Player/PlayerPawnController.h"
+#include "Slate/SceneViewport.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -34,16 +36,7 @@ void UChattersGameInstance::Init()
 
 	this->bInitialized = true;
 
-	auto* PlayerController = this->GetPlayerController();
-
-	if (PlayerController)
-	{
-		/** Fix shadow distance bug */
-		PlayerController->ConsoleCommand(TEXT("r.Shadow.MaxCSMResolution 4096"), true);
-		PlayerController->ConsoleCommand(TEXT("r.Shadow.RadiusThreshold 0"), true);
-	}
-
-	this->GetMapManager()->LoadLevel(this->GetMapManager()->MenuWorldName, true);
+	this->ReturnToTheMainMenu();
 }
 
 void UChattersGameInstance::Shutdown()
@@ -82,6 +75,8 @@ void UChattersGameInstance::LoadComplete(const float LoadTime, const FString& Ma
 			this->GameSession->LevelLoaded(this->GetMapManager()->WorldName);
 		}
 	}
+
+	this->SetIsGamePaused(false);
 }
 
 void UChattersGameInstance::SetIsInMainMenu(bool bInMainMenuNew)
@@ -92,6 +87,27 @@ void UChattersGameInstance::SetIsInMainMenu(bool bInMainMenuNew)
 	}
 
 	this->bInMainMenu = bInMainMenuNew;
+
+	auto* PlayerPawnController = Cast<APlayerPawnController>(this->GetPlayerController());
+
+	if (PlayerPawnController)
+	{
+		PlayerPawnController->bCanControl = !this->bInMainMenu;
+	}
+
+	if (bInMainMenu)
+	{
+		if (this->GameSession)
+		{
+			this->GameSession->Destroy();
+			this->GameSession = nullptr;
+		}
+	}
+}
+
+void UChattersGameInstance::ReturnToTheMainMenu()
+{
+	this->GetMapManager()->LoadLevel(this->GetMapManager()->MenuWorldName, true);
 }
 
 UMapManager* UChattersGameInstance::GetMapManager()
@@ -161,7 +177,7 @@ void UChattersGameInstance::ToggleMainMenuUI(bool MainMenuStatus)
 
 		auto* MainMenuWidget = this->GetWidgetManager()->MainMenuWidget;
 
-		UE_LOG(LogTemp, Display, TEXT("[UChattersGameInstance] Is mainMenu widget nullptr: %d"), MainMenuStatus);
+		UE_LOG(LogTemp, Display, TEXT("[UChattersGameInstance] Is mainMenu widget nullptr: %d"), MainMenuWidget == nullptr);
 
 
 		if (MainMenuWidget != nullptr)
@@ -169,11 +185,17 @@ void UChattersGameInstance::ToggleMainMenuUI(bool MainMenuStatus)
 			MainMenuWidget->Show();
 			this->ToggleMouseCursor(true);
 		}
+
+		UChattersGameInstance::SetUIControlMode(true);
+
 	}
 	else
 	{
 		this->GetWidgetManager()->RemoveMainMenuWidget();
 		this->ToggleMouseCursor(false);
+
+		UChattersGameInstance::SetUIControlMode(false);
+
 	}
 }
 
@@ -227,6 +249,52 @@ APlayerController* UChattersGameInstance::GetPlayerController()
 	return PlayerController;
 }
 
+void UChattersGameInstance::SetUIControlMode(bool bAllowUIControl)
+{
+	auto* PlayerController = UChattersGameInstance::GetPlayerController();
+
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	if (bAllowUIControl)
+	{
+		auto InputMode = FInputModeGameAndUI();
+		InputMode.SetHideCursorDuringCapture(false);
+		PlayerController->SetInputMode(InputMode);
+
+		FVector2D ViewportSize = FVector2D(1.0f, 1.0f);
+
+		if (GEngine && GEngine->GameViewport)
+		{
+			GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+			auto* GameViewport = GEngine->GameViewport->GetGameViewport();
+
+			if (!GameViewport)
+			{
+				return;
+			}
+
+			auto CachedGeometry = GameViewport->GetCachedGeometry();
+
+			if (CachedGeometry.GetLocalSize() != FVector2D(0.0f, 0.0f))
+			{
+				FVector2D ViewportCenter = ViewportSize / 2.0f;
+
+				PlayerController->SetMouseLocation(FMath::RoundToInt(ViewportCenter.X), FMath::RoundToInt(ViewportCenter.Y));
+			}
+		}
+
+
+	}
+	else
+	{
+		PlayerController->SetInputMode(FInputModeGameOnly());
+	}
+}
+
 void UChattersGameInstance::StartGameSession()
 {
 	if (this->GameSession)
@@ -248,4 +316,21 @@ void UChattersGameInstance::StartGameSession()
 bool UChattersGameInstance::GetIsInMainMenu()
 {
 	return this->bInMainMenu;
+}
+
+void UChattersGameInstance::SetIsGamePaused(bool bPauseStatus)
+{
+	this->bGamePaused = bPauseStatus;
+
+	auto* PlayerController = this->GetPlayerController();
+
+	if (PlayerController)
+	{
+		PlayerController->SetPause(this->bGamePaused);
+	}
+}
+
+bool UChattersGameInstance::GetIsGamePaused()
+{
+	return this->bGamePaused;
 }

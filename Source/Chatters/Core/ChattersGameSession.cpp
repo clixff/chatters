@@ -4,6 +4,7 @@
 #include "ChattersGameSession.h"
 #include "ChattersGameInstance.h"
 #include "../Player/PlayerPawn.h"
+#include "../Player/PlayerPawnController.h"
 #include "Managers/MapManager.h"
 
 UChattersGameSession* UChattersGameSession::Singleton = nullptr;
@@ -16,7 +17,10 @@ UChattersGameSession::UChattersGameSession()
 UChattersGameSession::~UChattersGameSession()
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession destroyed"));
-	UChattersGameSession::Singleton = nullptr;
+	if (UChattersGameSession::Singleton == this)
+	{
+		UChattersGameSession::Singleton = nullptr;
+	}
 }
 
 void UChattersGameSession::Init()
@@ -65,6 +69,16 @@ void UChattersGameSession::Destroy()
 		}
 	}
 
+	if (this->SessionWidget && this->SessionWidget->IsValidLowLevel())
+	{
+		this->SessionWidget->ConditionalBeginDestroy();
+	}
+
+	if (this->PauseMenuWidget && this->PauseMenuWidget->IsValidLowLevel())
+	{
+		this->PauseMenuWidget->ConditionalBeginDestroy();
+	}
+
 	if (this->IsValidLowLevel())
 	{
 		this->ConditionalBeginDestroy();
@@ -73,6 +87,7 @@ void UChattersGameSession::Destroy()
 
 void UChattersGameSession::LevelLoaded(FString LevelName)
 {
+
 	this->BlueAlive = 0;
 	this->RedAlive = 0;
 
@@ -173,6 +188,13 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 			}
 		}
 
+		auto* PlayerPawnController = Cast<APlayerPawnController>(PlayerController);
+
+		if (PlayerPawnController)
+		{
+			PlayerPawnController->bCanControl = true;
+		}
+
 		/** Fix shadow distance bug */
 		PlayerController->ConsoleCommand(TEXT("r.Shadow.MaxCSMResolution 4096"), true);
 		PlayerController->ConsoleCommand(TEXT("r.Shadow.RadiusThreshold 0"), true);
@@ -180,6 +202,8 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		//PlayerController->ConsoleCommand(TEXT("stat fps"), true);
 		//PlayerController->ConsoleCommand(TEXT("stat unit"), true);
 	}
+
+	UChattersGameInstance::SetUIControlMode(false);
 
 
 	this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
@@ -467,4 +491,72 @@ FTransform UChattersGameSession::GetAvailableSpawnPoint()
 	}
 
 	return SpawnPointTransform;
+}
+
+UPauseMenuWidget* UChattersGameSession::GetPauseMenuWidget()
+{
+	if (!this->PauseMenuWidget)
+	{
+		if (!this->PauseMenuWidgetClass)
+		{
+			this->PauseMenuWidgetClass = UPauseMenuWidget::StaticClass();
+		}
+
+		this->PauseMenuWidget = UCustomWidgetBase::CreateUserWidget(this->PauseMenuWidgetClass);
+	}
+
+	return this->PauseMenuWidget;
+}
+
+void UChattersGameSession::PauseGame()
+{
+	auto* PauseMenuWidgetPtr = this->GetPauseMenuWidget();
+
+	if (PauseMenuWidgetPtr)
+	{
+		auto* GameInstance = UChattersGameInstance::Get();
+
+		if (GameInstance)
+		{
+			GameInstance->SetIsGamePaused(true);
+
+			auto* PlayerController = Cast<APlayerPawnController>(GameInstance->GetPlayerController());
+
+			if (PlayerController)
+			{
+				PlayerController->bCanControl = false;
+			}
+		}
+
+		PauseMenuWidgetPtr->Show();
+
+		if (this->SessionWidget)
+		{
+			this->SessionWidget->Hide();
+		}
+	}
+}
+
+void UChattersGameSession::UnpauseGame()
+{
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (GameInstance)
+	{
+		auto* PlayerController = Cast<APlayerPawnController>(GameInstance->GetPlayerController());
+
+		if (PlayerController)
+		{
+			PlayerController->bCanControl = true;
+		}
+
+		UChattersGameInstance::SetUIControlMode(false);
+
+		GameInstance->SetIsGamePaused(false);
+
+		if (this->SessionWidget)
+		{
+			this->SessionWidget->Show();
+		}
+	}
 }
