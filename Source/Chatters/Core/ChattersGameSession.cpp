@@ -23,7 +23,7 @@ UChattersGameSession::~UChattersGameSession()
 	}
 }
 
-void UChattersGameSession::Init()
+void UChattersGameSession::Init(FString LevelName)
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession init"));
 
@@ -37,7 +37,7 @@ void UChattersGameSession::Init()
 
 		if (MapManager)
 		{
-			MapManager->LoadLevel(MapManager->WildWestWorldName, true);
+			MapManager->LoadLevel(LevelName, true);
 		}
 	}
 

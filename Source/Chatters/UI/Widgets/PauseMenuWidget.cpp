@@ -15,7 +15,7 @@ void UPauseMenuWidget::Show()
 		GameInstance->ToggleMouseCursor(true);
 	}
 
-	this->SetTab(EPauseMenuTab::PauseMenu);
+	this->SetTab(EPauseMenuTab::PauseMenu, false);
 
 	this->PlayFadeInAnimation();
 
@@ -40,7 +40,7 @@ void UPauseMenuWidget::Hide()
 	}
 }
 
-void UPauseMenuWidget::SetTab_Implementation(const EPauseMenuTab& NewTab)
+void UPauseMenuWidget::SetTab_Implementation(const EPauseMenuTab& NewTab, bool bPlayAnimation)
 {
 	this->Tab = NewTab;
 }

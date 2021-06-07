@@ -42,7 +42,7 @@ public:
 	UChattersGameSession();
 	~UChattersGameSession();
 
-	void Init();
+	void Init(FString LevelName);
 
 	void Destroy();
 

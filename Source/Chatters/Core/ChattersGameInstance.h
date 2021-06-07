@@ -71,7 +71,7 @@ public:
 
 	void ToggleMouseCursor(bool bShowMouseCursor);
 
-	void StartGameSession();
+	void StartGameSession(FString LevelName);
 
 	bool GetIsInMainMenu();
 

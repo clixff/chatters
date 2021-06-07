@@ -31,9 +31,9 @@ public:
 		EPauseMenuTab Tab = EPauseMenuTab::PauseMenu;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-		void SetTab(const EPauseMenuTab &NewTab);
+		void SetTab(const EPauseMenuTab &NewTab, bool bPlayAnimation = true);
 
-	void SetTab_Implementation(const EPauseMenuTab &NewTab);
+	void SetTab_Implementation(const EPauseMenuTab &NewTab, bool bPlayAnimation);
 
 	void UnpauseGame();
 

@@ -295,7 +295,7 @@ void UChattersGameInstance::SetUIControlMode(bool bAllowUIControl)
 	}
 }
 
-void UChattersGameInstance::StartGameSession()
+void UChattersGameInstance::StartGameSession(FString LevelName)
 {
 	if (this->GameSession)
 	{
@@ -310,7 +310,7 @@ void UChattersGameInstance::StartGameSession()
 
 	this->GameSession = NewObject<UChattersGameSession>(this, this->GameSessionClass, TEXT("GameSession"));
 
-	this->GameSession->Init();
+	this->GameSession->Init(LevelName);
 }
 
 bool UChattersGameInstance::GetIsInMainMenu()

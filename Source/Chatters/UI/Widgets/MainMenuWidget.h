@@ -4,7 +4,29 @@
 
 #include "CoreMinimal.h"
 #include "CustomWidgetBase.h"
+#include "Materials/MaterialInterface.h"
+#include "MainMenu/MapPreview.h"
 #include "MainMenuWidget.generated.h"
+
+USTRUCT(BlueprintType)
+struct FMainMenuLevelToPlay
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		FString LevelName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		UMaterialInterface* LevelPreview;
+};
+
+UENUM(BlueprintType)
+enum class EMainMenuTab : uint8
+{
+	MainMenu,
+	MapSelect,
+	Settings
+};
 
 /**
  * 
@@ -14,9 +36,41 @@ class CHATTERS_API UMainMenuWidget : public UCustomWidgetBase
 {
 	GENERATED_BODY()
 public:
+	virtual void Show() override;
+
 	UFUNCTION(BlueprintCallable)
 		void OnPlayClick();
 
 	UFUNCTION(BlueprintCallable)
 		void OnQuitClick();
+
+	UPROPERTY(BlueprintReadOnly)
+		EMainMenuTab Tab = EMainMenuTab::MainMenu;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+		void SetTab(EMainMenuTab NewTab, bool bPlayAnimation = true);
+
+	void SetTab_Implementation(EMainMenuTab NewTab, bool bPlayAnimation);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		TArray<FMainMenuLevelToPlay> LevelsList;
+
+	UPROPERTY(BlueprintReadOnly)
+		int32 SelectedLevel = 0;
+
+	UFUNCTION(BlueprintCallable)
+		void OnLoginClick();
+
+	UFUNCTION(blueprintnativeEvent, BlueprintCallable)
+		void UpdateLoginStatus(bool bLogined, const FString& TwitchName, const FString& TwitchAvatarURL);
+
+	void UpdateLoginStatus_Implementation(bool bLogined, const FString& TwitchName, const FString& TwitchAvatarURL);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		TSubclassOf<UMapPreview> MapPreviewSubclass;
+
+	UPROPERTY()
+		TArray<UMapPreview*> MapPreviewWidgets;
+
+	void SetSelectedLevel(int32 NewSelectedLevel);
 };
