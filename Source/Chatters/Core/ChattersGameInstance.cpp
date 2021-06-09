@@ -22,7 +22,7 @@ UChattersGameInstance::~UChattersGameInstance()
 
 void UChattersGameInstance::Init()
 {
-	float RandNumber = FMath::RandRange(0.0f, 100.0f);
+	USavedSettings::Singleton = nullptr;
 
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameInstance] GameInstance init"));
 
@@ -35,6 +35,8 @@ void UChattersGameInstance::Init()
 	this->CreateWidgetManager();
 
 	this->bInitialized = true;
+
+	this->SavedSettings = USavedSettings::LoadOrCreate();
 
 	this->ReturnToTheMainMenu();
 }
@@ -186,7 +188,7 @@ void UChattersGameInstance::ToggleMainMenuUI(bool MainMenuStatus)
 			this->ToggleMouseCursor(true);
 		}
 
-		UChattersGameInstance::SetUIControlMode(true);
+		UChattersGameInstance::SetUIControlMode(true, false);
 
 	}
 	else
@@ -249,7 +251,7 @@ APlayerController* UChattersGameInstance::GetPlayerController()
 	return PlayerController;
 }
 
-void UChattersGameInstance::SetUIControlMode(bool bAllowUIControl)
+void UChattersGameInstance::SetUIControlMode(bool bAllowUIControl, bool bUpdateMousePosition)
 {
 	auto* PlayerController = UChattersGameInstance::GetPlayerController();
 
@@ -264,30 +266,31 @@ void UChattersGameInstance::SetUIControlMode(bool bAllowUIControl)
 		InputMode.SetHideCursorDuringCapture(false);
 		PlayerController->SetInputMode(InputMode);
 
-		FVector2D ViewportSize = FVector2D(1.0f, 1.0f);
-
-		if (GEngine && GEngine->GameViewport)
+		if (bUpdateMousePosition)
 		{
-			GEngine->GameViewport->GetViewportSize(ViewportSize);
+			FVector2D ViewportSize = FVector2D(1.0f, 1.0f);
 
-			auto* GameViewport = GEngine->GameViewport->GetGameViewport();
-
-			if (!GameViewport)
+			if (GEngine && GEngine->GameViewport)
 			{
-				return;
-			}
+				GEngine->GameViewport->GetViewportSize(ViewportSize);
 
-			auto CachedGeometry = GameViewport->GetCachedGeometry();
+				auto* GameViewport = GEngine->GameViewport->GetGameViewport();
 
-			if (CachedGeometry.GetLocalSize() != FVector2D(0.0f, 0.0f))
-			{
-				FVector2D ViewportCenter = ViewportSize / 2.0f;
+				if (!GameViewport)
+				{
+					return;
+				}
 
-				PlayerController->SetMouseLocation(FMath::RoundToInt(ViewportCenter.X), FMath::RoundToInt(ViewportCenter.Y));
+				auto CachedGeometry = GameViewport->GetCachedGeometry();
+
+				if (CachedGeometry.GetLocalSize() != FVector2D(0.0f, 0.0f))
+				{
+					FVector2D ViewportCenter = ViewportSize / 2.0f;
+
+					PlayerController->SetMouseLocation(FMath::RoundToInt(ViewportCenter.X), FMath::RoundToInt(ViewportCenter.Y));
+				}
 			}
 		}
-
-
 	}
 	else
 	{

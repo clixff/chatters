@@ -7,6 +7,7 @@
 #include "Managers/MapManager.h"
 #include "Managers/WidgetManager.h"
 #include "ChattersGameSession.h"
+#include "./Settings/SavedSettings.h"
 #include "ChattersGameInstance.generated.h"
 
 /**
@@ -88,7 +89,7 @@ public:
 
 	static FName CoreStringTablePath;
 
-	static void SetUIControlMode(bool bAllowUIControl);
+	static void SetUIControlMode(bool bAllowUIControl, bool bUpdateMousePosition = true);
 private:
 	static UChattersGameInstance* Singleton;
 
@@ -104,6 +105,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Export)
 		UChattersGameSession* GameSession = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Export)
+		USavedSettings* SavedSettings = nullptr;
 
 	bool bGamePaused = false;
 };

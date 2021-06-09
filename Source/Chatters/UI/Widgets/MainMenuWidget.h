@@ -6,6 +6,7 @@
 #include "CustomWidgetBase.h"
 #include "Materials/MaterialInterface.h"
 #include "MainMenu/MapPreview.h"
+#include "Components/EditableTextBox.h"
 #include "MainMenuWidget.generated.h"
 
 USTRUCT(BlueprintType)
@@ -73,4 +74,23 @@ public:
 		TArray<UMapPreview*> MapPreviewWidgets;
 
 	void SetSelectedLevel(int32 NewSelectedLevel);
+
+	void SetLevelParam(FString ParamKey, FString ParamValue);
+
+	UFUNCTION(BlueprintCallable)
+		void OnNumberInputChanged(UEditableTextBox* InputWidget);
+
+	UFUNCTION(BlueprintCallable)
+		int32 OnNumberInputComitted(UEditableTextBox* InputWidget, int32 MinValue, int32 MaxValue, int32 DefaultValue);
+
+	UFUNCTION(BlueprintCallable)
+		void SetMaxBotsValue(int32 MaxBots, UEditableTextBox* Widget = nullptr, bool bUpdateSettings = true);
+private:
+	TArray<UWidget*> GetButtonWidgets();
+
+	void AddButtonWidgetToArray(int32 ButtonIndex);
+
+	UPROPERTY()
+		TArray<UWidget*> ButtonWidgets;
+	
 };

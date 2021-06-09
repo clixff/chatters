@@ -5,6 +5,7 @@
 #include "ChattersGameInstance.h"
 #include "../Player/PlayerPawn.h"
 #include "../Player/PlayerPawnController.h"
+#include "./Settings/SavedSettings.h"
 #include "Managers/MapManager.h"
 
 UChattersGameSession* UChattersGameSession::Singleton = nullptr;
@@ -28,6 +29,16 @@ void UChattersGameSession::Init(FString LevelName)
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameSession] UChattersGameSession init"));
 
 	UChattersGameSession::Singleton = this;
+
+
+	auto* SavedSettings = USavedSettings::Get();
+
+	if (SavedSettings)
+	{
+		this->GameModeType = SavedSettings->DefaultSessionGameMode;
+		this->SessionType = SavedSettings->DefaultSessionType;
+		this->MaxPlayers = SavedSettings->DefaultMaxPlayers;
+	}
 
 	auto* GameInstance = UChattersGameInstance::Get();
 	

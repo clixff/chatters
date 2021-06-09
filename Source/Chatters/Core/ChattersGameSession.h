@@ -15,21 +15,6 @@
 #include "../Combat/FirearmProjectile.h"
 #include "ChattersGameSession.generated.h"
 
-
-UENUM(BlueprintType)
-enum class ESessionType : uint8
-{
-	/**
-	 * Fill battleground with generated bots
-	 */
-	Generated	UMETA(DisplayName = "Generated"),
-
-	/**
-	 * Spawn twitch viewers
-	 */
-	Twitch	UMETA(DisplayName = "Twitch")
-};
-
 /**
  * 
  */

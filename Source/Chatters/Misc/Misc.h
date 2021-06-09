@@ -76,3 +76,60 @@ public:
 		this->Current = 0.0f;
 	}
 };
+
+UENUM(BlueprintType)
+enum class EGraphicsQualityLevel : uint8
+{
+	Low,
+	Mid,
+	High
+};
+
+UENUM(BlueprintType)
+enum class EKillFeedPosition : uint8
+{
+	Left,
+	Right
+};
+
+UENUM(BlueprintType)
+enum class ESessionType : uint8
+{
+	/**
+	 * Fill battleground with generated bots
+	 */
+	Generated	UMETA(DisplayName = "Generated"),
+
+	/**
+	 * Spawn twitch viewers
+	 */
+	 Twitch	UMETA(DisplayName = "Twitch")
+};
+
+class FStringHelper
+{
+public:
+	FStringHelper() {  };
+
+	static FString ReplaceAllNonNumbers(FString OriginalString)
+	{
+		FString OutString = TEXT("");
+
+		TArray<TCHAR> NewStringChars;
+
+		auto CharsList = OriginalString.GetCharArray();
+
+		for (auto& Character : CharsList)
+		{
+			auto bIsDigit = iswdigit(Character);
+			if (bIsDigit)
+			{
+				NewStringChars.Add(Character);
+			}
+		}
+
+		OutString = NewStringChars;
+
+		return OutString;
+	};
+};
