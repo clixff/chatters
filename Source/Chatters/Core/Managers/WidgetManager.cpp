@@ -25,7 +25,6 @@ void UWidgetManager::CreateMainMenuWidget()
 
 		this->MainMenuWidget = UCustomWidgetBase::CreateUserWidget(this->MainMenuClass);
 	}
-
 }
 
 void UWidgetManager::RemoveMainMenuWidget()
@@ -40,5 +39,19 @@ void UWidgetManager::RemoveMainMenuWidget()
 		}
 
 		this->MainMenuWidget = nullptr;
+	}
+}
+
+void UWidgetManager::CreateLoadingWidget()
+{
+	if (this->LoadingWidget == nullptr)
+	{
+		if (this->LoadingWidgetClass == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[UWidgetManager] LoadingWidgetClass is nullptr"));
+			return;
+		}
+
+		this->LoadingWidget = UCustomWidgetBase::CreateUserWidget(this->LoadingWidgetClass);
 	}
 }

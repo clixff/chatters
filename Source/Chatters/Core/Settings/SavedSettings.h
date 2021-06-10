@@ -44,6 +44,8 @@ public:
 
 	void SetDefaultParams();
 
+	void ApplyParams();
+
 	/** Get singleton */
 	static USavedSettings* Get();
 

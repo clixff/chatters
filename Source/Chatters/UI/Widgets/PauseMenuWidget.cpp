@@ -2,6 +2,8 @@
 
 
 #include "PauseMenuWidget.h"
+#include "MainMenu/SettingsWidget.h"
+#include "../../Core/Settings/SavedSettings.h"
 #include "../../Core/ChattersGameInstance.h"
 
 void UPauseMenuWidget::Show()
@@ -20,6 +22,13 @@ void UPauseMenuWidget::Show()
 	this->PlayFadeInAnimation();
 
 	UChattersGameInstance::SetUIControlMode(true);
+
+	auto* SettingsWidget = Cast<USettingsWidget>(this->GetWidgetFromName(TEXT("SettingsWidget")));
+
+	if (SettingsWidget)
+	{
+		SettingsWidget->Init();
+	}
 }
 
 
@@ -42,6 +51,16 @@ void UPauseMenuWidget::Hide()
 
 void UPauseMenuWidget::SetTab_Implementation(const EPauseMenuTab& NewTab, bool bPlayAnimation)
 {
+	if (this->Tab == EPauseMenuTab::Settings)
+	{
+		auto* SavedSettings = USavedSettings::Get();
+
+		if (SavedSettings)
+		{
+			SavedSettings->ApplyParams();
+		}
+	}
+
 	this->Tab = NewTab;
 }
 

@@ -137,6 +137,13 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	this->SessionWidget->SetTeamsWrapperVisibility(this->GameModeType == ESessionGameMode::Teams);
 	this->SessionWidget->UpdateRoundSeconds(0.0f);
 
+	auto* Settings = USavedSettings::Get();
+
+	if (Settings)
+	{
+		this->SessionWidget->SetKillFeedPosition(Settings->KillFeedPosition);
+	}
+
 	if (!this->BotSubclass)
 	{
 		this->BotSubclass = ABot::StaticClass();
@@ -205,13 +212,6 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		{
 			PlayerPawnController->bCanControl = true;
 		}
-
-		/** Fix shadow distance bug */
-		PlayerController->ConsoleCommand(TEXT("r.Shadow.MaxCSMResolution 4096"), true);
-		PlayerController->ConsoleCommand(TEXT("r.Shadow.RadiusThreshold 0"), true);
-
-		//PlayerController->ConsoleCommand(TEXT("stat fps"), true);
-		//PlayerController->ConsoleCommand(TEXT("stat unit"), true);
 	}
 
 	UChattersGameInstance::SetUIControlMode(false);
@@ -221,6 +221,13 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 	this->SessionWidget->Show();
 
+
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (GameInstance)
+	{
+		GameInstance->FixShadowsQuality();
+	}
 }
 
 void UChattersGameSession::OnBotDied(int32 BotID)

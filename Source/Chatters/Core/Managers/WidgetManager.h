@@ -6,6 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "../../UI/Widgets/CustomWidgetBase.h"
 #include "../../UI/Widgets/MainMenuWidget.h"
+#include "../../UI/Widgets/MainMenu/SettingsWidget.h"
 #include "WidgetManager.generated.h"
 
 /**
@@ -25,12 +26,24 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<UMainMenuWidget> MainMenuClass;
 
+	UPROPERTY(EditDefaultsOnly)
+		TSubclassOf<UCustomWidgetBase> LoadingWidgetClass;
+
 public:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Export)
 		UMainMenuWidget* MainMenuWidget;
+
+	UPROPERTY(VisibleAnywhere, Export)
+		USettingsWidget* SettingsWidget = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Export)
+		UCustomWidgetBase* LoadingWidget = nullptr;
 
 public:
 	void CreateMainMenuWidget();
 
 	void RemoveMainMenuWidget();
+
+	void CreateLoadingWidget();
+
 };

@@ -2,6 +2,7 @@
 
 
 #include "SavedSettings.h"
+#include "../ChattersGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 
 const FString USavedSettings::SlotName = TEXT("SavedSettings");
@@ -53,6 +54,19 @@ USavedSettings* USavedSettings::LoadOrCreate()
 	}
 
 	return USavedSettings::Get();
+}
+
+void USavedSettings::ApplyParams()
+{
+	auto* GameInstance = UChattersGameInstance::Get();
+
+
+	if (GameInstance)
+	{
+		GameInstance->UpdateGameVolume(this->GameVolume);
+	}
+
+	this->SaveToDisk();
 }
 
 void USavedSettings::SetDefaultParams()

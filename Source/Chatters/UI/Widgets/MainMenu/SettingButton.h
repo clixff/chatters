@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "../CustomWidgetBase.h"
 #include "../MainMenuWidget.h"
+#include "SettingsWidget.h"
 #include "../../../Misc/Misc.h"
 #include "SettingButton.generated.h"
 
@@ -63,4 +64,9 @@ public:
 
 	static FString SessionTypeToString(ESessionType SessionType);
 	static FString GameModeTypeToString(ESessionGameMode GameModeType);
+
+	UPROPERTY()
+		USettingsWidget* SettingsWidget = nullptr;
+
+	USettingsWidget* GetSettingsWidget();
 };

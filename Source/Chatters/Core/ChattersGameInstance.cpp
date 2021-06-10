@@ -3,6 +3,7 @@
 #include "ChattersGameInstance.h"
 #include "../Player/PlayerPawnController.h"
 #include "Slate/SceneViewport.h"
+#include "GameFramework/GameUserSettings.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -38,6 +39,10 @@ void UChattersGameInstance::Init()
 
 	this->SavedSettings = USavedSettings::LoadOrCreate();
 
+	this->SetGraphicsQuality(this->SavedSettings->GraphicsQualityLevel);
+
+	this->UpdateGameVolume(this->SavedSettings->GameVolume);
+
 	this->ReturnToTheMainMenu();
 }
 
@@ -69,6 +74,11 @@ void UChattersGameInstance::LoadComplete(const float LoadTime, const FString& Ma
 	if (this->bInMainMenu)
 	{
 		this->ToggleMainMenuUI(true);
+
+		if (this->WidgetManager)
+		{
+			this->WidgetManager->CreateLoadingWidget();
+		}
 	}
 	else if (this->GetMapManager()->WorldName != NULL_WORLD_NAME)
 	{
@@ -79,6 +89,12 @@ void UChattersGameInstance::LoadComplete(const float LoadTime, const FString& Ma
 	}
 
 	this->SetIsGamePaused(false);
+
+	if (this->SavedSettings)
+	{
+		this->UpdateGameVolume(this->SavedSettings->GameVolume);
+	}
+
 }
 
 void UChattersGameInstance::SetIsInMainMenu(bool bInMainMenuNew)
@@ -311,6 +327,21 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 		UE_LOG(LogTemp, Warning, TEXT("[UChattersGameInstance] GameSessionClass was nullptr"));
 	}
 
+	auto* WidgetManagerRef = this->GetWidgetManager();
+
+	if (WidgetManagerRef)
+	{
+		if (WidgetManagerRef->LoadingWidget)
+		{
+			if (WidgetManagerRef->MainMenuWidget)
+			{
+				WidgetManagerRef->MainMenuWidget->Hide();
+			}
+
+			WidgetManagerRef->LoadingWidget->Show();
+		}
+	}
+
 	this->GameSession = NewObject<UChattersGameSession>(this, this->GameSessionClass, TEXT("GameSession"));
 
 	this->GameSession->Init(LevelName);
@@ -336,4 +367,65 @@ void UChattersGameInstance::SetIsGamePaused(bool bPauseStatus)
 bool UChattersGameInstance::GetIsGamePaused()
 {
 	return this->bGamePaused;
+}
+
+void UChattersGameInstance::SetGraphicsQuality(EGraphicsQualityLevel GraphicsQuality)
+{
+	if (!GEngine || !GEngine->GameUserSettings)
+	{
+		return;
+	}
+
+	int32 ScalabilityLevel = 0;
+
+	switch (GraphicsQuality)
+	{
+	case EGraphicsQualityLevel::Low:
+		ScalabilityLevel = 0;
+		break;
+	case EGraphicsQualityLevel::Mid:
+		ScalabilityLevel = 2;
+		break;
+	case EGraphicsQualityLevel::High:
+	default:
+		ScalabilityLevel = 4;
+		break;
+	}
+	
+	auto* GameUserSettings = GEngine->GetGameUserSettings();
+
+	if (!GameUserSettings)
+	{
+		return;
+	}
+
+	GameUserSettings->SetOverallScalabilityLevel(ScalabilityLevel);
+
+	GameUserSettings->SetResolutionScaleValueEx(100.0f);
+
+	GameUserSettings->SetFullscreenMode(EWindowMode::Type::WindowedFullscreen);
+
+	GameUserSettings->ApplySettings(true);
+
+	this->FixShadowsQuality();
+
+}
+
+void UChattersGameInstance::FixShadowsQuality()
+{
+	auto* PlayerController = this->GetPlayerController();
+
+	if (PlayerController)
+	{
+		PlayerController->ConsoleCommand(TEXT("r.Shadow.MaxCSMResolution 4096"), true);
+		PlayerController->ConsoleCommand(TEXT("r.Shadow.RadiusThreshold 0"), true);
+	}
+}
+
+float UChattersGameInstance::UpdateGameVolume_Implementation(float Volume)
+{
+	Volume = FMath::Clamp(Volume, 0.0f, 100.0f);
+
+
+	return Volume / 100.0f;
 }

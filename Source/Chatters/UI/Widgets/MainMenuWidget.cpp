@@ -7,6 +7,7 @@
 #include "Blueprint/WidgetTree.h"
 #include "MainMenu/SettingButton.h"
 #include "../../Core/Settings/SavedSettings.h"
+#include "MainMenu/SettingsWidget.h"
 #include "../../Core/ChattersGameInstance.h"
 
 void UMainMenuWidget::Show()
@@ -70,6 +71,13 @@ void UMainMenuWidget::Show()
 		this->SetLevelParam(TEXT("GameMode"), USettingButton::GameModeTypeToString(SavedSettings->DefaultSessionGameMode));
 		this->SetMaxBotsValue(SavedSettings->DefaultMaxPlayers, nullptr, false);
 	}
+
+	auto* SettingsWidget = Cast<USettingsWidget>(this->GetWidgetFromName(TEXT("SettingsWidget")));
+
+	if (SettingsWidget)
+	{
+		SettingsWidget->Init();
+	}
 }
 
 void UMainMenuWidget::OnPlayClick()
@@ -113,6 +121,16 @@ void UMainMenuWidget::OnQuitClick()
 
 void UMainMenuWidget::SetTab_Implementation(const EMainMenuTab NewTab, bool bPlayAnimation)
 {
+	if (this->Tab == EMainMenuTab::Settings)
+	{
+		auto* SavedSettings = USavedSettings::Get();
+
+		if (SavedSettings)
+		{
+			SavedSettings->ApplyParams();
+		}
+	}
+
 	this->Tab = NewTab;
 }
 

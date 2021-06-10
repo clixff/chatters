@@ -48,6 +48,15 @@ void USettingButton::OnClick()
 
 		MainMenuWidgetRef->SetLevelParam(this->SettingKey, this->SettingValue);
 	}
+	else
+	{
+		auto* SettingsWidgetRef = this->GetSettingsWidget();
+
+		if (SettingsWidgetRef)
+		{
+			SettingsWidgetRef->OnSettingChanged(this->SettingKey, this->SettingValue);
+		}
+	}
 
 	SavedSettings->SaveToDisk();
 
@@ -105,5 +114,24 @@ FString USettingButton::GameModeTypeToString(ESessionGameMode GameModeType)
 	{
 		return TEXT("Default");
 	}
+}
+
+USettingsWidget* USettingButton::GetSettingsWidget()
+{
+	if (!SettingsWidget)
+	{
+		auto* GameInstance = UChattersGameInstance::Get();
+
+		if (GameInstance)
+		{
+			auto* WidgetManager = GameInstance->GetWidgetManager();
+			if (WidgetManager)
+			{
+				this->SettingsWidget = WidgetManager->SettingsWidget;
+			}
+		}
+	}
+
+	return this->SettingsWidget;
 }
 

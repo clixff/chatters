@@ -80,6 +80,14 @@ public:
 
 	bool GetIsGamePaused();
 
+	void SetGraphicsQuality(EGraphicsQualityLevel GraphicsQuality);
+
+	void FixShadowsQuality();
+
+	UFUNCTION(BlueprintNativeEvent)
+		float UpdateGameVolume(float Volume);
+		
+	float UpdateGameVolume_Implementation(float Volume);
 public:
 	/** Get Singleton */
 	static UChattersGameInstance* Get();

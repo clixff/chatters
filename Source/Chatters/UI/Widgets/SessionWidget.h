@@ -110,6 +110,11 @@ public:
 
 	UPROPERTY()
 		UVerticalBox* KillFeedContainer = nullptr;
+
+	UPROPERTY()
+		EKillFeedPosition KillFeedPosition = EKillFeedPosition::Right;
+
+	void SetKillFeedPosition(EKillFeedPosition Position);
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
 

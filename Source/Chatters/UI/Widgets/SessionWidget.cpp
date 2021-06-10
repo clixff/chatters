@@ -216,7 +216,7 @@ void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor
 		return;
 	}
 
-	VerticalBoxSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Right);
+	VerticalBoxSlot->SetHorizontalAlignment(this->KillFeedPosition == EKillFeedPosition::Right ? EHorizontalAlignment::HAlign_Right : EHorizontalAlignment::HAlign_Left);
 	VerticalBoxSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 10.0f));
 
 	KillFeedElement->VerticalBoxSlot = VerticalBoxSlot;
@@ -232,6 +232,21 @@ void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor
 			FirstElement->StartDestroying();
 			this->KillFeedElements[0] = nullptr;
 			this->KillFeedElements.RemoveAt(0, 1, true);
+		}
+	}
+}
+
+void USessionWidget::SetKillFeedPosition(EKillFeedPosition Position)
+{
+	this->KillFeedPosition = Position;
+
+	EHorizontalAlignment HorizontalAlignment = this->KillFeedPosition == EKillFeedPosition::Right ? EHorizontalAlignment::HAlign_Right : EHorizontalAlignment::HAlign_Left;
+
+	for (auto* KillFeedElement : this->KillFeedElements)
+	{
+		if (KillFeedElement && KillFeedElement->IsValidLowLevel() && KillFeedElement->VerticalBoxSlot)
+		{
+			KillFeedElement->VerticalBoxSlot->SetHorizontalAlignment(HorizontalAlignment);
 		}
 	}
 }

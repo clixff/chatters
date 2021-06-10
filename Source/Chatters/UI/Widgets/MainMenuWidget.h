@@ -85,6 +85,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void SetMaxBotsValue(int32 MaxBots, UEditableTextBox* Widget = nullptr, bool bUpdateSettings = true);
+
 private:
 	TArray<UWidget*> GetButtonWidgets();
 
