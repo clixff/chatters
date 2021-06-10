@@ -1471,7 +1471,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 
 	if (bCritical)
 	{
-		Damage *= 2;
+		Damage = FMath::RoundToInt(Damage * 1.5f);
 	}
 
 	auto OldHP = this->HealthPoints;
