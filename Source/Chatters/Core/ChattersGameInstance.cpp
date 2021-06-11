@@ -4,6 +4,8 @@
 #include "../Player/PlayerPawnController.h"
 #include "Slate/SceneViewport.h"
 #include "GameFramework/GameUserSettings.h"
+#include "../Misc/Process/Process.h"
+#include "../Sockets/SocketClient.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -44,11 +46,23 @@ void UChattersGameInstance::Init()
 	this->UpdateGameVolume(this->SavedSettings->GameVolume);
 
 	this->ReturnToTheMainMenu();
+
+	if (this->bStartNodeChildProcess)
+	{
+		FNodeChildProcess::Create();
+	}
+
+	FSocketClient::Create();
 }
 
 void UChattersGameInstance::Shutdown()
 {
 	UE_LOG(LogTemp, Display, TEXT("[UChattersGameInstance] GameInstance shutdown"));
+
+	FNodeChildProcess::Shutdown();
+
+	FSocketClient::Destroy();
+
 	UGameInstance::Shutdown();
 }
 
@@ -404,6 +418,8 @@ void UChattersGameInstance::SetGraphicsQuality(EGraphicsQualityLevel GraphicsQua
 	GameUserSettings->SetResolutionScaleValueEx(100.0f);
 
 	GameUserSettings->SetFullscreenMode(EWindowMode::Type::WindowedFullscreen);
+
+	GameUserSettings->SetVSyncEnabled(true);
 
 	GameUserSettings->ApplySettings(true);
 

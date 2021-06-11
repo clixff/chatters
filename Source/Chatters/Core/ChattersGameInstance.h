@@ -88,6 +88,9 @@ public:
 		float UpdateGameVolume(float Volume);
 		
 	float UpdateGameVolume_Implementation(float Volume);
+
+	UPROPERTY(EditDefaultsOnly)
+		bool bStartNodeChildProcess = true;
 public:
 	/** Get Singleton */
 	static UChattersGameInstance* Get();
