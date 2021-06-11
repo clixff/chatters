@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "HAL/RunnableThread.h"
 #include "HAL/Runnable.h"
-#include "HAL/ThreadSafeCounter.h"
 #include <Windows.h>
 
 /** Node.js child process for server */

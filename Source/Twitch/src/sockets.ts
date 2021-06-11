@@ -32,6 +32,8 @@ export default class SocketsServer
         this.socket = socket;
         console.log('[SocketsServer] Client connected.');
 
+        this.socket.emit('msg');
+
         this.socket.on('disconnect', this.onDisconnect);
     }
 

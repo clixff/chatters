@@ -216,6 +216,10 @@
 		{
 			"Name": "Volumetrics",
 			"Enabled": true
+		},
+		{
+			"Name": "SocketIoClient",
+			"Enabled": false
 		}
 	],
 	"TargetPlatforms": [

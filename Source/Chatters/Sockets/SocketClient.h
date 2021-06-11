@@ -3,11 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HAL/RunnableThread.h"
+#include "HAL/Runnable.h"
+#include "socket.io-client-cpp/src/sio_client.h"
 
 /**
  * 
  */
-class CHATTERS_API FSocketClient
+class CHATTERS_API FSocketClient : public FRunnable
 {
 public:
 	FSocketClient();
@@ -18,4 +21,34 @@ public:
 	static FSocketClient* Create();
 
 	static void Destroy();
+
+	FRunnableThread* Thread = nullptr;
+
+private:
+	bool bConnectionFinished = false;
+	bool bConnectionEnded = false;
+
+	TSharedPtr<sio::client> Client;
+	//sio::client* Client = nullptr;
+	sio::socket::ptr Socket;
+
+	FCriticalSection m_mutex;
+public:
+	// Begin FRunnable interface.
+	virtual bool Init() override;
+
+	virtual uint32 Run() override;
+
+	virtual void Stop() override;
+	// End FRunnable interface
+
+
+	void OnConnect();
+
+	void OnClose(sio::client::close_reason const& reason);
+
+	void OnError();
+
+
+	void OnMessage(sio::event& ev);
 };
