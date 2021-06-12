@@ -32,9 +32,18 @@ export default class SocketsServer
         this.socket = socket;
         console.log('[SocketsServer] Client connected.');
 
-        this.socket.emit('msg');
+        this.socket.emit('msg', 'Hello World');
+        this.socket.emit('msg', 'Hello мир');
+        this.socket.emit('msg', 'Привет мир');
 
         this.socket.on('disconnect', this.onDisconnect);
+
+        this.socket.on('twitch-token-update', this.onTwitchTokenUpdate);
+    }
+
+    onTwitchTokenUpdate(twitchToken: string): void
+    {
+        console.log(`[SocketsServer] Twitch token updated to ${twitchToken}`);
     }
 
 

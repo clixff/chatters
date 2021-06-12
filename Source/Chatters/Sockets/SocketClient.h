@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "HAL/RunnableThread.h"
 #include "HAL/Runnable.h"
+#include <locale>
+#include <codecvt>
 #include "socket.io-client-cpp/src/sio_client.h"
 
 /**
@@ -33,6 +35,11 @@ private:
 	sio::socket::ptr Socket;
 
 	FCriticalSection m_mutex;
+
+	static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> StringConverter;
+
+	static FString ConvertANSI(std::string RawString);
+	
 public:
 	// Begin FRunnable interface.
 	virtual bool Init() override;
@@ -51,4 +58,6 @@ public:
 
 
 	void OnMessage(sio::event& ev);
+
+	void OnTwitchDataLoaded(sio::event& ev);
 };

@@ -1,0 +1,12 @@
+[submodule "ThirdParty/socket.io-client-cpp/lib/websocketpp"]
+	path = ThirdParty/socket.io-client-cpp/lib/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
+[submodule "ThirdParty/socket.io-client-cpp/lib/rapidjson"]
+	path = ThirdParty/socket.io-client-cpp/lib/rapidjson
+	url = https://github.com/miloyip/rapidjson.git
+[submodule "ThirdParty/socket.io-client-cpp/lib/asio"]
+	path = ThirdParty/socket.io-client-cpp/lib/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "ThirdParty/socket.io-client-cpp/lib/catch"]
+	path = ThirdParty/socket.io-client-cpp/lib/catch
+	url = https://github.com/philsquared/Catch.git
