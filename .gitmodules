@@ -7,3 +7,6 @@
 [submodule "ThirdParty/socket.io-client-cpp/lib/asio"]
 	path = ThirdParty/socket.io-client-cpp/lib/asio
 	url = https://github.com/chriskohlhoff/asio.git
+[submodule "ThirdParty/socket.io-client-cpp/lib/catch"]
+	path = ThirdParty/socket.io-client-cpp/lib/catch
+	url = https://github.com/philsquared/Catch.git
