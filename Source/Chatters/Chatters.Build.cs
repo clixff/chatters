@@ -14,6 +14,7 @@ public class Chatters : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
+		PublicDefinitions.Add("_WINSOCKAPI_");
 		PublicDefinitions.Add("ASIO_STANDALONE");
 		PublicDefinitions.Add("_WEBSOCKETPP_CPP11_INTERNAL_");
 		PublicDefinitions.Add("_WEBSOCKETPP_CPP11_FUNCTIONAL_");
