@@ -75,7 +75,6 @@ void FSocketClient::Stop()
 	UE_LOG(LogTemp, Display, TEXT("[FSocketClient] ::Stop()"));
 	if (this->Client)
 	{
-		this->Client->close();
 		this->Client->clear_con_listeners();
 	}
 }
