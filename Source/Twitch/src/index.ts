@@ -1,5 +1,5 @@
 import { Server } from  "./server";
-import SocketsServer from './sockets'
+import SocketsServer from './sockets';
 
 const server = new Server();
 

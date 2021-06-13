@@ -6,6 +6,7 @@
 #include "GameFramework/GameUserSettings.h"
 #include "../Misc/Process/Process.h"
 #include "../Sockets/SocketClient.h"
+#include "Async/Async.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -239,6 +240,24 @@ void UChattersGameInstance::ToggleMouseCursor(bool bShowMouseCursor)
 		PlayerController->bShowMouseCursor = bShowMouseCursor;
 		PlayerController->bEnableClickEvents = bShowMouseCursor;
 		PlayerController->bEnableMouseOverEvents = bShowMouseCursor;
+	}
+}
+
+void UChattersGameInstance::OnTwitchAuthDataLoaded(bool bSignedIn, FString DisplayName)
+{
+	this->TwitchAuthData.bSignedIn = bSignedIn;
+	this->TwitchAuthData.DisplayName = DisplayName;
+
+	if (this->GetWidgetManager())
+	{
+		auto* MainMenuWidget = this->GetWidgetManager()->MainMenuWidget;
+
+		if (MainMenuWidget)
+		{
+			AsyncTask(ENamedThreads::GameThread, [this, MainMenuWidget]() {
+				MainMenuWidget->UpdateTwitchData(this->TwitchAuthData);
+			});
+		}
 	}
 }
 

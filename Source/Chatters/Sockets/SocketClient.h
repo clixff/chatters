@@ -38,8 +38,11 @@ private:
 
 	static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> StringConverter;
 
-	static FString ConvertANSI(std::string RawString);
+	static FORCEINLINE FString ConvertFromANSI(std::string RawString);
+	static FORCEINLINE std::string ConvertToANSI(FString RawString);
 	
+	bool bTokenSent = false;
+
 public:
 	// Begin FRunnable interface.
 	virtual bool Init() override;
@@ -56,8 +59,11 @@ public:
 
 	void OnError();
 
-
-	void OnMessage(sio::event& ev);
-
 	void OnTwitchDataLoaded(sio::event& ev);
+
+	void SendTwitchToken(FString TwitchToken);
+
+	void OnTwitchTokenUpdated(sio::event& ev);
+
+	void RevokeToken(FString Token);
 };

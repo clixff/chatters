@@ -1871,13 +1871,23 @@ void ABot::TryDetachHat()
 	{
 		FRotator HeadRotation = this->GetMesh()->GetSocketRotation(FName(TEXT("head_")));
 
-		if (HeadRotation.Roll > 150.0f || HeadRotation.Roll < 75.0f || HeadRotation.Pitch > 50.0f || HeadRotation.Pitch < 50.0f)
+		if (HeadRotation.Roll > 150.0f || HeadRotation.Roll < 75.0f || HeadRotation.Pitch > 50.0f || HeadRotation.Pitch < -50.0f)
 		{
 			this->bHatAttached = false;
 			this->HatMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 			this->HatMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
 			this->HatMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 			this->HatMesh->SetSimulatePhysics(true);
+
+			const FVector HeadLocation = this->GetMesh()->GetSocketLocation(TEXT("head_"));
+			FVector HatLocation = HeadLocation - this->HatMesh->GetComponentLocation();
+
+			HatLocation.Normalize();
+			
+			const FVector HatPhysicsImpulse = HatLocation * -1000.0f;
+
+			//this->HatMesh->AddImpulseAtLocation(HatPhysicsImpulse, this->HatMesh->GetComponentLocation());
+
 		}
 	}
 }

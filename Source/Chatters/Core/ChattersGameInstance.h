@@ -91,6 +91,11 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		bool bStartNodeChildProcess = true;
+
+	UPROPERTY()
+		FTwitchAuthData TwitchAuthData;
+
+	void OnTwitchAuthDataLoaded(bool bSignedIn, FString DisplayName);
 public:
 	/** Get Singleton */
 	static UChattersGameInstance* Get();

@@ -133,3 +133,15 @@ public:
 		return OutString;
 	};
 };
+
+USTRUCT(BlueprintType)
+struct FTwitchAuthData
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(BlueprintReadOnly)
+		bool bSignedIn = false;
+
+	UPROPERTY(BlueprintReadOnly)
+		FString DisplayName = TEXT("");
+};

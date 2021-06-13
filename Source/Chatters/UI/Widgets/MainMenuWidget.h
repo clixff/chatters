@@ -6,6 +6,7 @@
 #include "CustomWidgetBase.h"
 #include "Materials/MaterialInterface.h"
 #include "MainMenu/MapPreview.h"
+#include "../../Misc/Misc.h"
 #include "Components/EditableTextBox.h"
 #include "MainMenuWidget.generated.h"
 
@@ -59,14 +60,6 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 		int32 SelectedLevel = 0;
 
-	UFUNCTION(BlueprintCallable)
-		void OnLoginClick();
-
-	UFUNCTION(blueprintnativeEvent, BlueprintCallable)
-		void UpdateLoginStatus(bool bLogined, const FString& TwitchName, const FString& TwitchAvatarURL);
-
-	void UpdateLoginStatus_Implementation(bool bLogined, const FString& TwitchName, const FString& TwitchAvatarURL);
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		TSubclassOf<UMapPreview> MapPreviewSubclass;
 
@@ -85,6 +78,15 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void SetMaxBotsValue(int32 MaxBots, UEditableTextBox* Widget = nullptr, bool bUpdateSettings = true);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void UpdateTwitchData(FTwitchAuthData AuthData);
+
+	UFUNCTION(BlueprintCallable)
+		void OnTwitchLoginClick();
+
+	UFUNCTION(BlueprintCallable)
+		void OnTwitchLogoutClick();
 
 private:
 	TArray<UWidget*> GetButtonWidgets();

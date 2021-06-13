@@ -8,6 +8,8 @@
 #include "MainMenu/SettingButton.h"
 #include "../../Core/Settings/SavedSettings.h"
 #include "MainMenu/SettingsWidget.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "../../Sockets/SocketClient.h"
 #include "../../Core/ChattersGameInstance.h"
 
 void UMainMenuWidget::Show()
@@ -78,6 +80,14 @@ void UMainMenuWidget::Show()
 	{
 		SettingsWidget->Init();
 	}
+
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (GameInstance)
+	{
+		this->UpdateTwitchData(GameInstance->TwitchAuthData);
+	}
+
 }
 
 void UMainMenuWidget::OnPlayClick()
@@ -132,14 +142,6 @@ void UMainMenuWidget::SetTab_Implementation(const EMainMenuTab NewTab, bool bPla
 	}
 
 	this->Tab = NewTab;
-}
-
-void UMainMenuWidget::OnLoginClick()
-{
-}
-
-void UMainMenuWidget::UpdateLoginStatus_Implementation(bool bLogined, const FString& TwitchName, const FString& TwitchAvatarURL)
-{
 }
 
 void UMainMenuWidget::SetSelectedLevel(int32 NewSelectedLevel)
@@ -290,4 +292,36 @@ void UMainMenuWidget::SetMaxBotsValue(int32 MaxBots, UEditableTextBox* Widget, b
 	}
 
 	Widget->SetText(FText::FromString(ValueString));
+}
+
+void UMainMenuWidget::OnTwitchLoginClick()
+{
+	static const FString URL = TEXT("http://127.0.0.1:41503/twitch-login");
+
+	UKismetSystemLibrary::LaunchURL(URL);
+}
+
+void UMainMenuWidget::OnTwitchLogoutClick()
+{
+	auto* SavedSettings = USavedSettings::Get();
+
+	if (SavedSettings)
+	{
+		auto* SocketClient = FSocketClient::Singleton;
+
+		if (SocketClient)
+		{
+			SocketClient->RevokeToken(SavedSettings->TwitchToken);
+		}
+
+		SavedSettings->TwitchToken = TEXT("");
+		SavedSettings->SaveToDisk();
+	}
+
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (GameInstance)
+	{
+		GameInstance->OnTwitchAuthDataLoaded(false, TEXT(""));
+	}
 }
