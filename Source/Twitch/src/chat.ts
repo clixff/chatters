@@ -92,7 +92,7 @@ export default class ChatClient
         },
         options:
         {
-            debug: true
+            debug: false
         }
     };
 

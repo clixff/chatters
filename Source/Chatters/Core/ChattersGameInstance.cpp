@@ -48,6 +48,10 @@ void UChattersGameInstance::Init()
 
 	this->ReturnToTheMainMenu();
 
+#if UE_BUILD_SHIPPING
+	this->bStartNodeChildProcess = true;
+#endif
+
 	if (this->bStartNodeChildProcess)
 	{
 		FNodeChildProcess::Create();

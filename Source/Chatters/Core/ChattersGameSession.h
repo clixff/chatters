@@ -129,4 +129,6 @@ private:
 		TSubclassOf<UPauseMenuWidget> PauseMenuWidgetClass;
 
 	int32 RoundNumber = 1;
+
+	FCriticalSection Mutex;
 };

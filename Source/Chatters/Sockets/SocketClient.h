@@ -70,4 +70,6 @@ public:
 	void OnViewerMessage(sio::event& ev);
 
 	void RevokeToken(FString Token);
+
+	void OnLevelLoaded();
 };

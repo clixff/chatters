@@ -6,6 +6,7 @@
 #include "../Player/PlayerPawn.h"
 #include "../Player/PlayerPawnController.h"
 #include "./Settings/SavedSettings.h"
+#include "../Sockets/SocketClient.h"
 #include "Managers/MapManager.h"
 
 UChattersGameSession* UChattersGameSession::Singleton = nullptr;
@@ -233,6 +234,13 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	{
 		GameInstance->FixShadowsQuality();
 	}
+
+	auto* SocketClient = FSocketClient::Singleton;
+
+	if (SocketClient && this->SessionType == ESessionType::Twitch)
+	{
+		SocketClient->OnLevelLoaded();
+	}
 }
 
 void UChattersGameSession::OnBotDied(int32 BotID)
@@ -412,6 +420,7 @@ USessionWidget* UChattersGameSession::GetSessionWidget()
 
 void UChattersGameSession::OnViewerJoin(FString Name)
 {
+	this->Mutex.Lock();
 	if (!this->bCanViewersJoin || this->SessionType == ESessionType::Generated)
 	{
 		return;
@@ -473,6 +482,8 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 		}
 		
 	}
+
+	this->Mutex.Unlock();
 }
 
 void UChattersGameSession::OnViewerMessage(FString Name, FString Message)

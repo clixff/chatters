@@ -231,6 +231,14 @@ void FSocketClient::OnViewerJoin(sio::event& ev)
 	}
 }
 
+void FSocketClient::OnLevelLoaded()
+{
+	if (this->Socket)
+	{
+		this->Socket->emit("level-loaded");
+	}
+}
+
 void FSocketClient::OnViewerMessage(sio::event& ev)
 {
 	UE_LOG(LogTemp, Display, TEXT("[FSocketClient] OnViewerMessage"));

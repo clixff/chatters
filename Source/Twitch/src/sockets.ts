@@ -14,7 +14,7 @@ export default class SocketsServer
         this.onConnection = this.onConnection.bind(this);
         this.onDisconnect = this.onDisconnect.bind(this);
         this.onTwitchTokenLoaded = this.onTwitchTokenLoaded.bind(this);
-
+        this.onGameLevelLoaded = this.onGameLevelLoaded.bind(this);
 
         this.io.on('connection', this.onConnection);
     }
@@ -46,6 +46,8 @@ export default class SocketsServer
         this.socket.on('twitch-token-loaded', this.onTwitchTokenLoaded);
         
         this.socket.on('twitch-logout', this.onTwitchLogout);
+
+        this.socket.on('level-loaded', this.onGameLevelLoaded);
     }
 
     async onTwitchTokenLoaded(twitchToken: string): Promise<void>
@@ -130,6 +132,47 @@ export default class SocketsServer
         if (this.socket)
         {
             this.socket.emit('viewer-message', viewerName.toLowerCase(), message);
+        }
+    }
+
+    onGameLevelLoaded(): void
+    {
+        const bSpawnDebugFakeViewers = false;
+
+        if (bSpawnDebugFakeViewers)
+        {
+            function generateString(): string
+            {
+                const originalString = (Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16)).toUpperCase().repeat(2);
+
+                const minLength = 10;
+                const maxLength = 25;
+
+                const length = minLength + Math.round(Math.random() * (maxLength - minLength));
+
+                return originalString.substr(0, length);
+            }
+
+            const maxBots = 75;
+
+            const join = (i: number): void =>
+            {
+                if (i == maxBots)
+                {
+                    return;
+                }
+
+                this.onViewerJoin(generateString());
+
+                const timeout = Math.random() * 500;
+
+                setTimeout(() =>
+                {
+                    join(i + 1);
+                }, timeout);                
+            };
+
+            join(0);
         }
     }
 
