@@ -65,5 +65,9 @@ public:
 
 	void OnTwitchTokenUpdated(sio::event& ev);
 
+	void OnViewerJoin(sio::event& ev);
+
+	void OnViewerMessage(sio::event& ev);
+
 	void RevokeToken(FString Token);
 };

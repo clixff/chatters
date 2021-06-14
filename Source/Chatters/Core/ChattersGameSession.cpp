@@ -98,7 +98,7 @@ void UChattersGameSession::Destroy()
 
 void UChattersGameSession::LevelLoaded(FString LevelName)
 {
-
+	this->BotsMap.Empty();
 	this->BlueAlive = 0;
 	this->RedAlive = 0;
 
@@ -178,8 +178,13 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 				this->Bots.Add(Bot);
 				this->AliveBots.Add(Bot);
+				this->BotsMap.Add(Bot->DisplayName.ToLower(), Bot);
 			}
 		}
+	}
+	else
+	{
+		this->bCanViewersJoin = true;
 	}
 
 	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
@@ -217,7 +222,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	UChattersGameInstance::SetUIControlMode(false);
 
 
-	this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
+	this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->MaxPlayers);
 
 	this->SessionWidget->Show();
 
@@ -303,7 +308,11 @@ void UChattersGameSession::Start()
 			this->SessionWidget->SetPlayCommandVisibility(false);
 			this->SessionWidget->bUpdateRoundTimer = true;
 			this->SessionWidget->SetRoundTimerVisibility(true);
+			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
+
 		}
+
+		this->bCanViewersJoin = false;
 
 		for (int32 i = 0; i < this->Bots.Num(); i++)
 		{
@@ -401,6 +410,96 @@ USessionWidget* UChattersGameSession::GetSessionWidget()
 	return this->SessionWidget;
 }
 
+void UChattersGameSession::OnViewerJoin(FString Name)
+{
+	if (!this->bCanViewersJoin || this->SessionType == ESessionType::Generated)
+	{
+		return;
+	}
+
+	if (this->Bots.Num() >= this->MaxPlayers)
+	{
+		return;
+	}
+
+	FString LowerCasedName = Name.ToLower();
+
+	/** Bot with this name already exists */
+	if (this->BotsMap.Contains(LowerCasedName))
+	{
+		return;
+	}
+
+	const int32 BotID = this->Bots.Num();
+
+	ABot* Bot = ABot::CreateBot(GetWorld(), Name, BotID, this->BotSubclass, this);
+	if (Bot)
+	{
+		Bot->Team = this->GameModeType == ESessionGameMode::Teams ? (BotID % 2 ? EBotTeam::Blue : EBotTeam::Red) : EBotTeam::White;
+
+		if (Bot->Team == EBotTeam::Blue)
+		{
+			this->BlueAlive++;
+		}
+		else if (Bot->Team == EBotTeam::Red)
+		{
+			this->RedAlive++;
+		}
+
+		Bot->UpdateNameColor();
+
+		this->Bots.Add(Bot);
+		this->AliveBots.Add(Bot);
+		this->BotsMap.Add(LowerCasedName, Bot);
+
+		if (this->SessionWidget)
+		{
+			this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
+			this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
+			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->MaxPlayers);
+		}
+
+		if (BotID == 0)
+		{
+			auto* PlayerController = GetWorld()->GetFirstPlayerController();
+			if (PlayerController)
+			{
+				auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
+				if (PlayerPawn)
+				{
+					PlayerPawn->AttachToBot(Bot);
+				}
+			}
+		}
+		
+	}
+}
+
+void UChattersGameSession::OnViewerMessage(FString Name, FString Message)
+{
+	if (this->SessionType != ESessionType::Twitch)
+	{
+		return;
+	}
+
+	auto* BotResult = this->BotsMap.Find(Name);
+	ABot* Bot = nullptr;
+
+	if (!BotResult)
+	{
+		return;
+	}
+
+	Bot = *BotResult;
+
+	if (!Bot || !Bot->bAlive)
+	{
+		return;
+	}
+
+	Bot->Say(Message);
+}
+
 void UChattersGameSession::OnTeamsBattleEnd()
 {
 	this->AvailableBotSpawnPoints = this->BotSpawnPoints;
@@ -411,6 +510,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 	int32 AliveBotsNumber = 0;
 	this->RedAlive = 0;
 	this->BlueAlive = 0;
+	this->BotsMap.Empty();
 
 	for (int32 i = 0; i < this->Bots.Num(); i++)
 	{
@@ -446,6 +546,8 @@ void UChattersGameSession::OnTeamsBattleEnd()
 			Bot->ResetOnNewRound();
 
 			AliveBotsNumber++;
+
+			this->BotsMap.Add(Bot->DisplayName.ToLower(), Bot);
 		}
 	}
 

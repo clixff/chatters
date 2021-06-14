@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import http from 'http';
 import { getTwitchAppClientID, getTwitchAuthData } from './misc';
 import fetch from 'node-fetch';
+import { chatClient } from '.';
 
 export default class SocketsServer
 {
@@ -22,6 +23,11 @@ export default class SocketsServer
     {
         this.socket = null;
         console.log(`[SocketsServer] Client disconnected. Reason: ${reason}`);
+
+        if (chatClient)
+        {
+            chatClient.disconnect();
+        }
     }
 
     onConnection(socket: Socket): void
@@ -51,6 +57,11 @@ export default class SocketsServer
             if (!twitchToken.length)
             {
                 this.sendTwitchAuthData(false, '');
+
+                if (chatClient)
+                {
+                    chatClient.disconnect();
+                }
             }
             else
             {
@@ -59,6 +70,11 @@ export default class SocketsServer
                 if (authData)
                 {
                     this.sendTwitchAuthData(authData.bSignedIn, authData.name);
+
+                    if (chatClient)
+                    {
+                        chatClient.listen(authData.name.toLowerCase(), twitchToken, authData.id);
+                    }
                 }
             }
         }
@@ -94,6 +110,27 @@ export default class SocketsServer
         fetch(revokeURL, {
             method: 'POST'
         });
+
+        if (chatClient)
+        {
+            chatClient.disconnect();
+        }
+    }
+
+    onViewerJoin(viewerName: string): void
+    {
+        if (this.socket)
+        {
+            this.socket.emit('viewer-join', viewerName);
+        }
+    }
+
+    onViewerMessage(viewerName: string, message: string): void
+    {
+        if (this.socket)
+        {
+            this.socket.emit('viewer-message', viewerName.toLowerCase(), message);
+        }
     }
 
     io?: Server | null;

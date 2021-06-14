@@ -414,7 +414,7 @@ void UChattersGameInstance::SetGraphicsQuality(EGraphicsQualityLevel GraphicsQua
 	switch (GraphicsQuality)
 	{
 	case EGraphicsQualityLevel::Low:
-		ScalabilityLevel = 0;
+		ScalabilityLevel = 1;
 		break;
 	case EGraphicsQualityLevel::Mid:
 		ScalabilityLevel = 2;

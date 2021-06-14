@@ -55,6 +55,15 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		ESessionMode SessionMode = ESessionMode::Combat;
+
+	UPROPERTY()
+		TMap<FString, ABot*> BotsMap;
+
+	bool bCanViewersJoin = false;
+
+	void OnViewerJoin(FString Name);
+
+	void OnViewerMessage(FString Name, FString Message);
 public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<ABot> BotSubclass;

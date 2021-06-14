@@ -4,6 +4,7 @@
 #include "SocketClient.h"
 #include "../Core/Settings/SavedSettings.h"
 #include "../Core/ChattersGameInstance.h"
+#include "Async/Async.h"
 #include "SocketClient.h"
 
 FSocketClient* FSocketClient::Singleton = nullptr;
@@ -116,6 +117,9 @@ void FSocketClient::OnConnect()
 		}
 		this->Socket->on("twitch-auth-data-loaded", std::bind(&FSocketClient::OnTwitchDataLoaded, this, std::placeholders::_1));
 		this->Socket->on("twitch-token-updated", std::bind(&FSocketClient::OnTwitchTokenUpdated, this, std::placeholders::_1));
+		this->Socket->on("viewer-join", std::bind(&FSocketClient::OnViewerJoin, this, std::placeholders::_1));
+		this->Socket->on("viewer-message", std::bind(&FSocketClient::OnViewerMessage, this, std::placeholders::_1));
+
 	}
 }
 
@@ -191,6 +195,75 @@ void FSocketClient::OnTwitchTokenUpdated(sio::event& ev)
 
 	SavedSettings->TwitchToken = TwitchToken;
 	SavedSettings->SaveToDisk();
+}
+
+void FSocketClient::OnViewerJoin(sio::event& ev)
+{
+	UE_LOG(LogTemp, Display, TEXT("[FSocketClient] OnViewerJoin"));
+
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (!GameSession || !GameSession->bCanViewersJoin)
+	{
+		return;
+	}
+
+	auto Messages = ev.get_messages();
+
+	if (!Messages.size())
+	{
+		return;
+	}
+
+	const FString ViewerName = FSocketClient::ConvertFromANSI(Messages[0]->get_string());
+
+	if (!ViewerName.IsEmpty())
+	{
+		AsyncTask(ENamedThreads::GameThread, [GameSession, ViewerName]() {
+
+			if (!GameSession)
+			{
+				return;
+			}
+
+			GameSession->OnViewerJoin(ViewerName);
+		});
+	}
+}
+
+void FSocketClient::OnViewerMessage(sio::event& ev)
+{
+	UE_LOG(LogTemp, Display, TEXT("[FSocketClient] OnViewerMessage"));
+
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (!GameSession)
+	{
+		return;
+	}
+
+	auto Messages = ev.get_messages();
+
+	if (Messages.size() < 2)
+	{
+		return;
+	}
+
+	const FString ViewerName = FSocketClient::ConvertFromANSI(Messages[0]->get_string());
+	const FString Message = FSocketClient::ConvertFromANSI(Messages[1]->get_string());
+
+	if (!ViewerName.IsEmpty() && !Message.IsEmpty())
+	{
+		AsyncTask(ENamedThreads::GameThread, [GameSession, ViewerName, Message]() {
+
+			if (!GameSession)
+			{
+				return;
+			}
+
+			GameSession->OnViewerMessage(ViewerName, Message);
+		});
+	}
 }
 
 void FSocketClient::RevokeToken(FString Token)
