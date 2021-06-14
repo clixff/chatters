@@ -2,6 +2,7 @@
 
 #include "BotNameWidget.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Blueprint/WidgetTree.h"
 
 
@@ -242,9 +243,18 @@ void UBotNameWidget::UpdateChatBubbleMessage(FString Message)
 		FText NewText = FText::FromString(Message);
 		ChatBubbleTextWidget->SetText(NewText);
 
+		const float MinDesiredWidth = 50.0f;
+		const float MaxDesiredWidth = 600.0f;
+		const int32 MaxTextLength = 35;
+
+		const int32 TextLength = FMath::Clamp(Message.Len(), 1, MaxTextLength);
+		const float LengthRange = UKismetMathLibrary::NormalizeToRange(TextLength, 1, MaxTextLength);
+
+		ChatBubbleTextWidget->SetMinDesiredWidth(FMath::Lerp(MinDesiredWidth, MaxDesiredWidth, LengthRange));
+
 		this->ChatBubbleMessageTimer = this->ChatBubbleMessageMaxTime;
 
-		ChatBubbleTextWidget->SetAutoWrapText(true);
+		//ChatBubbleTextWidget->SetAutoWrapText(true);
 	}
 }
 

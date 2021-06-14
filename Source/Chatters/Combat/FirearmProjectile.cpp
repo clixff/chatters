@@ -163,7 +163,7 @@ void AFirearmProjectile::OnEnd()
 					if (CriticalHitChance < 1)
 					{
 						bCriticalHit = true;
-						this->BotCauser->SayRandomMessage();
+						//this->BotCauser->SayRandomMessage();
 					}
 
 					FVector ImpulseVector = this->CauserForwardVector * FirearmRef->ImpulseForce;
