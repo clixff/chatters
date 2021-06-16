@@ -79,7 +79,13 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 		FText RedTeamAlive;
 
-	void SetTeamAliveNumber(EBotTeam Team, int32 Number);
+	UPROPERTY()
+		UWidget* BlueAliveBarWidget = nullptr;
+
+	UPROPERTY()
+		UWidget* RedAliveBarWidget = nullptr;
+
+	void SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive);
 
 	void SetTeamsWrapperVisibility(bool bVisible);
 

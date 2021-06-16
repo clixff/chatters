@@ -188,8 +188,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		this->bCanViewersJoin = true;
 	}
 
-	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
-	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
+	this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive);
 
 	auto* PlayerController = World->GetFirstPlayerController();
 	if (PlayerController)
@@ -255,14 +254,15 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 			if (AliveBot->Team == EBotTeam::Blue)
 			{
 				this->BlueAlive--;
-				this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
-
 			}
 			else if (AliveBot->Team == EBotTeam::Red)
 			{
 				this->RedAlive--;
-				this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
+			}
 
+			if (AliveBot->Team != EBotTeam::White)
+			{
+				this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive);
 			}
 
 			if (this->SessionWidget)
@@ -463,8 +463,7 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 
 		if (this->SessionWidget)
 		{
-			this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
-			this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
+			this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive);
 			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->MaxPlayers);
 		}
 
@@ -562,8 +561,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 		}
 	}
 
-	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Blue, this->BlueAlive);
-	this->SessionWidget->SetTeamAliveNumber(EBotTeam::Red, this->RedAlive);
+	this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive);
 
 
 	auto* World = GetWorld();

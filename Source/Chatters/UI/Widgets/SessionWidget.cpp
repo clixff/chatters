@@ -118,19 +118,40 @@ void USessionWidget::SetPlayCommandVisibility(bool bVisible)
 	}
 }
 
-void USessionWidget::SetTeamAliveNumber(EBotTeam Team, int32 Number)
+void USessionWidget::SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive)
 {
-	FString AliveString = FString::Printf(TEXT("%d"), Number);
-	FText AliveText = FText::FromString(AliveString);
+	auto NumberToText = [](int32 Number)
+	{
+		FString AliveString = FString::Printf(TEXT("%d"), Number);
+		return FText::FromString(AliveString);
+	};
 
-	if (Team == EBotTeam::Blue)
+	this->BlueTeamAlive = NumberToText(BlueAlive);
+	this->RedTeamAlive = NumberToText(RedAlive);
+
+	const int32 TotalAlive = BlueAlive + RedAlive;
+
+	const float BlueAlivePercent = float(BlueAlive) / float(TotalAlive);
+	const float RedAlivePercent = 1.0f - BlueAlivePercent;
+
+	auto SetWidgetBarWidth = [this](UWidget** Widget, FName Name, float SizeX)
 	{
-		this->BlueTeamAlive = AliveText;
-	}
-	else if (Team == EBotTeam::Red)
-	{
-		this->RedTeamAlive = AliveText;
-	}
+		if (!*Widget)
+		{
+			*Widget = this->GetWidgetFromName(Name);
+		}
+
+		if (*Widget)
+		{
+			(*Widget)->SetRenderScale(FVector2D(SizeX, 1.0f));
+		}
+	};
+
+
+	const auto* WidgetTests = this->GetWidgetFromName(TEXT("Red_Score_Bg"));
+
+	SetWidgetBarWidth(&this->BlueAliveBarWidget, TEXT("Blue_Score_Bg"), BlueAlivePercent);
+	SetWidgetBarWidth(&this->RedAliveBarWidget, TEXT("Red_Score_Bg"), RedAlivePercent);
 }
 
 void USessionWidget::SetTeamsWrapperVisibility(bool bVisible)
