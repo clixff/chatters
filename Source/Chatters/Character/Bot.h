@@ -92,6 +92,17 @@ public:
 	ETargetType TargetType = ETargetType::None;
 };
 
+USTRUCT(BlueprintType)
+struct FEyesRotation
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FRotator LeftEye = FRotator(0.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FRotator RightEye = FRotator(0.0f);
+};
+
 class UChattersGameSession;
 
 UCLASS()
@@ -376,4 +387,7 @@ public:
 	void Clear();
 
 	void RemoveBloodDecal();
+
+	UFUNCTION(BlueprintCallable)
+		FEyesRotation GetEyesRotation();
 };

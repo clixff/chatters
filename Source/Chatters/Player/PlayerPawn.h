@@ -74,6 +74,8 @@ public:
 	static APlayerPawn* Get();
 
 	void Init();
+
+	FVector GetCameraLocation();
 private:
 	void UpdateBotNicknameWidgets();
 
@@ -88,4 +90,6 @@ private:
 	FRotator FindNewAcceptableCameraRotation(FRotator StartRotation);
 
 	static APlayerPawn* Singleton;
+
+	FVector CachedCameraLocation = FVector(0.0f);
 };

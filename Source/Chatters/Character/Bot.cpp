@@ -2266,3 +2266,62 @@ void ABot::RemoveBloodDecal()
 		this->FloorBloodDecalActor = nullptr;
 	}
 }
+
+FEyesRotation ABot::GetEyesRotation()
+{
+	FEyesRotation DefaultRotation;
+
+	if (!this->bAlive)
+	{
+		return DefaultRotation;
+	}
+
+	if (this->CombatAction == ECombatAction::Shooting)
+	{
+		return DefaultRotation;
+	}
+
+	APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+	if (!PlayerPawn)
+	{
+		return DefaultRotation;
+	}
+	
+	float DistanceFromCamera = PlayerPawn->GetDistanceFromCamera(this->GetActorLocation());
+
+	if (DistanceFromCamera > 500.0f)
+	{
+		return DefaultRotation;
+	}
+
+	FVector LeftEyeLocation = this->HeadMesh->GetSocketLocation(TEXT("eye_L"));
+	FVector RightEyeLocation = this->HeadMesh->GetSocketLocation(TEXT("eye_R"));
+
+	const FVector CameraLocation = PlayerPawn->GetCameraLocation();
+
+	auto GetEyeRotation = [this](FVector EyeLocation, FVector CameraLocation)
+	{
+		FVector RelativeCameraLocation = EyeLocation - CameraLocation;
+
+		RelativeCameraLocation = FRotator(0.0f, this->GetActorRotation().Yaw * -1.0f, 0.0f).RotateVector(RelativeCameraLocation);
+
+		FRotator EyeRotation = UKismetMathLibrary::FindLookAtRotation(FVector(0.0), RelativeCameraLocation);
+
+		EyeRotation.Yaw += 180.0f;
+		EyeRotation.Yaw = FMath::Fmod(EyeRotation.Yaw + 180.0f, 360.0f) - 180.0f;
+
+		EyeRotation.Roll = FMath::Clamp(EyeRotation.Pitch, -50.0f, 50.0f);
+		EyeRotation.Yaw = FMath::Clamp(EyeRotation.Yaw, -50.0f, 50.0f);
+		EyeRotation.Pitch = 0.0f;
+
+		return EyeRotation;
+	};
+
+	FEyesRotation EyesRotation;
+
+	EyesRotation.LeftEye = GetEyeRotation(LeftEyeLocation, CameraLocation);
+	EyesRotation.RightEye = GetEyeRotation(RightEyeLocation, CameraLocation);
+
+	return EyesRotation;
+}
