@@ -86,6 +86,7 @@ void UMainMenuWidget::Show()
 	if (GameInstance)
 	{
 		this->UpdateTwitchData(GameInstance->TwitchAuthData);
+		this->SetUpdateAvailableWidgetVisible(GameInstance->bUpdateAvailable);
 	}
 
 }
@@ -324,4 +325,11 @@ void UMainMenuWidget::OnTwitchLogoutClick()
 	{
 		GameInstance->OnTwitchAuthDataLoaded(false, TEXT(""));
 	}
+}
+
+void UMainMenuWidget::OpenGameUpdateURL()
+{
+	static const FString URL = TEXT("https://github.com/clixff/chatters/releases");
+
+	UKismetSystemLibrary::LaunchURL(URL);
 }

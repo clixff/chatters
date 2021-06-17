@@ -468,3 +468,37 @@ float UChattersGameInstance::UpdateGameVolume_Implementation(float Volume)
 
 	return Volume / 100.0f;
 }
+
+FString UChattersGameInstance::GetGameVersion()
+{
+	FString ProjectVersion;
+	GConfig->GetString(
+		TEXT("/Script/EngineSettings.GeneralProjectSettings"),
+		TEXT("ProjectVersion"),
+		ProjectVersion,
+		GGameIni
+	);
+
+	return ProjectVersion;
+}
+
+void UChattersGameInstance::SetUpdateAvailable(bool bUpdateAvailableValue)
+{
+	this->bUpdateAvailable = bUpdateAvailableValue;
+
+	if (this->GetWidgetManager())
+	{
+		auto* MainMenuWidget = this->GetWidgetManager()->MainMenuWidget;
+
+		if (MainMenuWidget)
+		{
+			AsyncTask(ENamedThreads::GameThread, [bUpdateAvailableValue, MainMenuWidget]() {
+
+				if (MainMenuWidget)
+				{
+					MainMenuWidget->SetUpdateAvailableWidgetVisible(bUpdateAvailableValue);
+				}
+			});
+		}
+	}
+}

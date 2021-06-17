@@ -76,3 +76,57 @@ export function getTwitchAuthData(token: string): Promise<ITwitchAuthData>
         });
     });
 }
+
+/**
+ * 
+ * @returns If game update available
+ */
+export function compareGameVersions(localVersionString: string, availableVersionString: string): boolean
+{
+    console.log(`Local game version: ${localVersionString}\nAvailable game version: ${availableVersionString}`);
+
+    if (localVersionString === availableVersionString)
+    {
+        return false;
+    }
+
+    const localVersion = localVersionString.split('.');
+    const availableVersion = availableVersionString.split('.');
+
+    if (!availableVersion.length)
+    {
+        return false;
+    }
+
+    if (!localVersion.length)
+    {
+        return false;
+    }
+    
+    const maxVersionNumbers = Math.max(localVersion.length, availableVersion.length);
+
+    for (let i = 0; i < maxVersionNumbers; i++)
+    {
+        const localVersionNumber = localVersion[i] || 0;
+        const availableVersionNumber = availableVersion[i] || 0;
+
+        if (localVersionNumber < availableVersionNumber)
+        {
+            return true;
+        }
+        else if (localVersionNumber === availableVersionNumber)
+        {
+            continue;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+
+
+

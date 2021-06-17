@@ -88,6 +88,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void OnTwitchLogoutClick();
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void SetUpdateAvailableWidgetVisible(bool bVisible);
+
+	UFUNCTION(BlueprintCallable)
+		void OpenGameUpdateURL();
 private:
 	TArray<UWidget*> GetButtonWidgets();
 

@@ -15,7 +15,6 @@ FSocketClient::FSocketClient()
 	UE_LOG(LogTemp, Display, TEXT("[FSocketClient] Socket client created"));
 	FSocketClient::Singleton = this;
 	this->Thread = FRunnableThread::Create(this, TEXT("FSocketClient"));
-
 }
 
 FSocketClient::~FSocketClient()
@@ -119,6 +118,9 @@ void FSocketClient::OnConnect()
 		this->Socket->on("twitch-token-updated", std::bind(&FSocketClient::OnTwitchTokenUpdated, this, std::placeholders::_1));
 		this->Socket->on("viewer-join", std::bind(&FSocketClient::OnViewerJoin, this, std::placeholders::_1));
 		this->Socket->on("viewer-message", std::bind(&FSocketClient::OnViewerMessage, this, std::placeholders::_1));
+		this->Socket->on("update-available", std::bind(&FSocketClient::OnGameUpdateAvailable, this, std::placeholders::_1));
+
+		this->CheckForUpdates();
 
 	}
 }
@@ -239,6 +241,16 @@ void FSocketClient::OnLevelLoaded()
 	}
 }
 
+void FSocketClient::OnGameUpdateAvailable(sio::event& ev)
+{
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (GameInstance)
+	{
+		GameInstance->SetUpdateAvailable(true);
+	}
+}
+
 void FSocketClient::OnViewerMessage(sio::event& ev)
 {
 	UE_LOG(LogTemp, Display, TEXT("[FSocketClient] OnViewerMessage"));
@@ -284,5 +296,27 @@ void FSocketClient::RevokeToken(FString Token)
 		argumentList.push(sio::string_message::create(TwitchTokenString));
 
 		this->Socket->emit("twitch-logout", argumentList);
+	}
+}
+
+void FSocketClient::CheckForUpdates()
+{
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	FString GameVersion = GameInstance->GetGameVersion();
+
+	std::string LocalVersionString = FSocketClient::ConvertToANSI(GameVersion);
+
+	if (this->Socket)
+	{
+		sio::message::list argumentList;
+		argumentList.push(sio::string_message::create(LocalVersionString));
+
+		this->Socket->emit("check-for-updates", argumentList);
 	}
 }

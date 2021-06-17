@@ -96,6 +96,12 @@ public:
 		FTwitchAuthData TwitchAuthData;
 
 	void OnTwitchAuthDataLoaded(bool bSignedIn, FString DisplayName);
+
+	bool bUpdateAvailable = false;
+
+	FString GetGameVersion();
+
+	void SetUpdateAvailable(bool bUpdateAvailableValue);
 public:
 	/** Get Singleton */
 	static UChattersGameInstance* Get();

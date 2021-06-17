@@ -12,23 +12,35 @@ export default class ChatClient
 
     listen(username: string, token: string, userId: number): void
     {
-        console.log(`[ChatClient] Listening`);
+        try
+        {
+            if (this.client)
+            {
+                this.disconnect();
+            }
 
-        this.params.identity = {
-            username: username,
-            password: token
-        };
-        this.params.channels = [ username ];
+            console.log(`[ChatClient] Listening`);
 
-        this.client = new tmi.client(this.params);
-
-        this.client.connect();
-
-        this.client.on('connected', this.onConnect);
-
-        this.client.on('message', this.onMessage);
-
-        this.channelID = `${userId}`;
+            this.params.identity = {
+                username: username,
+                password: token
+            };
+            this.params.channels = [ username ];
+    
+            this.client = new tmi.client(this.params);
+    
+            this.client.connect();
+    
+            this.client.on('connected', this.onConnect);
+    
+            this.client.on('message', this.onMessage);
+    
+            this.channelID = `${userId}`;
+        }
+        catch (error)
+        {
+            console.error(error);
+        }
     }
 
     onConnect(addr: string, port: number): void
