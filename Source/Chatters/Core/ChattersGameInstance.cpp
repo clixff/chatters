@@ -107,6 +107,14 @@ void UChattersGameInstance::LoadComplete(const float LoadTime, const FString& Ma
 		}
 	}
 
+
+	auto* PlayerPawnController = Cast<APlayerPawnController>(this->GetPlayerController());
+
+	if (PlayerPawnController)
+	{
+		PlayerPawnController->bCanControl = !this->bInMainMenu;
+	}
+
 	this->SetIsGamePaused(false);
 
 	if (this->SavedSettings)
@@ -124,13 +132,6 @@ void UChattersGameInstance::SetIsInMainMenu(bool bInMainMenuNew)
 	}
 
 	this->bInMainMenu = bInMainMenuNew;
-
-	auto* PlayerPawnController = Cast<APlayerPawnController>(this->GetPlayerController());
-
-	if (PlayerPawnController)
-	{
-		PlayerPawnController->bCanControl = !this->bInMainMenu;
-	}
 
 	if (bInMainMenu)
 	{
