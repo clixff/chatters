@@ -8,6 +8,8 @@
 #include "Components/VerticalBox.h"
 #include "Animation/WidgetAnimation.h"
 #include "../../Misc/Misc.h"
+#include "ViewerJoinNotification.h"
+#include "SessionNotification.h"
 #include "SessionWidget.generated.h"
 
 /**
@@ -103,27 +105,46 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 		void SetStreamerJoinTipVisible(bool bVisible);
+
+public:
+	// Notifications
+
+	UPROPERTY()
+		TArray<USessionNotification*> SessionNotifications;
+
+	void SetNotificationsContainerWidget();
+
+	UVerticalBoxSlot* AddNotificationToContainer(USessionNotification* Notification);
 public:
 	// Kill feed
 
-	UPROPERTY(EditDefaultsOnly, Category = "KillFeed")
+	UPROPERTY(EditDefaultsOnly, Category = "Notifications | KillFeed")
 		TSubclassOf<UKillFeedElement> KillFeedSubclass;
-
-	UPROPERTY()
-		TArray<UKillFeedElement*> KillFeedElements;
 
 	void OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon);
 
-	UPROPERTY(EditDefaultsOnly, Category = "KillFeed")
+	UPROPERTY(EditDefaultsOnly, Category = "Notifications | KillFeed")
 		int32 MaxKillFeedElements = 7;
 
 	UPROPERTY()
-		UVerticalBox* KillFeedContainer = nullptr;
+		UVerticalBox* SessionNotificationsContainer = nullptr;
 
 	UPROPERTY()
 		EKillFeedPosition KillFeedPosition = EKillFeedPosition::Right;
 
 	void SetKillFeedPosition(EKillFeedPosition Position);
+
+	void ClearAllNotifications();
+public:
+	// Viewer notifictaions
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Notifications | Joining")
+		TSubclassOf<UViewerJoinNotification> ViewerNotificationClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Notifications | Joining")
+		int32 MaxJoiningNotificationElements = 10;
+
+	void OnViewerJoined(FString Nickname, FLinearColor NameColor);
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
 

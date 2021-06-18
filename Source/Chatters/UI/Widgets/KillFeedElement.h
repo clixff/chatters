@@ -3,10 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CustomWidgetBase.h"
-#include "Components/VerticalBoxSlot.h"
-#include "Animation/WidgetAnimation.h"
 #include "Engine/Texture2D.h"
+#include "SessionNotification.h"
 #include "KillFeedElement.generated.h"
 
 UENUM(BlueprintType)
@@ -35,7 +33,7 @@ public:
  * 
  */
 UCLASS()
-class CHATTERS_API UKillFeedElement : public UCustomWidgetBase
+class CHATTERS_API UKillFeedElement : public USessionNotification
 {
 	GENERATED_BODY()
 public:
@@ -49,36 +47,6 @@ public:
 
 	void Init(FString KillerNameString, FString VictimNameString);
 
-	static FName GenerateName();
-
-	void Destroy();
-
-	void Tick(float DeltaTime);
-
-	float SecondsDIsplaying = 0.0f;
-
-	UPROPERTY()
-		UVerticalBoxSlot* VerticalBoxSlot = nullptr;
-
-	UPROPERTY(EditDefaultsOnly)
-		float MaxSeconds = 5.0f; 
-
-	UPROPERTY(EditDefaultsOnly)
-		float FadeInSeconds = 1.0f;
-
-	UPROPERTY(EditDefaultsOnly)
-		float FadeOutSeconds = 1.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UWidgetAnimation* FadeInAnimation;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UWidgetAnimation* FadeOutAnimation;
-
-	void StartDestroying();
-
-	bool bDestroying = false;
-
 	void SetNicknameColors(FLinearColor KillerColor, FLinearColor VictimColor);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -91,6 +59,4 @@ public:
 public:
 	UPROPERTY(EditDefaultsOnly, Category="Icons")
 		FKillFeedIcon ExplosionIcon;
-protected:
-	virtual void OnAnimationFinishedPlaying(UUMGSequencePlayer& Player) override;
 };

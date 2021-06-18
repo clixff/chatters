@@ -319,6 +319,7 @@ void UChattersGameSession::Start()
 			this->SessionWidget->SetRoundTimerVisibility(true);
 			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
 			this->SessionWidget->SetStreamerJoinTipVisible(false);
+			this->SessionWidget->ClearAllNotifications();
 		}
 
 		this->bCanViewersJoin = false;
@@ -424,11 +425,15 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 	this->Mutex.Lock();
 	if (!this->bCanViewersJoin || this->SessionType == ESessionType::Generated)
 	{
+		this->Mutex.Unlock();
+
 		return;
 	}
 
 	if (this->Bots.Num() >= this->MaxPlayers)
 	{
+		this->Mutex.Unlock();
+
 		return;
 	}
 
@@ -437,6 +442,7 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 	/** Bot with this name already exists */
 	if (this->BotsMap.Contains(LowerCasedName))
 	{
+		this->Mutex.Unlock();
 		return;
 	}
 
@@ -466,6 +472,7 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 		{
 			this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive);
 			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->MaxPlayers);
+			this->SessionWidget->OnViewerJoined(Bot->DisplayName, Bot->GetTeamColor());
 		}
 
 		if (BotID == 0)
