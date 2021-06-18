@@ -29,7 +29,10 @@ export default class ChatClient
     
             this.client = new tmi.client(this.params);
     
-            this.client.connect();
+            this.client.connect().catch((err) => 
+            {
+                console.error(err);
+            });
     
             this.client.on('connected', this.onConnect);
     
@@ -87,11 +90,21 @@ export default class ChatClient
 
     disconnect(): void
     {
-        if (this.client)
+        try
         {
-            console.log(`[ChatClient] Disconnecting`);
-            this.client.disconnect();
-            this.client = null;
+            if (this.client && this.client)
+            {
+                console.log(`[ChatClient] Disconnecting`);
+                this.client.disconnect().catch((err) => 
+                {
+                    console.error(err);
+                });
+                this.client = null;
+            }
+        }
+        catch (error)
+        {
+            console.error(error);
         }
     }
 

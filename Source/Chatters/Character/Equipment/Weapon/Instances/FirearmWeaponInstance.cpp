@@ -105,7 +105,7 @@ void UFirearmWeaponInstance::OnShoot()
 	if (FirearmRef)
 	{
 		this->Phase = EFirearmPhase::Shooting;
-		this->TimeoutValue = FirearmRef->ShootTime;
+		this->TimeoutValue = FirearmRef->ShootTime + FMath::RandRange(0.0f, 0.1f);
 		this->NumberOfBullets -= 1;
 	}
 
