@@ -65,6 +65,7 @@ void APlayerPawnController::SetupInputComponent()
 	this->InputComponent->BindAction("Slomo", IE_Released, this, &APlayerPawnController::OnSlowmoEnd);
 
 	this->InputComponent->BindAction("Esc", IE_Pressed, this, &APlayerPawnController::OnEscPressed);
+	this->InputComponent->BindAction("GameJoin", IE_Pressed, this, &APlayerPawnController::OnGameJoinPressed);
 
 
 ;}
@@ -414,5 +415,49 @@ void APlayerPawnController::OnEscPressed()
 				GameSession->PauseGame();
 			}
 		}
+	}
+}
+
+void APlayerPawnController::OnGameJoinPressed()
+{
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (!GameSession)
+	{
+		return;
+	}
+
+	if (GameSession->SessionType != ESessionType::Twitch || !GameSession->bCanViewersJoin)
+	{
+		return;
+	}
+
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	auto AuthData = GameInstance->TwitchAuthData;
+
+	if (!AuthData.bSignedIn || AuthData.DisplayName.IsEmpty())
+	{
+		return;
+	}
+
+
+	GameSession->OnViewerJoin(AuthData.DisplayName);
+	
+	auto* SessionWidget = GameSession->GetSessionWidget();
+
+	if (SessionWidget)
+	{
+		SessionWidget->SetStreamerJoinTipVisible(false);
 	}
 }

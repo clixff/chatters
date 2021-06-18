@@ -100,4 +100,6 @@ private:
 
 	void OnEscPressed();
 
+	void OnGameJoinPressed();
+
 };

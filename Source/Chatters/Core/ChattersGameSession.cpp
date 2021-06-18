@@ -186,6 +186,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	else
 	{
 		this->bCanViewersJoin = true;
+		this->SessionWidget->SetStreamerJoinTipVisible(true);
 	}
 
 	this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive);
@@ -317,7 +318,7 @@ void UChattersGameSession::Start()
 			this->SessionWidget->bUpdateRoundTimer = true;
 			this->SessionWidget->SetRoundTimerVisibility(true);
 			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
-
+			this->SessionWidget->SetStreamerJoinTipVisible(false);
 		}
 
 		this->bCanViewersJoin = false;

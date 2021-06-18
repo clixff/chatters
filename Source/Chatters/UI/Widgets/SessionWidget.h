@@ -100,6 +100,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		FText RoundTimerText = FText::FromString(TEXT("0:00"));
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void SetStreamerJoinTipVisible(bool bVisible);
 public:
 	// Kill feed
 
