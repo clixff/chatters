@@ -17,6 +17,8 @@ public:
 
 	void StartProcess();
 
+	void TerminateOldProcess();
+
 	static void Shutdown();
 
 	static void OnShutdown();
