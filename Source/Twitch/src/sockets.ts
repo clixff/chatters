@@ -180,7 +180,7 @@ export default class SocketsServer
         }
     }
 
-    async checkForUpdates(localVersion): Promise<void>
+    async checkForUpdates(localVersion: string): Promise<void>
     {
         try
         {
@@ -213,6 +213,14 @@ export default class SocketsServer
         {
             console.error(error);
         }   
+    }
+
+    onTargetCommand(from: string, targetName: string): void
+    {
+        if (this.socket)
+        {
+            this.socket.emit('target-command', from, targetName);
+        }
     }
 
     io?: Server | null;

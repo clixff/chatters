@@ -186,6 +186,8 @@ public:
 	EWeaponType GetWeaponType();
 
 	bool IsEnemy(ABot* BotToCheck);
+
+	void SetNewEnemyTarget(ABot* TargetBot);
 private:
 	bool bReady = false;
 
@@ -213,7 +215,6 @@ private:
 
 	void FindNewEnemyTarget();
 
-	void SetNewEnemyTarget(ABot* TargetBot);
 
 	FVector MovingTarget;
 

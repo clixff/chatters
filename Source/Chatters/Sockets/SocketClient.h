@@ -76,4 +76,6 @@ public:
 	void CheckForUpdates();
 
 	void OnGameUpdateAvailable(sio::event& ev);
+
+	void OnTargetCommand(sio::event& ev);
 };

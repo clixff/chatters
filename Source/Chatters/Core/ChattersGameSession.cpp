@@ -518,6 +518,47 @@ void UChattersGameSession::OnViewerMessage(FString Name, FString Message)
 	Bot->Say(Message);
 }
 
+void UChattersGameSession::OnViewerTargetCommand(FString ViewerName, FString TargetName)
+{
+	if (!this->bStarted)
+	{
+		return;
+	}
+
+	if (ViewerName == TargetName)
+	{
+		return;
+	}
+
+	ABot** ViewerBotRef = this->BotsMap.Find(ViewerName);
+	ABot** TargetBotRef = this->BotsMap.Find(TargetName);
+
+	if (!ViewerBotRef || !TargetBotRef)
+	{
+		return;
+	}
+
+	ABot* ViewerBot = *ViewerBotRef;
+	ABot* TargetBot = *TargetBotRef;
+
+	if (!ViewerBot || !TargetBot)
+	{
+		return;
+	}
+
+	if (!ViewerBot->bAlive || !TargetBot->bAlive)
+	{
+		return;
+	}
+
+	if (!ViewerBot->IsEnemy(TargetBot))
+	{
+		return;
+	}
+
+	ViewerBot->SetNewEnemyTarget(TargetBot);
+}
+
 void UChattersGameSession::OnTeamsBattleEnd()
 {
 	this->AvailableBotSpawnPoints = this->BotSpawnPoints;

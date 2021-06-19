@@ -119,6 +119,7 @@ void FSocketClient::OnConnect()
 		this->Socket->on("viewer-join", std::bind(&FSocketClient::OnViewerJoin, this, std::placeholders::_1));
 		this->Socket->on("viewer-message", std::bind(&FSocketClient::OnViewerMessage, this, std::placeholders::_1));
 		this->Socket->on("update-available", std::bind(&FSocketClient::OnGameUpdateAvailable, this, std::placeholders::_1));
+		this->Socket->on("target-command", std::bind(&FSocketClient::OnTargetCommand, this, std::placeholders::_1));
 
 		this->CheckForUpdates();
 
@@ -239,6 +240,44 @@ void FSocketClient::OnLevelLoaded()
 	{
 		this->Socket->emit("level-loaded");
 	}
+}
+
+void FSocketClient::OnTargetCommand(sio::event& ev)
+{
+	UE_LOG(LogTemp, Display, TEXT("[FSocketClient] OnTargetCommand"));
+
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (!GameSession || !GameSession->bStarted || GameSession->SessionType != ESessionType::Twitch)
+	{
+		return;
+	}
+
+	auto Messages = ev.get_messages();
+
+	if (Messages.size() < 2)
+	{
+		return;
+	}
+
+	const FString ViewerName = FSocketClient::ConvertFromANSI(Messages[0]->get_string());
+	const FString TargetName = FSocketClient::ConvertFromANSI(Messages[1]->get_string());
+
+	if (ViewerName.IsEmpty() || TargetName.IsEmpty())
+	{
+		return;
+	}
+
+	AsyncTask(ENamedThreads::GameThread, [GameSession, ViewerName, TargetName]() {
+
+		if (!GameSession)
+		{
+			return;
+		}
+
+		GameSession->OnViewerTargetCommand(ViewerName, TargetName);
+	});
+
 }
 
 void FSocketClient::OnGameUpdateAvailable(sio::event& ev)

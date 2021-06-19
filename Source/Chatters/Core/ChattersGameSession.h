@@ -64,6 +64,8 @@ public:
 	void OnViewerJoin(FString Name);
 
 	void OnViewerMessage(FString Name, FString Message);
+
+	void OnViewerTargetCommand(FString ViewerName, FString TargetName);
 public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<ABot> BotSubclass;

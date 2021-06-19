@@ -78,6 +78,25 @@ export default class ChatClient
                     socketsServer.onViewerJoin(userName);
                 }
             }
+            else if (messageLowerCased.startsWith('!target '))
+            {
+                const targetRegex = /^!target (?:\@)?((?:\w){2,30})$/;
+
+                const regexMatch = messageLowerCased.match(targetRegex);
+
+                if (regexMatch)
+                {
+                    const targetNickname: string | undefined = regexMatch[1];
+
+                    const usernameLowerCased = userName.toLowerCase();
+
+                    if (targetNickname && targetNickname != usernameLowerCased && socketsServer)
+                    {
+                        socketsServer.onTargetCommand(usernameLowerCased, targetNickname);
+                    }
+                }
+
+            }
             else if (message.length)
             {
                 if (socketsServer)
