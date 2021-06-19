@@ -160,6 +160,17 @@ void UMainMenuWidget::SetSelectedLevel(int32 NewSelectedLevel)
 
 		MapPreviewWidget->SetActiveStatus(i == NewSelectedLevel);
 	}
+
+	auto& SelectedLevelRef = this->LevelsList[NewSelectedLevel];
+
+	this->UpdateWeaponsList(SelectedLevelRef.WeaponsIcons);
+
+	this->WeaponsAvailableList.Empty();
+
+	for (auto& WeaponIcon : SelectedLevelRef.WeaponsIcons)
+	{
+		this->WeaponsAvailableList.Add(true);
+	}
 }
 
 TArray<UWidget*> UMainMenuWidget::GetButtonWidgets()
@@ -332,4 +343,14 @@ void UMainMenuWidget::OpenGameUpdateURL()
 	static const FString URL = TEXT("https://github.com/clixff/chatters/releases");
 
 	UKismetSystemLibrary::LaunchURL(URL);
+}
+
+void UMainMenuWidget::OnWeaponClick(int32 WeaponID)
+{
+	if (WeaponID < this->WeaponsAvailableList.Num())
+	{
+		this->WeaponsAvailableList[WeaponID] = !this->WeaponsAvailableList[WeaponID];
+
+		this->SetWeaponSelected(WeaponID, this->WeaponsAvailableList[WeaponID]);
+	}
 }

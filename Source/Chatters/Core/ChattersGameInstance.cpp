@@ -367,15 +367,18 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 
 	auto* WidgetManagerRef = this->GetWidgetManager();
 
+	TArray<bool> AvailableWeapons;
+
 	if (WidgetManagerRef)
 	{
+		if (WidgetManagerRef->MainMenuWidget)
+		{
+			WidgetManagerRef->MainMenuWidget->Hide();
+			AvailableWeapons = WidgetManagerRef->MainMenuWidget->WeaponsAvailableList;
+		}
+
 		if (WidgetManagerRef->LoadingWidget)
 		{
-			if (WidgetManagerRef->MainMenuWidget)
-			{
-				WidgetManagerRef->MainMenuWidget->Hide();
-			}
-
 			WidgetManagerRef->LoadingWidget->Show();
 		}
 	}
@@ -383,6 +386,7 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 	this->GameSession = NewObject<UChattersGameSession>(this, this->GameSessionClass, TEXT("GameSession"));
 
 	this->GameSession->Init(LevelName);
+	this->GameSession->AvailableWeapons = AvailableWeapons;
 }
 
 bool UChattersGameInstance::GetIsInMainMenu()

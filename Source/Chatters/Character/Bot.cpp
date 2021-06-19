@@ -1350,16 +1350,18 @@ void ABot::SetEquipment()
 				}
 			}
 
-			if (RandomEquipment.Weapon)
+			UWeaponItem* RandomWeapon = EquipmentList->GetRandomWeapon(GameSessionObject->AvailableWeapons);
+
+			if (RandomWeapon)
 			{
 				if (this->WeaponMesh)
 				{
-					this->WeaponMesh->SetStaticMesh(RandomEquipment.Weapon->StaticMesh);
-					this->WeaponMesh->SetRelativeTransform(RandomEquipment.Weapon->GetTransform());
+					this->WeaponMesh->SetStaticMesh(RandomWeapon->StaticMesh);
+					this->WeaponMesh->SetRelativeTransform(RandomWeapon->GetTransform());
 
 					UClass* WeaponInstanceClass = UWeaponInstance::StaticClass();
 
-					EWeaponType WeaponType = RandomEquipment.Weapon->Type;
+					EWeaponType WeaponType = RandomWeapon->Type;
 
 					if (WeaponType == EWeaponType::Melee)
 					{
@@ -1373,13 +1375,13 @@ void ABot::SetEquipment()
 					this->WeaponInstance = NewObject<UWeaponInstance>(this, WeaponInstanceClass);
 					if (this->WeaponInstance)
 					{
-						this->WeaponInstance->WeaponRef = RandomEquipment.Weapon;
+						this->WeaponInstance->WeaponRef = RandomWeapon;
 						this->WeaponInstance->BotOwner = this;
 						this->WeaponInstance->Init();
 
 						if (WeaponType == EWeaponType::Firearm)
 						{
-							UFirearmWeaponItem* FirearmRef = Cast<UFirearmWeaponItem>(RandomEquipment.Weapon);
+							UFirearmWeaponItem* FirearmRef = Cast<UFirearmWeaponItem>(RandomWeapon);
 							if (FirearmRef)
 							{
 								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation - this->GunAnimationRotationPoint;
@@ -1387,7 +1389,7 @@ void ABot::SetEquipment()
 						}
 						else if (WeaponType == EWeaponType::Melee)
 						{
-							auto* MeleeRef = Cast<UMeleeWeaponItem>(RandomEquipment.Weapon);
+							auto* MeleeRef = Cast<UMeleeWeaponItem>(RandomWeapon);
 							if (MeleeRef)
 							{
 								this->GunSocketRelativeLocation = FVector(0.0f, 0.0f, 50.0f) - this->GunAnimationRotationPoint;

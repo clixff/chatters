@@ -46,12 +46,12 @@ FRandomEquipment UEquipmentList::GetRandomEquipment()
 		}
 	}
 
-	int32 NumberOfWeapons = this->Weapons.Num();
-	if (NumberOfWeapons)
-	{
-		RandomIndex = FMath::RandRange(0, NumberOfWeapons - 1);
-		Equipment.Weapon = this->Weapons[RandomIndex];
-	}
+	//int32 NumberOfWeapons = this->Weapons.Num();
+	//if (NumberOfWeapons)
+	//{
+	//	RandomIndex = FMath::RandRange(0, NumberOfWeapons - 1);
+	//	Equipment.Weapon = this->Weapons[RandomIndex];
+	//}
 
 	int32 NumberOfCostumes = this->Costumes.Num();
 	if (NumberOfCostumes)
@@ -61,4 +61,39 @@ FRandomEquipment UEquipmentList::GetRandomEquipment()
 	}
 
 	return Equipment;
+}
+
+UWeaponItem* UEquipmentList::GetRandomWeapon(TArray<bool>& AvailableWeapons)
+{
+	const int32 WeaponsArrayNum = this->Weapons.Num();
+	if (!WeaponsArrayNum)
+	{
+		return nullptr;
+	}
+
+	TArray<UWeaponItem*> AvailableWeaponsRefs;
+
+	for (int32 i = 0; i < AvailableWeapons.Num(); i++)
+	{
+		bool& bWeaponAvailable = AvailableWeapons[i];
+
+		if (bWeaponAvailable && i < WeaponsArrayNum)
+		{
+			AvailableWeaponsRefs.Add(this->Weapons[i]);
+		}
+	}
+
+	if (!AvailableWeaponsRefs.Num())
+	{
+		AvailableWeaponsRefs = this->Weapons;
+	}
+
+	if (AvailableWeaponsRefs.Num() == 1)
+	{
+		return AvailableWeaponsRefs[0];
+	}
+
+	int32 RandomIndex = FMath::RandRange(0, AvailableWeaponsRefs.Num() - 1);
+
+	return AvailableWeaponsRefs[RandomIndex];
 }

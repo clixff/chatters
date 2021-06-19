@@ -115,6 +115,8 @@ public:
 	void PauseGame();
 
 	void UnpauseGame();
+
+	TArray<bool> AvailableWeapons;
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;

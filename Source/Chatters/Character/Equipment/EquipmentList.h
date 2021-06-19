@@ -49,4 +49,6 @@ public:
 		TArray<UCostumeItem*> Costumes;
 
 	FRandomEquipment GetRandomEquipment();
+
+	UWeaponItem* GetRandomWeapon(TArray<bool>& AvailableWeapons);
 };
