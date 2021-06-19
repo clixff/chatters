@@ -1238,6 +1238,7 @@ void ABot::CreateFloorBloodDecal()
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
 {
+	GameSessionObject = UChattersGameSession::Get();
 	if (!GameSessionObject)
 	{
 		return nullptr;

@@ -92,7 +92,7 @@ export default class ChatClient
 
                     if (targetNickname && targetNickname != usernameLowerCased && socketsServer)
                     {
-                        socketsServer.onTargetCommand(usernameLowerCased, targetNickname);
+                        // socketsServer.onTargetCommand(usernameLowerCased, targetNickname);
                     }
                 }
 
