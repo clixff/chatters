@@ -61,7 +61,7 @@ public:
 
 	bool bCanViewersJoin = false;
 
-	void OnViewerJoin(FString Name);
+	ABot* OnViewerJoin(FString Name);
 
 	void OnViewerMessage(FString Name, FString Message);
 

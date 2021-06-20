@@ -141,7 +141,15 @@ export default class SocketsServer
 
     onGameLevelLoaded(): void
     {
-        const bSpawnDebugFakeViewers = false;
+        let bSpawnDebugFakeViewers = false;
+
+        if ((process.env.node_env || '').trim() !== 'development')
+        {
+            bSpawnDebugFakeViewers = false;
+        }
+
+        console.log(`process.env.node_env: ${process.env.node_env}. bSpawnDebugFakeViewers: ${bSpawnDebugFakeViewers}`);
+
 
         if (bSpawnDebugFakeViewers)
         {

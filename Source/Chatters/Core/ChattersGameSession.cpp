@@ -418,21 +418,21 @@ USessionWidget* UChattersGameSession::GetSessionWidget()
 	return this->SessionWidget;
 }
 
-void UChattersGameSession::OnViewerJoin(FString Name)
+ABot* UChattersGameSession::OnViewerJoin(FString Name)
 {
 	this->Mutex.Lock();
 	if (!this->bCanViewersJoin || this->SessionType == ESessionType::Generated)
 	{
 		this->Mutex.Unlock();
 
-		return;
+		return nullptr;
 	}
 
 	if (this->Bots.Num() >= this->MaxPlayers)
 	{
 		this->Mutex.Unlock();
 
-		return;
+		return nullptr;
 	}
 
 	FString LowerCasedName = Name.ToLower();
@@ -441,7 +441,7 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 	if (this->BotsMap.Contains(LowerCasedName))
 	{
 		this->Mutex.Unlock();
-		return;
+		return nullptr;
 	}
 
 	const int32 BotID = this->Bots.Num();
@@ -487,6 +487,8 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 	}
 
 	this->Mutex.Unlock();
+
+	return Bot;
 }
 
 void UChattersGameSession::OnViewerMessage(FString Name, FString Message)

@@ -452,7 +452,14 @@ void APlayerPawnController::OnGameJoinPressed()
 	}
 
 
-	GameSession->OnViewerJoin(AuthData.DisplayName);
+	ABot* Bot =  GameSession->OnViewerJoin(AuthData.DisplayName);
+
+	auto* PlayerPawnRef = this->GetPlayerPawn();
+
+	if (Bot && PlayerPawnRef)
+	{
+		PlayerPawnRef->AttachToBot(Bot);
+	}
 	
 	auto* SessionWidget = GameSession->GetSessionWidget();
 
