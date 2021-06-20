@@ -5,8 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "../Props/ExplodingBarrel.h"
-#include "../Character/Bot.h"
-#include "../Character/Equipment/Weapon/Instances/FirearmWeaponInstance.h"
 #include "NiagaraComponent.h"
 #include "FirearmProjectile.generated.h"
 
@@ -16,6 +14,21 @@ enum class ETraceLengthAction : uint8
 	Increase,
 	Ignore
 };
+
+class ABot;
+class UFirearmWeaponInstance;
+class UFirearmWeaponItem;
+
+USTRUCT()
+struct FBulletHitResult
+{
+	GENERATED_BODY()
+public:
+	FHitResult HitResult;
+	ABot* BotToDamage = nullptr;
+	AExplodingBarrel* ExplodingBarrel = nullptr;
+};
+
 
 UCLASS()
 class CHATTERS_API AFirearmProjectile : public AActor
@@ -94,4 +107,6 @@ public:
 	void DestroyActor();
 
 	bool bSimplified = false;
+
+	void SetColor(FLinearColor Color);
 };

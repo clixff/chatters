@@ -41,6 +41,8 @@ public:
 	bool CanShoot();
 
 	void OnShoot();
+
+	FLinearColor TraceColor;
 private:
 	void StartReloading();
 };

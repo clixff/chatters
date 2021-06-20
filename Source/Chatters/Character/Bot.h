@@ -19,6 +19,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "../Misc/Misc.h"
 #include "Components/BoxComponent.h"
+#include "../Combat/FirearmProjectile.h"
 #include "../Misc/BloodDecal.h"
 #include "Bot.generated.h"
 
@@ -72,15 +73,7 @@ public:
 	float CurrentYaw = 0.0f;
 };
 
-USTRUCT()
-struct FBulletHitResult
-{
-	GENERATED_BODY()
-public:
-	FHitResult HitResult;
-	ABot* BotToDamage = nullptr;
-	AExplodingBarrel* ExplodingBarrel = nullptr;
-};
+
 
 USTRUCT()
 struct FBotTarget
@@ -188,6 +181,8 @@ public:
 	bool IsEnemy(ABot* BotToCheck);
 
 	void SetNewEnemyTarget(ABot* TargetBot);
+
+	void UpdateEquipmentTeamColors();
 private:
 	bool bReady = false;
 

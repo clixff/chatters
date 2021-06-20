@@ -14,7 +14,6 @@
 #include "NavigationSystem.h"
 #include "AI/Navigation/NavigationTypes.h"
 #include "../UI/Widgets/KillFeedElement.h"
-#include "../Combat/FirearmProjectile.h"
 #include "../Player/PlayerPawn.h"
 #include "../Core/ChattersGameSession.h"
 
@@ -292,6 +291,38 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 		else
 		{
 			this->CombatStyle = ECombatStyle::Defense;
+
+		}
+	}
+}
+
+void ABot::UpdateEquipmentTeamColors()
+{
+	if (this->WeaponInstance && this->WeaponInstance->WeaponRef)
+	{
+		auto* WeaponRef = this->WeaponInstance->WeaponRef;
+
+		/** Set random projectile trace colors */
+		if (WeaponRef->Type == EWeaponType::Firearm)
+		{
+			auto* FirearmInstance = Cast<UFirearmWeaponInstance>(this->WeaponInstance);
+			if (!FirearmInstance || !FirearmInstance->GetFirearmRef())
+			{
+				return;
+			}
+
+			auto* FirearmRef = FirearmInstance->GetFirearmRef();
+			auto TeamProjectileColors = FirearmRef->TeamProjectileColors;
+
+
+			if (this->Team != EBotTeam::White && TeamProjectileColors.Num() > 1)
+			{
+				FirearmInstance->TraceColor = this->Team == EBotTeam::Blue ? TeamProjectileColors[0] : TeamProjectileColors[1];
+			}
+			else
+			{
+				FirearmInstance->TraceColor = FirearmRef->GetRandomProjectileColor();
+			}
 
 		}
 	}
@@ -907,13 +938,16 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FActorSpawnParameters ProjectileSpawnParams;
 			ProjectileSpawnParams.Name = AFirearmProjectile::GenerateName();
+
+			auto ProjectileClass = FirearmRef->FirearmProjectileSubClass;
 		
-			auto* FirearmProjectile = World->SpawnActor<AFirearmProjectile>(this->GetGameSession()->FirearmProjectileSubClass, ProjectileTransform, ProjectileSpawnParams);
+			auto* FirearmProjectile = World->SpawnActor<AFirearmProjectile>(ProjectileClass, ProjectileTransform, ProjectileSpawnParams);
 
 			FVector EndLocation = BulletHitResult.HitResult.bBlockingHit ? BulletHitResult.HitResult.ImpactPoint : BulletHitResult.HitResult.TraceEnd;
 
 			FirearmProjectile->Init(OutBulletLocation, EndLocation, BulletHitResult, FirearmInstance, this->GetActorForwardVector());
 			FirearmProjectile->BotCauser = this;
+			FirearmProjectile->SetColor(FirearmInstance->TraceColor);
 
 			APlayerPawn* PlayerPawn = APlayerPawn::Get();
 
@@ -1254,6 +1288,8 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 
 	if (Bot)
 	{
+		Bot->Team = GameSessionObject->GameModeType == ESessionGameMode::Teams ? (IDToSet % 2 ? EBotTeam::Blue : EBotTeam::Red) : EBotTeam::White;
+
 		Bot->Init(NameToSet, IDToSet);
 	}
 
@@ -1436,6 +1472,7 @@ void ABot::Init(FString NewName, int32 NewID)
 	}
 
 	this->SetEquipment();
+	this->UpdateEquipmentTeamColors();
 }
 
 void ABot::MoveToRandomLocation()

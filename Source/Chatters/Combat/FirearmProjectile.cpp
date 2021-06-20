@@ -4,6 +4,8 @@
 #include "FirearmProjectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "../Player/PlayerPawn.h"
+#include "../Character/Bot.h"
+#include "../Character/Equipment/Weapon/Instances/FirearmWeaponInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 
 uint32 AFirearmProjectile::TotalNumberOfProjectiles = 0;
@@ -126,7 +128,8 @@ void AFirearmProjectile::OnEnd()
 		this->DestroyActor();
 	}
 
-	if (!this->BotCauser || !this->FirearmRef || (BulletHitResult.BotToDamage && !BulletHitResult.BotToDamage->bAlive))
+
+	if (!this->BotCauser || !this->FirearmInstance || !this->FirearmRef || (BulletHitResult.BotToDamage && !BulletHitResult.BotToDamage->bAlive))
 	{
 		return;
 	}
@@ -163,10 +166,9 @@ void AFirearmProjectile::OnEnd()
 					if (CriticalHitChance < 1)
 					{
 						bCriticalHit = true;
-						//this->BotCauser->SayRandomMessage();
 					}
 
-					FVector ImpulseVector = this->CauserForwardVector * FirearmRef->ImpulseForce;
+					FVector ImpulseVector = this->CauserForwardVector * this->FirearmRef->ImpulseForce;
 					BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
 
 					APlayerPawn* PlayerPawn = APlayerPawn::Get();
@@ -231,3 +233,10 @@ void AFirearmProjectile::DestroyActor()
 	this->Destroy();
 }
 
+void AFirearmProjectile::SetColor(FLinearColor Color)
+{
+	if (this->Trace)
+	{
+		this->Trace->SetVariableLinearColor(TEXT("Color"), Color);
+	}
+}

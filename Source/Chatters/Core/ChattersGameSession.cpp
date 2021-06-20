@@ -164,8 +164,6 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass, this);
 			if (Bot)
 			{
-				Bot->Team = this->GameModeType == ESessionGameMode::Teams ? (i % 2 ? EBotTeam::Blue : EBotTeam::Red)  : EBotTeam::White;
-
 				if (Bot->Team == EBotTeam::Blue)
 				{
 					this->BlueAlive++;
@@ -451,8 +449,6 @@ void UChattersGameSession::OnViewerJoin(FString Name)
 	ABot* Bot = ABot::CreateBot(GetWorld(), Name, BotID, this->BotSubclass, this);
 	if (Bot)
 	{
-		Bot->Team = this->GameModeType == ESessionGameMode::Teams ? (BotID % 2 ? EBotTeam::Blue : EBotTeam::Red) : EBotTeam::White;
-
 		if (Bot->Team == EBotTeam::Blue)
 		{
 			this->BlueAlive++;
@@ -592,6 +588,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 			Bot->SetActorLocation(SpawnPoint.GetLocation());
 			Bot->SetActorRotation(SpawnPoint.GetRotation());
 			Bot->Team = AliveBotsNumber % 2 ? EBotTeam::Blue : EBotTeam::Red;
+			Bot->UpdateEquipmentTeamColors();
 
 			if (Bot->Team == EBotTeam::Blue)
 			{

@@ -12,3 +12,16 @@ UFirearmWeaponItem::~UFirearmWeaponItem()
 {
 
 }
+
+FLinearColor UFirearmWeaponItem::GetRandomProjectileColor()
+{
+	int32 ColorsNum = this->RandomProjectileColors.Num();
+	if (!ColorsNum)
+	{
+		return FLinearColor(1.0f, 1.0f, 1.0f);
+	}
+
+	int32 RandomIndex = FMath::RandRange(0, ColorsNum - 1);
+
+	return this->RandomProjectileColors[RandomIndex];
+}

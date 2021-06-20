@@ -109,9 +109,6 @@ public:
 
 	FTransform GetAvailableSpawnPoint();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		TSubclassOf<AFirearmProjectile> FirearmProjectileSubClass = AFirearmProjectile::StaticClass();
-
 	UPauseMenuWidget* GetPauseMenuWidget();
 
 	void PauseGame();
