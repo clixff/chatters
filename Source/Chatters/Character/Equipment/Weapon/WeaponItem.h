@@ -58,4 +58,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		FKillFeedIcon KillFeedIcon;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		TArray<FMaterialSlots> TeamMaterials;
 };

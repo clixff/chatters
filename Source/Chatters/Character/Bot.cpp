@@ -325,6 +325,35 @@ void ABot::UpdateEquipmentTeamColors()
 			}
 
 		}
+		else if (WeaponRef->Type == EWeaponType::Melee)
+		{
+			auto* MeleeInstance = Cast<UMeleeWeaponInstance>(this->WeaponInstance);
+			if (!MeleeInstance || !MeleeInstance->GetMeleeRef())
+			{
+				return;
+			}
+
+			auto* MeleeRef = MeleeInstance->GetMeleeRef();
+
+			TArray<UMaterialInterface*> RandomMaterials;
+
+			if (this->Team != EBotTeam::White && MeleeRef->TeamMaterials.Num() > 1)
+			{
+				RandomMaterials = this->Team == EBotTeam::Blue ? MeleeRef->TeamMaterials[0].Slots : MeleeRef->TeamMaterials[1].Slots;
+			}
+			else
+			{
+				RandomMaterials = MeleeRef->GetRandomMaterials();
+			}
+
+			if (RandomMaterials.Num() && this->WeaponMesh)
+			{
+				for (int32 i = 0; i < RandomMaterials.Num(); i++)
+				{
+					this->WeaponMesh->SetMaterial(i, RandomMaterials[i]);
+				}
+			}
+		}
 	}
 }
 
