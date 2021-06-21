@@ -115,7 +115,7 @@ public:
 
 	void UnpauseGame();
 
-	TArray<bool> AvailableWeapons;
+	TSet<FString> AvailableWeapons;
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;

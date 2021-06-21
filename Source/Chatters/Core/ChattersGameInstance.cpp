@@ -367,7 +367,7 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 
 	auto* WidgetManagerRef = this->GetWidgetManager();
 
-	TArray<bool> AvailableWeapons;
+	TSet<FString> AvailableWeapons;
 
 	if (WidgetManagerRef)
 	{

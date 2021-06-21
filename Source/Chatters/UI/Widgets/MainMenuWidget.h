@@ -23,6 +23,9 @@ public:
 		float SizeX = 8.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		float SizeY = 8.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		FString Name;
 };
 
 USTRUCT(BlueprintType)
@@ -116,7 +119,7 @@ public:
 		void OpenGameUpdateURL();
 
 	UPROPERTY()
-		TArray<bool> WeaponsAvailableList;
+		TSet<FString> WeaponsAvailableList;
 
 	UFUNCTION(BlueprintCallable)
 		void OnWeaponClick(int32 WeaponID);

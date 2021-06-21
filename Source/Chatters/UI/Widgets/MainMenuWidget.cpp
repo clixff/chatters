@@ -169,7 +169,7 @@ void UMainMenuWidget::SetSelectedLevel(int32 NewSelectedLevel)
 
 	for (auto& WeaponIcon : SelectedLevelRef.WeaponsIcons)
 	{
-		this->WeaponsAvailableList.Add(true);
+		this->WeaponsAvailableList.Add(WeaponIcon.Name);
 	}
 }
 
@@ -347,10 +347,24 @@ void UMainMenuWidget::OpenGameUpdateURL()
 
 void UMainMenuWidget::OnWeaponClick(int32 WeaponID)
 {
-	if (WeaponID < this->WeaponsAvailableList.Num())
-	{
-		this->WeaponsAvailableList[WeaponID] = !this->WeaponsAvailableList[WeaponID];
+	auto SelectedLevelRef = this->LevelsList[this->SelectedLevel];
+	auto WeaponList = SelectedLevelRef.WeaponsIcons;
 
-		this->SetWeaponSelected(WeaponID, this->WeaponsAvailableList[WeaponID]);
+	if (WeaponID < WeaponList.Num())
+	{
+		auto Weapon = WeaponList[WeaponID];
+
+		bool bWeaponSelected = this->WeaponsAvailableList.Contains(Weapon.Name);
+
+		if (bWeaponSelected)
+		{
+			this->WeaponsAvailableList.Remove(Weapon.Name);
+		}
+		else
+		{
+			this->WeaponsAvailableList.Add(Weapon.Name);
+		}
+
+		this->SetWeaponSelected(WeaponID, !bWeaponSelected);
 	}
 }

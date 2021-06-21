@@ -68,9 +68,11 @@ public:
 	
 	bool IsTeamEquipmentSetsExists();
 
-	UEquipmentList* GetEquipmentSet(EBotTeam Team);
+	UEquipmentList* GetEquipmentSet(EBotTeam Team, TSet<FString> AllowedWeaponsList = TSet<FString>());
 
 	FRandomEquipment GetRandomEquipment(EBotTeam Team = EBotTeam::White);
 
-	UWeaponItem* GetRandomWeapon(TArray<bool>& AvailableWeapons, EBotTeam Team = EBotTeam::White);
+	UWeaponItem* GetRandomWeapon(TSet<FString>& AvailableWeapons, EBotTeam Team = EBotTeam::White);
+	
+	bool IsContainsAllowedWeapons(TSet<FString> AllowedWeaponsList);
 };

@@ -20,12 +20,23 @@ bool UEquipmentList::IsTeamEquipmentSetsExists()
 	return this->TeamEquipmentSets.Blue.Num() && this->TeamEquipmentSets.Red.Num();
 }
 
-UEquipmentList* UEquipmentList::GetEquipmentSet(EBotTeam Team)
+UEquipmentList* UEquipmentList::GetEquipmentSet(EBotTeam Team, TSet<FString> AllowedWeaponsList)
 {
 	if (Team != EBotTeam::White && this->IsTeamEquipmentSetsExists())
 	{
-		TArray<UEquipmentList*>& TeamEquipmentArray = Team == EBotTeam::Blue ? this->TeamEquipmentSets.Blue : this->TeamEquipmentSets.Red;
-		auto* TeamEquipmentSet = TeamEquipmentArray[FMath::RandRange(0, TeamEquipmentArray.Num() - 1)];
+		TArray<UEquipmentList*> TeamEquipmentArray = Team == EBotTeam::Blue ? this->TeamEquipmentSets.Blue : this->TeamEquipmentSets.Red;
+
+		TArray<UEquipmentList*> TeamEquipmentArrayCopy;
+
+		for (int32 i = 0; i < TeamEquipmentArray.Num(); i++)
+		{
+			if (TeamEquipmentArray[i]->IsContainsAllowedWeapons(AllowedWeaponsList))
+			{
+				TeamEquipmentArrayCopy.Add(TeamEquipmentArray[i]);
+			}
+		}
+
+		auto* TeamEquipmentSet = TeamEquipmentArrayCopy[FMath::RandRange(0, TeamEquipmentArrayCopy.Num() - 1)];
 		if (TeamEquipmentSet)
 		{
 			return TeamEquipmentSet;
@@ -33,7 +44,17 @@ UEquipmentList* UEquipmentList::GetEquipmentSet(EBotTeam Team)
 	}
 	else if (this->EquipmentSets.Num())
 	{
-		UEquipmentList* RandomEquipmentSet = this->EquipmentSets[FMath::RandRange(0, this->EquipmentSets.Num() - 1)];
+		TArray<UEquipmentList*> EquipmentSetsCopy;
+
+		for (int32 i = 0; i < this->EquipmentSets.Num(); i++)
+		{
+			if (this->EquipmentSets[i]->IsContainsAllowedWeapons(AllowedWeaponsList))
+			{
+				EquipmentSetsCopy.Add(this->EquipmentSets[i]);
+			}
+		}
+
+		UEquipmentList* RandomEquipmentSet = EquipmentSetsCopy[FMath::RandRange(0, EquipmentSetsCopy.Num() - 1)];
 
 		if (RandomEquipmentSet)
 		{
@@ -99,7 +120,7 @@ FRandomEquipment UEquipmentList::GetRandomEquipment(EBotTeam Team)
 	return Equipment;
 }
 
-UWeaponItem* UEquipmentList::GetRandomWeapon(TArray<bool>& AvailableWeapons, EBotTeam Team)
+UWeaponItem* UEquipmentList::GetRandomWeapon(TSet<FString>& AvailableWeapons, EBotTeam Team)
 {
 	auto* EquipmentSet = this->GetEquipmentSet(Team);
 
@@ -116,15 +137,16 @@ UWeaponItem* UEquipmentList::GetRandomWeapon(TArray<bool>& AvailableWeapons, EBo
 
 	TArray<UWeaponItem*> AvailableWeaponsRefs;
 
-	for (int32 i = 0; i < AvailableWeapons.Num(); i++)
+	for (int32 i = 0; i < this->Weapons.Num(); i++)
 	{
-		bool& bWeaponAvailable = AvailableWeapons[i];
+		auto Name = this->Weapons[i]->GetName();
 
-		if (bWeaponAvailable && i < WeaponsArrayNum)
+		if (AvailableWeapons.Contains(Name))
 		{
 			AvailableWeaponsRefs.Add(this->Weapons[i]);
 		}
 	}
+
 
 	if (!AvailableWeaponsRefs.Num())
 	{
@@ -139,4 +161,17 @@ UWeaponItem* UEquipmentList::GetRandomWeapon(TArray<bool>& AvailableWeapons, EBo
 	int32 RandomIndex = FMath::RandRange(0, AvailableWeaponsRefs.Num() - 1);
 
 	return AvailableWeaponsRefs[RandomIndex];
+}
+
+bool UEquipmentList::IsContainsAllowedWeapons(TSet<FString> AllowedWeaponsList)
+{
+	for (int32 i = 0; i < this->Weapons.Num(); i++)
+	{
+		if (AllowedWeaponsList.Contains(this->Weapons[i]->GetName()))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

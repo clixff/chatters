@@ -1369,7 +1369,7 @@ void ABot::SetEquipment()
 
 		if (EquipmentList)
 		{
-			auto* EquipmentSet = EquipmentList->GetEquipmentSet(this->Team);
+			auto* EquipmentSet = EquipmentList->GetEquipmentSet(this->Team, GameSessionObject->AvailableWeapons);
 
 			auto RandomEquipment = EquipmentSet->GetRandomEquipment(this->Team);
 			if (this->HatMesh)
