@@ -569,6 +569,16 @@ void UChattersGameSession::OnTeamsBattleEnd()
 	this->BlueAlive = 0;
 	this->BotsMap.Empty();
 
+	bool bRedFirst = FMath::RandRange(0, 1) ? true : false;
+
+	EBotTeam TeamsList[2] = { EBotTeam::Blue, EBotTeam::Red };
+
+	if (!bRedFirst)
+	{
+		TeamsList[0] = EBotTeam::Red;
+		TeamsList[1] = EBotTeam::Blue;
+	}
+
 	for (int32 i = 0; i < this->Bots.Num(); i++)
 	{
 		auto* Bot = this->Bots[i];
@@ -589,7 +599,16 @@ void UChattersGameSession::OnTeamsBattleEnd()
 
 			Bot->SetActorLocation(SpawnPoint.GetLocation());
 			Bot->SetActorRotation(SpawnPoint.GetRotation());
-			Bot->Team = AliveBotsNumber % 2 ? EBotTeam::Blue : EBotTeam::Red;
+
+			auto PrevBotTeam = Bot->Team;
+
+			Bot->Team = AliveBotsNumber % 2 ? TeamsList[0] : TeamsList[1];
+
+			if (PrevBotTeam != Bot->Team && this->EquipmentListLevel && this->EquipmentListLevel->IsTeamEquipmentSetsExists())
+			{
+				Bot->SetEquipment();
+			}
+
 			Bot->UpdateEquipmentTeamColors();
 
 			if (Bot->Team == EBotTeam::Blue)

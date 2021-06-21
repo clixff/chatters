@@ -23,6 +23,18 @@ public:
 	UCostumeItem* Costume = nullptr;
 };
 
+USTRUCT(BlueprintType)
+struct FTeamRandomEquipment
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		TArray<UEquipmentList*> Blue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		TArray<UEquipmentList*> Red;
+};
+
 /**
  * 
  */
@@ -48,7 +60,17 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		TArray<UCostumeItem*> Costumes;
 
-	FRandomEquipment GetRandomEquipment();
+	UPROPERTY(EditDefaultsOnly)
+		TArray<UEquipmentList*> EquipmentSets;
 
-	UWeaponItem* GetRandomWeapon(TArray<bool>& AvailableWeapons);
+	UPROPERTY(EditDefaultsOnly)
+		FTeamRandomEquipment TeamEquipmentSets;
+	
+	bool IsTeamEquipmentSetsExists();
+
+	UEquipmentList* GetEquipmentSet(EBotTeam Team);
+
+	FRandomEquipment GetRandomEquipment(EBotTeam Team = EBotTeam::White);
+
+	UWeaponItem* GetRandomWeapon(TArray<bool>& AvailableWeapons, EBotTeam Team = EBotTeam::White);
 };

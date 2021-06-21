@@ -1369,7 +1369,9 @@ void ABot::SetEquipment()
 
 		if (EquipmentList)
 		{
-			auto RandomEquipment = EquipmentList->GetRandomEquipment();
+			auto* EquipmentSet = EquipmentList->GetEquipmentSet(this->Team);
+
+			auto RandomEquipment = EquipmentSet->GetRandomEquipment(this->Team);
 			if (this->HatMesh)
 			{
 				if (!RandomEquipment.Hat)
@@ -1416,12 +1418,13 @@ void ABot::SetEquipment()
 				}
 			}
 
-			UWeaponItem* RandomWeapon = EquipmentList->GetRandomWeapon(GameSessionObject->AvailableWeapons);
+			UWeaponItem* RandomWeapon = EquipmentSet->GetRandomWeapon(GameSessionObject->AvailableWeapons, this->Team);
 
 			if (RandomWeapon)
 			{
 				if (this->WeaponMesh)
 				{
+					this->WeaponMesh->ReregisterComponent();
 					this->WeaponMesh->SetStaticMesh(RandomWeapon->StaticMesh);
 					this->WeaponMesh->SetRelativeTransform(RandomWeapon->GetTransform());
 

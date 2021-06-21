@@ -183,10 +183,11 @@ public:
 	void SetNewEnemyTarget(ABot* TargetBot);
 
 	void UpdateEquipmentTeamColors();
-private:
-	bool bReady = false;
 
 	void SetEquipment();
+
+private:
+	bool bReady = false;
 
 	void MoveToRandomLocation();
 
