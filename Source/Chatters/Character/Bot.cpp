@@ -1382,7 +1382,7 @@ void ABot::SetEquipment()
 				{
 					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
 					this->HatMesh->SetRelativeTransform(RandomEquipment.Hat->GetTransform());
-
+					this->HatMesh->EmptyOverrideMaterials();
 
 					if (RandomEquipment.Hat->StaticMesh)
 					{
@@ -1424,9 +1424,11 @@ void ABot::SetEquipment()
 			{
 				if (this->WeaponMesh)
 				{
-					this->WeaponMesh->ReregisterComponent();
+					//this->WeaponMesh->ReregisterComponent();
 					this->WeaponMesh->SetStaticMesh(RandomWeapon->StaticMesh);
 					this->WeaponMesh->SetRelativeTransform(RandomWeapon->GetTransform());
+
+					this->WeaponMesh->EmptyOverrideMaterials();
 
 					UClass* WeaponInstanceClass = UWeaponInstance::StaticClass();
 
@@ -1476,6 +1478,9 @@ void ABot::SetEquipment()
 			if (RandomEquipment.Costume && this->GetMesh() && RandomEquipment.Costume->SkeletalMesh)
 			{
 				this->GetMesh()->SetSkeletalMeshWithoutResettingAnimation(RandomEquipment.Costume->SkeletalMesh);
+
+				this->GetMesh()->EmptyOverrideMaterials();
+
 
 				TArray<UMaterialInterface*> Materials = RandomEquipment.Costume->GetRandomMaterials();
 
