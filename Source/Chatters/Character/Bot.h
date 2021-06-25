@@ -201,6 +201,8 @@ private:
 
 	bool bHatAttached = false;
 
+	bool bCanHatBeDetached = false;
+
 	float SecondsAfterDeath = 0.0f;
 
 	void TryDetachHat();

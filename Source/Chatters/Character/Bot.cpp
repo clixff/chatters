@@ -159,7 +159,7 @@ void ABot::Tick(float DeltaTime)
 			}
 		}
 
-		if (this->bHatAttached && this->SecondsAfterDeath <= 25.0f)
+		if (this->bHatAttached && this->bCanHatBeDetached && this->SecondsAfterDeath <= 25.0f)
 		{
 			this->TryDetachHat();
 		}
@@ -983,6 +983,7 @@ void ABot::Shoot(bool bBulletOffset)
 			float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(OutBulletLocation) :  0.0f;
 
 			FirearmProjectile->bSimplified = DistanceFromCamera > 5000.0f;
+			//FirearmProjectile->bSimplified = false;
 
 			if (DistanceFromCamera <= 7000.0f)
 			{
@@ -1394,6 +1395,8 @@ void ABot::SetEquipment()
 						}
 
 					}
+
+					this->bCanHatBeDetached = RandomEquipment.Hat->bCanDetach;
 				}
 			}
 

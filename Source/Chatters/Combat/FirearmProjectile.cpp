@@ -123,7 +123,7 @@ void AFirearmProjectile::OnEnd()
 	this->bActive = false;
 	this->TraceLengthAction = ETraceLengthAction::Reduce;
 
-	if (!this->BulletHitResult.HitResult.bBlockingHit)
+	if (!this->BulletHitResult.HitResult.bBlockingHit || this->bSimplified)
 	{
 		this->DestroyActor();
 	}
