@@ -168,6 +168,7 @@ void AFirearmProjectile::OnEnd()
 						bCriticalHit = true;
 					}
 
+
 					FVector ImpulseVector = this->CauserForwardVector * this->FirearmRef->ImpulseForce;
 					BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
 

@@ -28,7 +28,7 @@ void ABotSpawnPoint::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Display, TEXT("[ABotSpawnPoint] Bot spawn point spawned"));
+	//UE_LOG(LogTemp, Display, TEXT("[ABotSpawnPoint] Bot spawn point spawned"));
 
 	auto* GameSession = UChattersGameSession::Get();
 

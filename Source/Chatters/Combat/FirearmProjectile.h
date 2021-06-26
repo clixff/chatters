@@ -63,7 +63,8 @@ public:
 
 	void OnEnd();
 
-	ABot* BotCauser = nullptr;
+	UPROPERTY()
+		ABot* BotCauser = nullptr;
 
 	float Distance = 0.0f;
 

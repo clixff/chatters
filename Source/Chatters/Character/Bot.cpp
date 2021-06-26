@@ -66,6 +66,8 @@ ABot::ABot()
 
 ABot::~ABot()
 {
+	FVector Position = this->GetActorLocation();
+
 	if (this->WeaponInstance != nullptr)
 	{
 		if (this->WeaponInstance->IsValidLowLevel())
@@ -176,6 +178,15 @@ void ABot::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+void ABot::Destroyed()
+{
+	Super::Destroyed();
+
+	//FVector Position = this->GetActorLocation();
+
+	//UE_LOG(LogTemp, Display, TEXT("[ABot] Bot %s destroyed."), *this->DisplayName);
 }
 
 bool ABot::GetIsAlive()
@@ -291,7 +302,6 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 		else
 		{
 			this->CombatStyle = ECombatStyle::Defense;
-
 		}
 	}
 }
@@ -1566,7 +1576,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	else
 	{
 		/** If damage by enemy */
-		if (this->IsEnemy(ByBot) && ByBot->bAlive)
+		if (ByBot && this->IsEnemy(ByBot) && ByBot->bAlive)
 		{
 			/** If bot is not target already */
 			if (!this->Target.Bot || this->Target.Bot != ByBot)

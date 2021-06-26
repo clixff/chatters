@@ -165,6 +165,11 @@ UWeaponItem* UEquipmentList::GetRandomWeapon(TSet<FString>& AvailableWeapons, EB
 
 bool UEquipmentList::IsContainsAllowedWeapons(TSet<FString> AllowedWeaponsList)
 {
+	if (!AllowedWeaponsList.Num())
+	{
+		return true;
+	}
+
 	for (int32 i = 0; i < this->Weapons.Num(); i++)
 	{
 		if (AllowedWeaponsList.Contains(this->Weapons[i]->GetName()))

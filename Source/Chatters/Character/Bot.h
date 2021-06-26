@@ -80,8 +80,11 @@ struct FBotTarget
 {
 	GENERATED_BODY()
 public:
-	AActor* Actor = nullptr;
-	ABot* Bot = nullptr;
+	UPROPERTY()
+		AActor* Actor = nullptr;
+	UPROPERTY()
+		ABot* Bot = nullptr;
+	UPROPERTY()
 	ETargetType TargetType = ETargetType::None;
 };
 
@@ -118,6 +121,8 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	virtual void Destroyed() override;
 
 public:
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
@@ -308,7 +313,8 @@ private:
 
 	FManualTimer AimingTime = FManualTimer(0.2f);
 private:
-	FBotTarget Target;
+	UPROPERTY()
+		FBotTarget Target;
 
 	float SecondsSinceLastBarrelsCheck = 0.0f;
 public:
