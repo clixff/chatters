@@ -226,10 +226,22 @@ FName AFirearmProjectile::GenerateName()
 
 void AFirearmProjectile::DestroyActor()
 {
-	if (this->Trace && this->Trace->IsValidLowLevel())
+	if (this->bDestroyed)
 	{
-		this->Trace->DestroyComponent();
+		return;
 	}
+
+	//if (this->Trace && this->Trace->IsValidLowLevel())
+	//{
+	//	this->Trace->DestroyComponent();
+	//}
+
+	if (this->Trace)
+	{
+		this->Trace->DestroyInstance();
+	}
+
+	this->bDestroyed = true;
 
 	this->Destroy();
 }

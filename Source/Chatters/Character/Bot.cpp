@@ -759,7 +759,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
 
-	if (this->bMovingToRandomCombatLocation && (DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 7.0f))
+	if (this->bMovingToRandomCombatLocation && (DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 2.0f))
 	{
 		this->bMovingToRandomCombatLocation = false;
 		
@@ -810,7 +810,8 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	}
 
 	/** If the bot can shoot or reloading and still moving, stop it */
-	if ((bCanActuallyShoot || bReloading) && this->bMovingToRandomCombatLocation)
+	//if ((bCanActuallyShoot || bReloading) && this->bMovingToRandomCombatLocation)
+	if (bReloading && this->bMovingToRandomCombatLocation)
 	{
 		if (AIController)
 		{
@@ -829,7 +830,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	float BotSpeed = this->GetSpeed();
 
-	if (bCanActuallyShoot && BotSpeed < 5.0f)
+	if (bCanActuallyShoot)
 	{
 		this->Shoot(true);
 	}

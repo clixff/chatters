@@ -70,6 +70,8 @@ public:
 
 	bool bActive = false;
 
+	bool bDestroyed = false;
+
 	FBulletHitResult BulletHitResult;
 	FVector CauserForwardVector;
 	UFirearmWeaponItem* FirearmRef = nullptr;
