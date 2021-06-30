@@ -15,6 +15,7 @@
 #include "AI/Navigation/NavigationTypes.h"
 #include "../UI/Widgets/KillFeedElement.h"
 #include "../Player/PlayerPawn.h"
+#include "NiagaraFunctionLibrary.h"
 #include "../Core/ChattersGameSession.h"
 
 DECLARE_STATS_GROUP(TEXT("BOTS_Game"), STATGROUP_BOTS, STATCAT_Advanced);
@@ -1211,14 +1212,9 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(this->GetActorLocation()) : 0.0f;
 
-	if (DistanceFromCamera <= 7000.0f && BotHit->BloodParticle && HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
+	if (HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
 	{
-		FTransform BloodParticleTransform;
-		BloodParticleTransform.SetLocation(HitResult.ImpactPoint);
-		FRotator TestRot = UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), HitResult.ImpactPoint);
-		TestRot.Pitch += 90.0f;
-		BloodParticleTransform.SetRotation(FQuat(TestRot));
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BotHit->BloodParticle, BloodParticleTransform, true);
+		BotHit->SpawnBloodParticle(HitResult.ImpactPoint, this->GetActorLocation());
 	}
 
 	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, FVector(), FVector(), NAME_None, bCritical);
@@ -1309,6 +1305,24 @@ void ABot::CreateFloorBloodDecal()
 
 	this->FloorBloodDecalActor = WorldObject->SpawnActor<ABloodDecal>(this->FloorBloodDecalSubclass, DecalSpawnTransform);
 	this->FloorBloodDecalActor->BotOwner = this;
+}
+
+void ABot::SpawnBloodParticle(FVector ImpactPoint, FVector CauserLocation)
+{
+	APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	float DistanceFromCamera = PlayerPawn->GetDistanceFromCamera(ImpactPoint);
+
+	if (DistanceFromCamera <= 7000.0f && this->BloodNiagaraParticle)
+	{
+		FRotator ParticleRotation = UKismetMathLibrary::FindLookAtRotation(ImpactPoint, CauserLocation);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), this->BloodNiagaraParticle, ImpactPoint, ParticleRotation);
+	}
 }
 
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)

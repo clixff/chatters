@@ -182,15 +182,7 @@ void AFirearmProjectile::OnEnd()
 
 					float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(BulletHitResult.HitResult.ImpactPoint) : 0.0f;
 
-					if (DistanceFromCamera <= 7000.0f && BotToDamage->BloodParticle)
-					{
-						FTransform BloodParticleTransform;
-						BloodParticleTransform.SetLocation(BulletHitResult.HitResult.ImpactPoint);
-						FRotator TestRot = UKismetMathLibrary::FindLookAtRotation(this->StartLocation, BulletHitResult.HitResult.ImpactPoint);
-						TestRot.Pitch += 90.0f;
-						BloodParticleTransform.SetRotation(FQuat(TestRot));
-						UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BotToDamage->BloodParticle, BloodParticleTransform, true);
-					}
+					BotToDamage->SpawnBloodParticle(BulletHitResult.HitResult.ImpactPoint, this->GetActorLocation());
 				}
 			}
 		}

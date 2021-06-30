@@ -21,6 +21,7 @@
 #include "Components/BoxComponent.h"
 #include "../Combat/FirearmProjectile.h"
 #include "../Misc/BloodDecal.h"
+#include "NiagaraSystem.h"
 #include "Bot.generated.h"
 
 
@@ -191,6 +192,7 @@ public:
 
 	void SetEquipment();
 
+	void SpawnBloodParticle(FVector ImpactPoint, FVector CauserLocation);
 private:
 	bool bReady = false;
 
@@ -312,6 +314,7 @@ private:
 		ABloodDecal* FloorBloodDecalActor = nullptr;
 
 	FManualTimer AimingTime = FManualTimer(0.2f);
+
 private:
 	UPROPERTY()
 		FBotTarget Target;
@@ -351,7 +354,7 @@ public:
 		UWeaponItem* GetWeaponRef();
 
 	UPROPERTY(EditDefaultsOnly)
-		UParticleSystem* BloodParticle = nullptr;
+		UNiagaraSystem* BloodNiagaraParticle = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool bShouldApplyGunAnimation = false;
