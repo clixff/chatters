@@ -38,6 +38,12 @@ void AFirearmProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (this->bPendingDestroying)
+	{
+		this->DestroyActor();
+		return;
+	}
+
 	if (this->bActive)
 	{
 		this->Time += DeltaTime;
@@ -231,6 +237,7 @@ void AFirearmProjectile::DestroyActor()
 		return;
 	}
 
+
 	//if (this->Trace && this->Trace->IsValidLowLevel())
 	//{
 	//	this->Trace->DestroyComponent();
@@ -238,10 +245,19 @@ void AFirearmProjectile::DestroyActor()
 
 	if (this->Trace)
 	{
+		auto* TraceSystemInstance = this->Trace->GetSystemInstance();
+
+		if (!TraceSystemInstance || TraceSystemInstance->IsPendingSpawn())
+		{
+			this->bPendingDestroying = true;
+			return;
+		}
+
 		this->Trace->DestroyInstance();
 	}
 
 	this->bDestroyed = true;
+	this->bPendingDestroying = false;
 
 	this->Destroy();
 }

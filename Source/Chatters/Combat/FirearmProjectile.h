@@ -112,4 +112,6 @@ public:
 	bool bSimplified = false;
 
 	void SetColor(FLinearColor Color);
+private:
+	bool bPendingDestroying = false;
 };
