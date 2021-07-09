@@ -22,6 +22,7 @@
 #include "../Combat/FirearmProjectile.h"
 #include "../Misc/BloodDecal.h"
 #include "NiagaraSystem.h"
+#include "Sound/SoundBase.h"
 #include "Bot.generated.h"
 
 
@@ -193,6 +194,9 @@ public:
 	void SetEquipment();
 
 	void SpawnBloodParticle(FVector ImpactPoint, FVector CauserLocation);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		USoundBase* FallDamageSound = nullptr;
 private:
 	bool bReady = false;
 
@@ -314,6 +318,11 @@ private:
 		ABloodDecal* FloorBloodDecalActor = nullptr;
 
 	FManualTimer AimingTime = FManualTimer(0.2f);
+
+
+	bool bFallingLastTick = false;
+
+	float FallingStartZLocation = 0.0f;;
 
 private:
 	UPROPERTY()

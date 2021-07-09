@@ -148,6 +148,49 @@ void ABot::Tick(float DeltaTime)
 		{
 			this->SecondsWithoutMoving.Current = 0.0f;
 		}
+		
+		if (this->bReady)
+		{
+			bool bFalling = this->GetMovementComponent()->IsFalling();
+
+			/** When falling starts */
+			if (bFalling && !this->bFallingLastTick)
+			{
+				this->FallingStartZLocation = this->GetActorLocation().Z;
+			}
+			/** When falling ends */
+			else if (!bFalling && this->bFallingLastTick)
+			{
+				float FallDistance = FMath::Abs(this->FallingStartZLocation - this->GetActorLocation().Z);
+
+				const float MinFallDistanceToDamage = 250.0f;
+				const float MaxFallDistanceToDamage = 600.0f;
+
+				const float MinFallDamage = 5.0f;
+				const float MaxFallDamage = 100.0f;
+
+				if (FallDistance >= MinFallDistanceToDamage)
+				{
+					FallDistance = FMath::Clamp(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
+					
+					float FallDistanceScale = UKismetMathLibrary::NormalizeToRange(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
+					
+					FallDistanceScale = FMath::Clamp(FallDistanceScale, 0.0f, 1.0f);
+
+					int32 Damage = FMath::FloorToInt(FMath::Lerp(MinFallDamage, MaxFallDamage, FallDistanceScale));
+
+					this->ApplyDamage(Damage, this, EWeaponType::None);
+
+					if (this->FallDamageSound)
+					{
+						UGameplayStatics::PlaySoundAtLocation(GetWorld(), this->FallDamageSound, this->GetActorLocation(), FMath::RandRange(0.7f, 0.85f));
+					}
+				}
+
+			}
+
+			this->bFallingLastTick = bFalling;
+		}
 
 		this->LastTickLocation = this->GetActorLocation();
 	}
