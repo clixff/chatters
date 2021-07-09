@@ -82,6 +82,10 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		int32 RedAlive = 0;
 
+	int32 BlueAliveMax = 0;
+	int32 RedAliveMax = 0;
+
+
 	/** Equipment lists for all levels */
 	UPROPERTY(EditDefaultsOnly)
 		TMap<FString, UEquipmentList*> EquipmentListsForLevels;

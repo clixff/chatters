@@ -118,7 +118,7 @@ void USessionWidget::SetPlayCommandVisibility(bool bVisible)
 	}
 }
 
-void USessionWidget::SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive)
+void USessionWidget::SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive, int32 BlueMaxAlive, int32 RedMaxAlive)
 {
 	auto NumberToText = [](int32 Number)
 	{
@@ -131,8 +131,8 @@ void USessionWidget::SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive)
 
 	const int32 TotalAlive = BlueAlive + RedAlive;
 
-	const float BlueAlivePercent = float(BlueAlive) / float(TotalAlive);
-	const float RedAlivePercent = 1.0f - BlueAlivePercent;
+	const float BlueAlivePercent = FMath::Clamp(float(BlueAlive) / float(BlueMaxAlive), 0.0f, 1.0f);
+	const float RedAlivePercent = FMath::Clamp(float(RedAlive) / float(RedMaxAlive), 0.0f, 1.0f);
 
 	auto SetWidgetBarWidth = [this](UWidget** Widget, FName Name, float SizeX)
 	{
@@ -147,8 +147,6 @@ void USessionWidget::SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive)
 		}
 	};
 
-
-	const auto* WidgetTests = this->GetWidgetFromName(TEXT("Red_Score_Bg"));
 
 	SetWidgetBarWidth(&this->BlueAliveBarWidget, TEXT("Blue_Score_Bg"), BlueAlivePercent);
 	SetWidgetBarWidth(&this->RedAliveBarWidget, TEXT("Red_Score_Bg"), RedAlivePercent);

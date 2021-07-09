@@ -87,7 +87,7 @@ public:
 	UPROPERTY()
 		UWidget* RedAliveBarWidget = nullptr;
 
-	void SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive);
+	void SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive, int32 BlueMaxAlive, int32 RedMaxAlive);
 
 	void SetTeamsWrapperVisibility(bool bVisible);
 
@@ -105,6 +105,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 		void SetStreamerJoinTipVisible(bool bVisible);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void UpdateScoreBackground(ESessionGameMode GameMode);
 
 public:
 	// Notifications
