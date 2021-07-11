@@ -21,6 +21,11 @@ class CHATTERS_API USessionWidget : public UCustomWidgetBase
 	GENERATED_BODY()
 public:
 
+	virtual void Show() override;
+
+	virtual void Hide() override;
+
+
 	void UpdateAliveBotsText(int32 NumberOfAlive, int32 MaxPlayers);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

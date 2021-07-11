@@ -6,6 +6,47 @@
 #include "../../Core/ChattersGameInstance.h"
 #include "Blueprint/WidgetTree.h"
 
+void USessionWidget::Show()
+{
+	Super::Show();
+}
+
+void USessionWidget::Hide()
+{
+	if (this->SessionNotificationsContainer)
+	{
+		auto SessionNotificatonsList = this->SessionNotificationsContainer->GetAllChildren();
+
+		for (auto* Notification : SessionNotificatonsList)
+		{
+			if (Notification)
+			{
+				auto SessionNotification = Cast<USessionNotification>(Notification);
+
+				if (SessionNotification)
+				{
+					if (SessionNotification->bDestroying)
+					{
+						SessionNotification->Destroy();
+					}
+				}
+			}
+		}
+	}
+
+	UWidget* NewRoundWidget = this->GetWidgetFromName(TEXT("NewRoundTextWidget"));
+
+	if (NewRoundWidget)
+	{
+		NewRoundWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
+
+
+	Super::Hide();
+
+}
+
+
 void USessionWidget::UpdateAliveBotsText(int32 NumberOfAlive, int32 MaxPlayers)
 {
 	FString AliveBotsString = FString::Printf(TEXT("%d / %d"), NumberOfAlive, MaxPlayers);
