@@ -143,6 +143,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	if (Settings)
 	{
 		this->SessionWidget->SetKillFeedPosition(Settings->KillFeedPosition);
+		
 	}
 
 	if (!this->BotSubclass)
@@ -218,6 +219,11 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		if (PlayerPawnController)
 		{
 			PlayerPawnController->bCanControl = true;
+
+			if (Settings)
+			{
+				PlayerPawnController->SetMouseSensitivity(Settings->MouseSensitivity);
+			}
 		}
 	}
 

@@ -46,6 +46,10 @@ void UChattersGameInstance::Init()
 
 	this->UpdateGameVolume(this->SavedSettings->GameVolume);
 
+	this->SetVSyncEnabled(this->SavedSettings->bVSync);
+
+	this->SetMaxFPS(this->SavedSettings->MaxFPS);
+
 	this->ReturnToTheMainMenu();
 
 #if UE_BUILD_SHIPPING
@@ -447,7 +451,7 @@ void UChattersGameInstance::SetGraphicsQuality(EGraphicsQualityLevel GraphicsQua
 
 	GameUserSettings->SetFullscreenMode(EWindowMode::Type::WindowedFullscreen);
 
-	GameUserSettings->SetVSyncEnabled(true);
+	//GameUserSettings->SetVSyncEnabled(true);
 
 	GameUserSettings->ApplySettings(true);
 
@@ -464,6 +468,44 @@ void UChattersGameInstance::FixShadowsQuality()
 		PlayerController->ConsoleCommand(TEXT("r.Shadow.MaxCSMResolution 4096"), true);
 		PlayerController->ConsoleCommand(TEXT("r.Shadow.RadiusThreshold 0"), true);
 	}
+}
+
+void UChattersGameInstance::SetVSyncEnabled(bool bEnabled)
+{
+	if (!GEngine)
+	{
+		return;
+	}
+
+	auto* GameUserSettings = GEngine->GetGameUserSettings();
+
+	if (!GameUserSettings)
+	{
+		return;
+	}
+
+	GameUserSettings->SetVSyncEnabled(bEnabled);
+
+	GameUserSettings->ApplySettings(true);
+}
+
+void UChattersGameInstance::SetMaxFPS(int32 MaxFPS)
+{
+	if (!GEngine)
+	{
+		return;
+	}
+
+	auto* GameUserSettings = GEngine->GetGameUserSettings();
+
+	if (!GameUserSettings)
+	{
+		return;
+	}
+
+	GameUserSettings->SetFrameRateLimit(MaxFPS);
+
+	GameUserSettings->ApplySettings(true);
 }
 
 float UChattersGameInstance::UpdateGameVolume_Implementation(float Volume)

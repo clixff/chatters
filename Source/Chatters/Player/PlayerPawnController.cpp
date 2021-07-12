@@ -6,6 +6,8 @@
 #include "../Core/ChattersGameInstance.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "../Character/Bot.h"
+#include "GameFramework/PlayerInput.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "../Core/ChattersGameSession.h"
 
 APlayerPawnController::APlayerPawnController()
@@ -66,8 +68,6 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAction("Esc", IE_Pressed, this, &APlayerPawnController::OnEscPressed);
 	this->InputComponent->BindAction("GameJoin", IE_Pressed, this, &APlayerPawnController::OnGameJoinPressed);
-
-
 ;}
 
 void APlayerPawnController::BeginPlay()
@@ -466,5 +466,27 @@ void APlayerPawnController::OnGameJoinPressed()
 	if (SessionWidget)
 	{
 		SessionWidget->SetStreamerJoinTipVisible(false);
+	}
+}
+
+void APlayerPawnController::SetMouseSensitivity(int32 Sensitivity)
+{
+	const float MinSensitivityFloat = 0.0001f;
+	const float MaxSensitivityFloat = 0.45f;
+
+	const int32 MinSensitivity = 1;
+	const int32 MaxSensitivity = 100;
+
+	Sensitivity = FMath::Clamp(Sensitivity, MinSensitivity, MaxSensitivity);
+
+	float SensitivityScale = UKismetMathLibrary::NormalizeToRange(Sensitivity, 1, 100);
+
+	float NewSensitivity = FMath::Lerp(MinSensitivityFloat, MaxSensitivityFloat, SensitivityScale);
+
+	UE_LOG(LogTemp, Display, TEXT("[APlayerPawnController] Set mouse sensivitiy to %f"), NewSensitivity);
+
+	if (this->PlayerInput)
+	{
+		this->PlayerInput->SetMouseSensitivity(NewSensitivity);
 	}
 }

@@ -84,6 +84,10 @@ public:
 
 	void FixShadowsQuality();
 
+	void SetVSyncEnabled(bool bEnabled);
+
+	void SetMaxFPS(int32 MaxFPS);
+
 	UFUNCTION(BlueprintNativeEvent)
 		float UpdateGameVolume(float Volume);
 		

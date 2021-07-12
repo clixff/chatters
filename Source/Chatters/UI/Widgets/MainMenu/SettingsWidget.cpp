@@ -57,6 +57,16 @@ void USettingsWidget::OnSettingChanged(FString SettingKey, FString SettingValue)
 			SessionWidget->SetKillFeedPosition(Settings->KillFeedPosition);
 		}
 	}
+	else if (SettingKey == TEXT("VSync"))
+	{
+
+		Settings->bVSync = SettingValue == TEXT("On") ? true : false;
+		
+		if (GameInstance)
+		{
+			GameInstance->SetVSyncEnabled(Settings->bVSync);
+		}
+	}
 
 
 	this->SetSettingValue(SettingKey, SettingValue);
@@ -87,7 +97,10 @@ void USettingsWidget::Init()
 
 	this->SetSettingValue(TEXT("Graphics"), USettingsWidget::GraphicsQualityToString(Settings->GraphicsQualityLevel));
 	this->SetSettingValue(TEXT("KillFeed"), USettingsWidget::KillFeedPositionToString(Settings->KillFeedPosition));
+	this->SetSettingValue(TEXT("VSync"), Settings->bVSync ? TEXT("On") : TEXT("Off"));
 	this->UpdateGameVolumeSlider(Settings->GameVolume);
+	this->UpdateMaxFpsSlider(Settings->MaxFPS);
+	this->UpdateMouseSensitivitySlider(Settings->MouseSensitivity);
 
 	this->bInitialized = true;
 }
@@ -123,6 +136,22 @@ void USettingsWidget::SetGameVolume()
 	if (this->SavedSettings)
 	{
 		this->SavedSettings->GameVolume = this->GameVolume;
+	}
+}
+
+void USettingsWidget::SetMaxFPS()
+{
+	if (this->SavedSettings)
+	{
+		this->SavedSettings->MaxFPS = this->MaxFPS;
+	}
+}
+
+void USettingsWidget::SetMouseSensitivity()
+{
+	if (this->SavedSettings)
+	{
+		this->SavedSettings->MouseSensitivity = this->MouseSensitivity;
 	}
 }
 

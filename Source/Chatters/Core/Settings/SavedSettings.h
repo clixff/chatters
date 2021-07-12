@@ -35,6 +35,15 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Session")
 		FString TwitchToken = TEXT("");
+
+	UPROPERTY(VisibleAnywhere, Category = "Settings")
+		bool bVSync = true;
+
+	UPROPERTY(VisibleAnywhere, Category = "Settings")
+		int32 MaxFPS = 120;
+
+	UPROPERTY(VisibleAnywhere, Category = "Settings")
+		int32 MouseSensitivity = 22;
 public:
 	static const FString SlotName;
 
