@@ -60,6 +60,8 @@ void UMeleeWeaponInstance::OnHit()
 
 		this->TimeToEnableCollision = (1.0f - EnableCollisionTimePercent) * Ref->HitTimeout;
 		this->TimeToDisableCollision = (1.0f - DisableCollisionTimePercent) * Ref->HitTimeout;
+
+		this->bHitPrevTick = true;
 	}
 }
 

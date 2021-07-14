@@ -24,6 +24,20 @@ UFirearmWeaponItem* UFirearmWeaponInstance::GetFirearmRef()
 void UFirearmWeaponInstance::Tick(float DeltaTime)
 {
 	UWeaponInstance::Tick(DeltaTime);
+
+	if (this->WeaponRef->bLoopingHitAnimation)
+	{
+		switch (this->Phase)
+		{
+		case EFirearmPhase::Shooting:
+			this->bShouldPlayHitAnimation = true;
+			break;
+		default:
+			this->bShouldPlayHitAnimation = false;
+			break;
+		}
+	}
+
 	if (this->TimeoutValue > 0.0f && this->Phase != EFirearmPhase::IDLE)
 	{
 		this->TimeoutValue -= DeltaTime;
@@ -40,6 +54,7 @@ void UFirearmWeaponInstance::Tick(float DeltaTime)
 				else
 				{
 					this->Phase = EFirearmPhase::IDLE;
+					this->SecondsWithoutHit.Reset();
 				}
 			}
 			else if (this->Phase == EFirearmPhase::Reloading)
@@ -59,6 +74,7 @@ void UFirearmWeaponInstance::Tick(float DeltaTime)
 
 void UFirearmWeaponInstance::Init()
 {
+	Super::Init();
 	auto* FirearmRef = this->GetFirearmRef();
 
 	if (FirearmRef)
@@ -107,8 +123,11 @@ void UFirearmWeaponInstance::OnShoot()
 		this->Phase = EFirearmPhase::Shooting;
 		this->TimeoutValue = FirearmRef->ShootTime + FMath::RandRange(0.0f, 0.1f);
 		this->NumberOfBullets -= 1;
+		this->bHitPrevTick = true;
 	}
 
 	this->bShouldPlayHitAnimation = true;
 	this->HitAnimationTime = 0.0f;
+
+	//UE_LOG(LogTemp, Display, TEXT("[UFirearmWeaponInstance] Shoot. Seconds without shooting: %f"), this->SecondsWithoutHit.Current);
 }

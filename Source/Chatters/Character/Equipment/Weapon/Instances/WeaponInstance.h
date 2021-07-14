@@ -38,4 +38,8 @@ public:
 
 	/** Generated new damage value between min and max */
 	int32 GetDamage();
+
+	bool bHitPrevTick = false;
+
+	FManualTimer SecondsWithoutHit = FManualTimer(0.2f);
 };

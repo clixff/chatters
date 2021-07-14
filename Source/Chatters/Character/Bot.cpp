@@ -99,6 +99,11 @@ void ABot::Tick(float DeltaTime)
 		{
 			this->WeaponInstance->Tick(DeltaTime);
 
+			//if (this->bPlayerAttached)
+			//{
+			//	UE_LOG(LogTemp, Display, TEXT("[ABot] %s bShouldPlayHitAnimation: %d. No hit time: %f s"), *this->DisplayName, this->ShouldPlayWeaponHitAnimation(), this->WeaponInstance->SecondsWithoutHit.Current);
+			//}
+
 			if (this->bTestAiming)
 			{
 				this->TestAimingTick(DeltaTime);

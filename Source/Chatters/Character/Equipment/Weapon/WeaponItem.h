@@ -44,6 +44,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		float TimeToPlayHitAnimation = 0.5f;
 
+	UPROPERTY(EditDefaultsOnly)
+		bool bLoopingHitAnimation = false;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		UBlendSpace* IdleBlendSpace = nullptr;
 
