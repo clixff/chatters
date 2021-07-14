@@ -41,6 +41,28 @@ void UFirearmWeaponInstance::Tick(float DeltaTime)
 	if (this->TimeoutValue > 0.0f && this->Phase != EFirearmPhase::IDLE)
 	{
 		this->TimeoutValue -= DeltaTime;
+
+		if (this->Phase == EFirearmPhase::Reloading && !this->bSpawnedReloadingParticle)
+		{
+			auto* FirearmRef = this->GetFirearmRef();
+			if (FirearmRef)
+			{
+				float TimeoutValueReversed = FirearmRef->ReloadingTime - this->TimeoutValue;
+
+				if (TimeoutValueReversed >= FirearmRef->ReloadingParticleStartSecond)
+				{
+					this->bSpawnedReloadingParticle = true;
+					
+					auto* BotOwnerRef = Cast<ABot>(this->BotOwner);
+
+					if (BotOwnerRef)
+					{
+						BotOwnerRef->SpawnReloadingParticle(FirearmRef->ReloadingParticle, FirearmRef->ReloadingParticleTransform);
+					}
+				}
+			}
+		}
+
 		if (this->TimeoutValue <= 0.0f)
 		{
 			this->TimeoutValue = 0.0f;
@@ -101,6 +123,8 @@ void UFirearmWeaponInstance::StartReloading()
 		this->TimeoutValue = FirearmRef->ReloadingTime;
 		this->NumberOfBullets = 0;
 		this->bShouldPlayReloadingAnimation = true;
+		/** If ReloadingParticle reference is null, set as already spawned, so there will be no attempts to spawn new particle */
+		this->bSpawnedReloadingParticle = (FirearmRef->ReloadingParticle == nullptr);
 	}
 
 	if (this->BotOwner)

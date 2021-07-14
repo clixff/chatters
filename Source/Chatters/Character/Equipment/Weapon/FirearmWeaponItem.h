@@ -7,6 +7,7 @@
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystem.h"
 #include "../../../Combat/FirearmProjectile.h"
+#include "NiagaraSystem.h"
 #include "FirearmWeaponItem.generated.h"
 
 
@@ -60,4 +61,13 @@ public:
 		TArray<FLinearColor> TeamProjectileColors;
 
 	FLinearColor GetRandomProjectileColor();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reloading particle")
+		UNiagaraSystem* ReloadingParticle = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reloading particle")
+		FTransform ReloadingParticleTransform;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reloading particle")
+		float ReloadingParticleStartSecond = 0.0f;
 };

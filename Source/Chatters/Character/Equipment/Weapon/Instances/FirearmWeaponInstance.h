@@ -45,4 +45,6 @@ public:
 	FLinearColor TraceColor;
 private:
 	void StartReloading();
+
+	bool bSpawnedReloadingParticle = false;
 };

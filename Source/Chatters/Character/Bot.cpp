@@ -1588,6 +1588,21 @@ void ABot::Init(FString NewName, int32 NewID)
 	this->UpdateEquipmentTeamColors();
 }
 
+void ABot::SpawnReloadingParticle(UNiagaraSystem* Particle, FTransform Transform)
+{
+	if (!Particle)
+	{
+		return;
+	}
+
+	if (!this->WeaponInstance || !this->WeaponMesh)
+	{
+		return;
+	}
+
+	UNiagaraFunctionLibrary::SpawnSystemAttached(Particle, this->WeaponMesh, TEXT("out"), Transform.GetLocation(), FRotator(Transform.GetRotation()), EAttachLocation::SnapToTarget, true, true);
+}
+
 void ABot::MoveToRandomLocation()
 {
 	auto* AIController = this->GetAIController();

@@ -197,6 +197,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		USoundBase* FallDamageSound = nullptr;
+
+	void SpawnReloadingParticle(UNiagaraSystem* Particle, FTransform Transform);
 private:
 	bool bReady = false;
 
