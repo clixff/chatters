@@ -39,9 +39,6 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		USoundBase* ShootSound;
 
-	UPROPERTY(EditDefaultsOnly)
-		float ImpulseForce = 1000.0f;
-
 	UPROPERTY(EditDefaultsOnly, Category="Transform")
 		FVector SocketRelativeLocation;
 

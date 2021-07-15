@@ -111,7 +111,7 @@ public:
 	
 	void OnTeamsBattleEnd();
 
-	FTransform GetAvailableSpawnPoint();
+	FTransform GetAvailableSpawnPoint(bool bRemoveSpawnPoint = true);
 
 	UPauseMenuWidget* GetPauseMenuWidget();
 
@@ -120,6 +120,8 @@ public:
 	void UnpauseGame();
 
 	TSet<FString> AvailableWeapons;
+
+	void RespawnBotAfterStuck(ABot* Bot);
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;

@@ -361,3 +361,11 @@ FVector APlayerPawn::GetCameraLocation()
 {
 	return this->CachedCameraLocation;
 }
+
+void APlayerPawn::RespawnAttachedBot()
+{
+	if (this->bAttachedToBot && this->BotToAttach)
+	{
+		this->BotToAttach->RespawnAtRandomPlace();
+	}
+}

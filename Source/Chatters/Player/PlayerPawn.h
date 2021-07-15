@@ -76,6 +76,8 @@ public:
 	void Init();
 
 	FVector GetCameraLocation();
+
+	void RespawnAttachedBot();
 private:
 	void UpdateBotNicknameWidgets();
 

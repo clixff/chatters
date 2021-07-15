@@ -199,6 +199,9 @@ public:
 		USoundBase* FallDamageSound = nullptr;
 
 	void SpawnReloadingParticle(UNiagaraSystem* Particle, FTransform Transform);
+
+	/** Useful when bot is stuck */
+	void RespawnAtRandomPlace();
 private:
 	bool bReady = false;
 
@@ -326,6 +329,7 @@ private:
 
 	float FallingStartZLocation = 0.0f;;
 
+	int32 StuckCount = 0;
 private:
 	UPROPERTY()
 		FBotTarget Target;

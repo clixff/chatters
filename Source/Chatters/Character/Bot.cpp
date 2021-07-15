@@ -146,12 +146,22 @@ void ABot::Tick(float DeltaTime)
 
 				UE_LOG(LogTemp, Warning, TEXT("[ABot] Bot %s stuck, finding new target. Combat Action was %d. Old target name is %s"), *this->DisplayName, int(this->CombatAction), *OldTargetName);
 				this->SecondsWithoutMoving.Reset();
+
+				this->StuckCount++;
+
+				if (this->StuckCount >= 10)
+				{
+					this->StuckCount = 0;
+					this->RespawnAtRandomPlace();
+				}
+
 				this->FindNewEnemyTarget();
 			}
 		}
 		else
 		{
-			this->SecondsWithoutMoving.Current = 0.0f;
+			this->SecondsWithoutMoving.Reset();
+			this->StuckCount = 0;
 		}
 		
 		if (this->bReady)
@@ -1265,7 +1275,10 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 		BotHit->SpawnBloodParticle(HitResult.ImpactPoint, this->GetActorLocation());
 	}
 
-	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, FVector(), FVector(), NAME_None, bCritical);
+	FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), BotHit->GetActorLocation()).Vector() * MeleeRef->ImpulseForce;
+	FVector ImpulseLocation = HitResult.bBlockingHit ? HitResult.ImpactPoint : BotHit->GetActorLocation();
+
+	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, ImpulseVector, ImpulseLocation, HitResult.bBlockingHit ? HitResult.BoneName : NAME_None, bCritical);
 
 	if (MeleeInstance->BotsHit.Num() == 1 && MeleeRef->DamageSound)
 	{
@@ -1370,6 +1383,29 @@ void ABot::SpawnBloodParticle(FVector ImpactPoint, FVector CauserLocation)
 	{
 		FRotator ParticleRotation = UKismetMathLibrary::FindLookAtRotation(ImpactPoint, CauserLocation);
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), this->BloodNiagaraParticle, ImpactPoint, ParticleRotation);
+	}
+}
+
+void ABot::RespawnAtRandomPlace()
+{
+	FVector NewRandomLocation;
+
+	bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomLocationInNavigableRadius(GetWorld(), this->GetActorLocation(), NewRandomLocation, 1500.0f);
+
+	if (bFoundRandomLocation)
+	{
+		this->SetActorLocation(NewRandomLocation + FVector(0.0f, 0.0f, 150.0f));
+	}
+	else
+	{
+		auto* GameSession = UChattersGameSession::Get();
+
+		if (!GameSession)
+		{
+			return;
+		}
+
+		GameSession->RespawnBotAfterStuck(this);
 	}
 }
 
@@ -1590,6 +1626,20 @@ void ABot::Init(FString NewName, int32 NewID)
 
 void ABot::SpawnReloadingParticle(UNiagaraSystem* Particle, FTransform Transform)
 {
+	auto* PlayerPawn = APlayerPawn::Get();
+
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	auto DistanceFromCamera = PlayerPawn->GetDistanceFromCamera(this->GetActorLocation());
+
+	if (DistanceFromCamera > 5000.0f)
+	{
+		return;
+	}
+
 	if (!Particle)
 	{
 		return;
@@ -1817,7 +1867,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	}
 
-	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Bow)
+	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Bow || WeaponType == EWeaponType::Melee)
 	{
 		this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
 	}

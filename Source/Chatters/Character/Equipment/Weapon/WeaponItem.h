@@ -38,6 +38,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		int32 MaxDamage = 0;
 
+	UPROPERTY(EditDefaultsOnly)
+		float ImpulseForce = 1000.0f;
+
 	UPROPERTY(VisibleAnywhere)
 		EWeaponType Type = EWeaponType::None;
 

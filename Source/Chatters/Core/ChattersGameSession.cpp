@@ -333,6 +333,8 @@ void UChattersGameSession::Start()
 
 		this->bCanViewersJoin = false;
 
+		this->AvailableBotSpawnPoints = this->BotSpawnPoints;
+
 		for (int32 i = 0; i < this->Bots.Num(); i++)
 		{
 			auto* Bot = this->Bots[i];
@@ -689,7 +691,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 	}
 }
 
-FTransform UChattersGameSession::GetAvailableSpawnPoint()
+FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint)
 {
 	FTransform SpawnPointTransform;
 	
@@ -700,7 +702,11 @@ FTransform UChattersGameSession::GetAvailableSpawnPoint()
 	{
 		SpawnPointTransform.SetLocation(SpawnPoint->GetActorLocation());
 		SpawnPointTransform.SetRotation(FQuat(SpawnPoint->GetRotation()));
-		this->AvailableBotSpawnPoints.RemoveAt(RandNumber, 1, true);
+
+		if (bRemoveSpawnPoint)
+		{
+			this->AvailableBotSpawnPoints.RemoveAt(RandNumber, 1, true);
+		}
 	}
 
 	return SpawnPointTransform;
@@ -772,4 +778,16 @@ void UChattersGameSession::UnpauseGame()
 			this->SessionWidget->Show();
 		}
 	}
+}
+
+void UChattersGameSession::RespawnBotAfterStuck(ABot* Bot)
+{
+	if (!Bot)
+	{
+		return;
+	}
+
+	auto SpawnPoint = this->GetAvailableSpawnPoint(false);
+
+	Bot->SetActorLocation(SpawnPoint.GetLocation());
 }

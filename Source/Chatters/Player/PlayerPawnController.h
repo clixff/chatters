@@ -105,4 +105,6 @@ private:
 
 	void OnGameJoinPressed();
 
+	void OnRespawnBotPressed();
+
 };

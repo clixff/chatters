@@ -68,6 +68,8 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAction("Esc", IE_Pressed, this, &APlayerPawnController::OnEscPressed);
 	this->InputComponent->BindAction("GameJoin", IE_Pressed, this, &APlayerPawnController::OnGameJoinPressed);
+	this->InputComponent->BindAction("Respawn", IE_Pressed, this, &APlayerPawnController::OnRespawnBotPressed);
+
 ;}
 
 void APlayerPawnController::BeginPlay()
@@ -467,6 +469,23 @@ void APlayerPawnController::OnGameJoinPressed()
 	{
 		SessionWidget->SetStreamerJoinTipVisible(false);
 	}
+}
+
+void APlayerPawnController::OnRespawnBotPressed()
+{
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
+	auto* PlayerPawnRef = this->GetPlayerPawn();
+
+	if (!PlayerPawnRef)
+	{
+		return;
+	}
+
+	PlayerPawnRef->RespawnAttachedBot();
 }
 
 void APlayerPawnController::SetMouseSensitivity(int32 Sensitivity)
