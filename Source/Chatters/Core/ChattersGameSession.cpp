@@ -675,6 +675,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 			if (ExplodingBarrel->DestructibleComponent)
 			{
 				ExplodingBarrel->DestructibleComponent->ReregisterComponent();
+				ExplodingBarrel->DestructibleComponent->SetCanEverAffectNavigation(true);
 			}
 		}
 	}

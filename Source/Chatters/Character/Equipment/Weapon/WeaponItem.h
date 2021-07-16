@@ -67,4 +67,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		TArray<FMaterialSlots> TeamMaterials;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UBlendSpace1D* RunBlendSpace = nullptr;
 };
