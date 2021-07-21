@@ -1600,6 +1600,8 @@ void ABot::SetEquipment()
 				{
 					this->GetMesh()->SetMaterial(i, Materials[i]);
 				}
+
+				this->HeadMesh->SetHiddenInGame(RandomEquipment.Costume->bHideHeadMesh);
 			}
 		}
 	}

@@ -14,4 +14,7 @@ class CHATTERS_API UCostumeItem : public USkeletalMeshEquipmentItem
 {
 	GENERATED_BODY()
 	
+public:
+	UPROPERTY(EditDefaultsOnly)
+		bool bHideHeadMesh = false;
 };
