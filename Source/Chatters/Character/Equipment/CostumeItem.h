@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EquipmentItem.h"
+#include "NiagaraSystem.h"
 #include "CostumeItem.generated.h"
 
 /**
@@ -17,4 +18,7 @@ class CHATTERS_API UCostumeItem : public USkeletalMeshEquipmentItem
 public:
 	UPROPERTY(EditDefaultsOnly)
 		bool bHideHeadMesh = false;
+
+	UPROPERTY(EditDefaultsOnly)
+		UNiagaraSystem* BloodParticle = nullptr;
 };

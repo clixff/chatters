@@ -371,6 +371,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		UNiagaraSystem* BloodNiagaraParticle = nullptr;
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		UNiagaraSystem* GetDefaultBloodParticle();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool bShouldApplyGunAnimation = false;
 

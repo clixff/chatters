@@ -1602,6 +1602,8 @@ void ABot::SetEquipment()
 				}
 
 				this->HeadMesh->SetHiddenInGame(RandomEquipment.Costume->bHideHeadMesh);
+
+				this->BloodNiagaraParticle = RandomEquipment.Costume->BloodParticle ? RandomEquipment.Costume->BloodParticle : this->GetDefaultBloodParticle();
 			}
 		}
 	}
