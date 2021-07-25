@@ -61,9 +61,11 @@ public:
 
 	bool bCanViewersJoin = false;
 
-	void OnViewerJoin(FString Name);
+	ABot* OnViewerJoin(FString Name);
 
 	void OnViewerMessage(FString Name, FString Message);
+
+	void OnViewerTargetCommand(FString ViewerName, FString TargetName);
 public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<ABot> BotSubclass;
@@ -79,6 +81,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 		int32 RedAlive = 0;
+
+	int32 BlueAliveMax = 0;
+	int32 RedAliveMax = 0;
+
 
 	/** Equipment lists for all levels */
 	UPROPERTY(EditDefaultsOnly)
@@ -105,16 +111,17 @@ public:
 	
 	void OnTeamsBattleEnd();
 
-	FTransform GetAvailableSpawnPoint();
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		TSubclassOf<AFirearmProjectile> FirearmProjectileSubClass = AFirearmProjectile::StaticClass();
+	FTransform GetAvailableSpawnPoint(bool bRemoveSpawnPoint = true);
 
 	UPauseMenuWidget* GetPauseMenuWidget();
 
 	void PauseGame();
 
 	void UnpauseGame();
+
+	TSet<FString> AvailableWeapons;
+
+	void RespawnBotAfterStuck(ABot* Bot);
 private:
 	UPROPERTY(VisibleAnywhere)
 		USessionWidget* SessionWidget = nullptr;

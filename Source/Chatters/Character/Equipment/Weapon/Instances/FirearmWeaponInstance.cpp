@@ -24,9 +24,45 @@ UFirearmWeaponItem* UFirearmWeaponInstance::GetFirearmRef()
 void UFirearmWeaponInstance::Tick(float DeltaTime)
 {
 	UWeaponInstance::Tick(DeltaTime);
+
+	if (this->WeaponRef->bLoopingHitAnimation)
+	{
+		switch (this->Phase)
+		{
+		case EFirearmPhase::Shooting:
+			this->bShouldPlayHitAnimation = true;
+			break;
+		default:
+			this->bShouldPlayHitAnimation = false;
+			break;
+		}
+	}
+
 	if (this->TimeoutValue > 0.0f && this->Phase != EFirearmPhase::IDLE)
 	{
 		this->TimeoutValue -= DeltaTime;
+
+		if (this->Phase == EFirearmPhase::Reloading && !this->bSpawnedReloadingParticle)
+		{
+			auto* FirearmRef = this->GetFirearmRef();
+			if (FirearmRef)
+			{
+				float TimeoutValueReversed = FirearmRef->ReloadingTime - this->TimeoutValue;
+
+				if (TimeoutValueReversed >= FirearmRef->ReloadingParticleStartSecond)
+				{
+					this->bSpawnedReloadingParticle = true;
+					
+					auto* BotOwnerRef = Cast<ABot>(this->BotOwner);
+
+					if (BotOwnerRef)
+					{
+						BotOwnerRef->SpawnReloadingParticle(FirearmRef->ReloadingParticle, FirearmRef->ReloadingParticleTransform);
+					}
+				}
+			}
+		}
+
 		if (this->TimeoutValue <= 0.0f)
 		{
 			this->TimeoutValue = 0.0f;
@@ -40,6 +76,7 @@ void UFirearmWeaponInstance::Tick(float DeltaTime)
 				else
 				{
 					this->Phase = EFirearmPhase::IDLE;
+					this->SecondsWithoutHit.Reset();
 				}
 			}
 			else if (this->Phase == EFirearmPhase::Reloading)
@@ -59,6 +96,7 @@ void UFirearmWeaponInstance::Tick(float DeltaTime)
 
 void UFirearmWeaponInstance::Init()
 {
+	Super::Init();
 	auto* FirearmRef = this->GetFirearmRef();
 
 	if (FirearmRef)
@@ -85,6 +123,8 @@ void UFirearmWeaponInstance::StartReloading()
 		this->TimeoutValue = FirearmRef->ReloadingTime;
 		this->NumberOfBullets = 0;
 		this->bShouldPlayReloadingAnimation = true;
+		/** If ReloadingParticle reference is null, set as already spawned, so there will be no attempts to spawn new particle */
+		this->bSpawnedReloadingParticle = (FirearmRef->ReloadingParticle == nullptr);
 	}
 
 	if (this->BotOwner)
@@ -105,10 +145,13 @@ void UFirearmWeaponInstance::OnShoot()
 	if (FirearmRef)
 	{
 		this->Phase = EFirearmPhase::Shooting;
-		this->TimeoutValue = FirearmRef->ShootTime;
+		this->TimeoutValue = FirearmRef->ShootTime + FMath::RandRange(0.0f, 0.1f);
 		this->NumberOfBullets -= 1;
+		this->bHitPrevTick = true;
 	}
 
 	this->bShouldPlayHitAnimation = true;
 	this->HitAnimationTime = 0.0f;
+
+	//UE_LOG(LogTemp, Display, TEXT("[UFirearmWeaponInstance] Shoot. Seconds without shooting: %f"), this->SecondsWithoutHit.Current);
 }

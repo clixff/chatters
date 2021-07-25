@@ -55,6 +55,9 @@ public:
 		float AttachedCameraMinPitchRotation = -70.0f;
 
 	bool bCanControl = true;
+
+	void SetMouseSensitivity(int32 Sensitivity);
+
 protected:
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
@@ -99,5 +102,9 @@ private:
 	void OnSlowmoEnd();
 
 	void OnEscPressed();
+
+	void OnGameJoinPressed();
+
+	void OnRespawnBotPressed();
 
 };

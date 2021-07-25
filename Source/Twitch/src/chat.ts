@@ -12,23 +12,38 @@ export default class ChatClient
 
     listen(username: string, token: string, userId: number): void
     {
-        console.log(`[ChatClient] Listening`);
+        try
+        {
+            if (this.client)
+            {
+                this.disconnect();
+            }
 
-        this.params.identity = {
-            username: username,
-            password: token
-        };
-        this.params.channels = [ username ];
+            console.log(`[ChatClient] Listening`);
 
-        this.client = new tmi.client(this.params);
-
-        this.client.connect();
-
-        this.client.on('connected', this.onConnect);
-
-        this.client.on('message', this.onMessage);
-
-        this.channelID = `${userId}`;
+            this.params.identity = {
+                username: username,
+                password: token
+            };
+            this.params.channels = [ username ];
+    
+            this.client = new tmi.client(this.params);
+    
+            this.client.connect().catch((err) => 
+            {
+                console.error(err);
+            });
+    
+            this.client.on('connected', this.onConnect);
+    
+            this.client.on('message', this.onMessage);
+    
+            this.channelID = `${userId}`;
+        }
+        catch (error)
+        {
+            console.error(error);
+        }
     }
 
     onConnect(addr: string, port: number): void
@@ -63,6 +78,25 @@ export default class ChatClient
                     socketsServer.onViewerJoin(userName);
                 }
             }
+            else if (messageLowerCased.startsWith('!target '))
+            {
+                const targetRegex = /^!target (?:\@)?((?:\w){2,30})$/;
+
+                const regexMatch = messageLowerCased.match(targetRegex);
+
+                if (regexMatch)
+                {
+                    const targetNickname: string | undefined = regexMatch[1];
+
+                    const usernameLowerCased = userName.toLowerCase();
+
+                    if (targetNickname && targetNickname != usernameLowerCased && socketsServer)
+                    {
+                        // socketsServer.onTargetCommand(usernameLowerCased, targetNickname);
+                    }
+                }
+
+            }
             else if (message.length)
             {
                 if (socketsServer)
@@ -75,11 +109,21 @@ export default class ChatClient
 
     disconnect(): void
     {
-        if (this.client)
+        try
         {
-            console.log(`[ChatClient] Disconnecting`);
-            this.client.disconnect();
-            this.client = null;
+            if (this.client && this.client)
+            {
+                console.log(`[ChatClient] Disconnecting`);
+                this.client.disconnect().catch((err) => 
+                {
+                    console.error(err);
+                });
+                this.client = null;
+            }
+        }
+        catch (error)
+        {
+            console.error(error);
         }
     }
 

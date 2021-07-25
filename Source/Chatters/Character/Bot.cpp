@@ -14,8 +14,8 @@
 #include "NavigationSystem.h"
 #include "AI/Navigation/NavigationTypes.h"
 #include "../UI/Widgets/KillFeedElement.h"
-#include "../Combat/FirearmProjectile.h"
 #include "../Player/PlayerPawn.h"
+#include "NiagaraFunctionLibrary.h"
 #include "../Core/ChattersGameSession.h"
 
 DECLARE_STATS_GROUP(TEXT("BOTS_Game"), STATGROUP_BOTS, STATCAT_Advanced);
@@ -67,6 +67,8 @@ ABot::ABot()
 
 ABot::~ABot()
 {
+	FVector Position = this->GetActorLocation();
+
 	if (this->WeaponInstance != nullptr)
 	{
 		if (this->WeaponInstance->IsValidLowLevel())
@@ -96,6 +98,11 @@ void ABot::Tick(float DeltaTime)
 		if (this->WeaponInstance)
 		{
 			this->WeaponInstance->Tick(DeltaTime);
+
+			//if (this->bPlayerAttached)
+			//{
+			//	UE_LOG(LogTemp, Display, TEXT("[ABot] %s bShouldPlayHitAnimation: %d. No hit time: %f s"), *this->DisplayName, this->ShouldPlayWeaponHitAnimation(), this->WeaponInstance->SecondsWithoutHit.Current);
+			//}
 
 			if (this->bTestAiming)
 			{
@@ -139,12 +146,65 @@ void ABot::Tick(float DeltaTime)
 
 				UE_LOG(LogTemp, Warning, TEXT("[ABot] Bot %s stuck, finding new target. Combat Action was %d. Old target name is %s"), *this->DisplayName, int(this->CombatAction), *OldTargetName);
 				this->SecondsWithoutMoving.Reset();
+
+				this->StuckCount++;
+
+				if (this->StuckCount >= 10)
+				{
+					this->StuckCount = 0;
+					this->RespawnAtRandomPlace();
+				}
+
 				this->FindNewEnemyTarget();
 			}
 		}
 		else
 		{
-			this->SecondsWithoutMoving.Current = 0.0f;
+			this->SecondsWithoutMoving.Reset();
+			this->StuckCount = 0;
+		}
+		
+		if (this->bReady)
+		{
+			bool bFalling = this->GetMovementComponent()->IsFalling();
+
+			/** When falling starts */
+			if (bFalling && !this->bFallingLastTick)
+			{
+				this->FallingStartZLocation = this->GetActorLocation().Z;
+			}
+			/** When falling ends */
+			else if (!bFalling && this->bFallingLastTick)
+			{
+				float FallDistance = FMath::Abs(this->FallingStartZLocation - this->GetActorLocation().Z);
+
+				const float MinFallDistanceToDamage = 250.0f;
+				const float MaxFallDistanceToDamage = 600.0f;
+
+				const float MinFallDamage = 5.0f;
+				const float MaxFallDamage = 100.0f;
+
+				if (FallDistance >= MinFallDistanceToDamage)
+				{
+					FallDistance = FMath::Clamp(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
+					
+					float FallDistanceScale = UKismetMathLibrary::NormalizeToRange(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
+					
+					FallDistanceScale = FMath::Clamp(FallDistanceScale, 0.0f, 1.0f);
+
+					int32 Damage = FMath::FloorToInt(FMath::Lerp(MinFallDamage, MaxFallDamage, FallDistanceScale));
+
+					this->ApplyDamage(Damage, this, EWeaponType::None);
+
+					if (this->FallDamageSound)
+					{
+						UGameplayStatics::PlaySoundAtLocation(GetWorld(), this->FallDamageSound, this->GetActorLocation(), FMath::RandRange(0.7f, 0.85f));
+					}
+				}
+
+			}
+
+			this->bFallingLastTick = bFalling;
 		}
 
 		this->LastTickLocation = this->GetActorLocation();
@@ -160,7 +220,7 @@ void ABot::Tick(float DeltaTime)
 			}
 		}
 
-		if (this->bHatAttached && this->SecondsAfterDeath <= 25.0f)
+		if (this->bHatAttached && this->bCanHatBeDetached && this->SecondsAfterDeath <= 25.0f)
 		{
 			this->TryDetachHat();
 		}
@@ -177,6 +237,15 @@ void ABot::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+void ABot::Destroyed()
+{
+	Super::Destroyed();
+
+	//FVector Position = this->GetActorLocation();
+
+	//UE_LOG(LogTemp, Display, TEXT("[ABot] Bot %s destroyed."), *this->DisplayName);
 }
 
 bool ABot::GetIsAlive()
@@ -292,7 +361,67 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 		else
 		{
 			this->CombatStyle = ECombatStyle::Defense;
+		}
+	}
+}
 
+void ABot::UpdateEquipmentTeamColors()
+{
+	if (this->WeaponInstance && this->WeaponInstance->WeaponRef)
+	{
+		auto* WeaponRef = this->WeaponInstance->WeaponRef;
+
+		/** Set random projectile trace colors */
+		if (WeaponRef->Type == EWeaponType::Firearm)
+		{
+			auto* FirearmInstance = Cast<UFirearmWeaponInstance>(this->WeaponInstance);
+			if (!FirearmInstance || !FirearmInstance->GetFirearmRef())
+			{
+				return;
+			}
+
+			auto* FirearmRef = FirearmInstance->GetFirearmRef();
+			auto TeamProjectileColors = FirearmRef->TeamProjectileColors;
+
+
+			if (this->Team != EBotTeam::White && TeamProjectileColors.Num() > 1)
+			{
+				FirearmInstance->TraceColor = this->Team == EBotTeam::Blue ? TeamProjectileColors[0] : TeamProjectileColors[1];
+			}
+			else
+			{
+				FirearmInstance->TraceColor = FirearmRef->GetRandomProjectileColor();
+			}
+
+		}
+		else if (WeaponRef->Type == EWeaponType::Melee)
+		{
+			auto* MeleeInstance = Cast<UMeleeWeaponInstance>(this->WeaponInstance);
+			if (!MeleeInstance || !MeleeInstance->GetMeleeRef())
+			{
+				return;
+			}
+
+			auto* MeleeRef = MeleeInstance->GetMeleeRef();
+
+			TArray<UMaterialInterface*> RandomMaterials;
+
+			if (this->Team != EBotTeam::White && MeleeRef->TeamMaterials.Num() > 1)
+			{
+				RandomMaterials = this->Team == EBotTeam::Blue ? MeleeRef->TeamMaterials[0].Slots : MeleeRef->TeamMaterials[1].Slots;
+			}
+			else
+			{
+				RandomMaterials = MeleeRef->GetRandomMaterials();
+			}
+
+			if (RandomMaterials.Num() && this->WeaponMesh)
+			{
+				for (int32 i = 0; i < RandomMaterials.Num(); i++)
+				{
+					this->WeaponMesh->SetMaterial(i, RandomMaterials[i]);
+				}
+			}
 		}
 	}
 }
@@ -689,7 +818,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
 
-	if (this->bMovingToRandomCombatLocation && (DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 7.0f))
+	if (this->bMovingToRandomCombatLocation && (DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 2.0f))
 	{
 		this->bMovingToRandomCombatLocation = false;
 		
@@ -740,7 +869,8 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	}
 
 	/** If the bot can shoot or reloading and still moving, stop it */
-	if ((bCanActuallyShoot || bReloading) && this->bMovingToRandomCombatLocation)
+	//if ((bCanActuallyShoot || bReloading) && this->bMovingToRandomCombatLocation)
+	if (bReloading && this->bMovingToRandomCombatLocation)
 	{
 		if (AIController)
 		{
@@ -759,7 +889,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	float BotSpeed = this->GetSpeed();
 
-	if (bCanActuallyShoot && BotSpeed < 5.0f)
+	if (bCanActuallyShoot)
 	{
 		this->Shoot(true);
 	}
@@ -907,19 +1037,23 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FActorSpawnParameters ProjectileSpawnParams;
 			ProjectileSpawnParams.Name = AFirearmProjectile::GenerateName();
+
+			auto ProjectileClass = FirearmRef->FirearmProjectileSubClass;
 		
-			auto* FirearmProjectile = World->SpawnActor<AFirearmProjectile>(this->GetGameSession()->FirearmProjectileSubClass, ProjectileTransform, ProjectileSpawnParams);
+			auto* FirearmProjectile = World->SpawnActor<AFirearmProjectile>(ProjectileClass, ProjectileTransform, ProjectileSpawnParams);
 
 			FVector EndLocation = BulletHitResult.HitResult.bBlockingHit ? BulletHitResult.HitResult.ImpactPoint : BulletHitResult.HitResult.TraceEnd;
 
 			FirearmProjectile->Init(OutBulletLocation, EndLocation, BulletHitResult, FirearmInstance, this->GetActorForwardVector());
 			FirearmProjectile->BotCauser = this;
+			FirearmProjectile->SetColor(FirearmInstance->TraceColor);
 
 			APlayerPawn* PlayerPawn = APlayerPawn::Get();
 
 			float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(OutBulletLocation) :  0.0f;
 
 			FirearmProjectile->bSimplified = DistanceFromCamera > 5000.0f;
+			//FirearmProjectile->bSimplified = false;
 
 			if (DistanceFromCamera <= 7000.0f)
 			{
@@ -1136,17 +1270,15 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(this->GetActorLocation()) : 0.0f;
 
-	if (DistanceFromCamera <= 7000.0f && BotHit->BloodParticle && HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
+	if (HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
 	{
-		FTransform BloodParticleTransform;
-		BloodParticleTransform.SetLocation(HitResult.ImpactPoint);
-		FRotator TestRot = UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), HitResult.ImpactPoint);
-		TestRot.Pitch += 90.0f;
-		BloodParticleTransform.SetRotation(FQuat(TestRot));
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BotHit->BloodParticle, BloodParticleTransform, true);
+		BotHit->SpawnBloodParticle(HitResult.ImpactPoint, this->GetActorLocation());
 	}
 
-	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, FVector(), FVector(), NAME_None, bCritical);
+	FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(this->GetActorLocation(), BotHit->GetActorLocation()).Vector() * MeleeRef->ImpulseForce;
+	FVector ImpulseLocation = HitResult.bBlockingHit ? HitResult.ImpactPoint : BotHit->GetActorLocation();
+
+	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, ImpulseVector, ImpulseLocation, HitResult.bBlockingHit ? HitResult.BoneName : NAME_None, bCritical);
 
 	if (MeleeInstance->BotsHit.Num() == 1 && MeleeRef->DamageSound)
 	{
@@ -1236,8 +1368,50 @@ void ABot::CreateFloorBloodDecal()
 	this->FloorBloodDecalActor->BotOwner = this;
 }
 
+void ABot::SpawnBloodParticle(FVector ImpactPoint, FVector CauserLocation)
+{
+	APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	float DistanceFromCamera = PlayerPawn->GetDistanceFromCamera(ImpactPoint);
+
+	if (DistanceFromCamera <= 7000.0f && this->BloodNiagaraParticle)
+	{
+		FRotator ParticleRotation = UKismetMathLibrary::FindLookAtRotation(ImpactPoint, CauserLocation);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), this->BloodNiagaraParticle, ImpactPoint, ParticleRotation);
+	}
+}
+
+void ABot::RespawnAtRandomPlace()
+{
+	FVector NewRandomLocation;
+
+	bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomLocationInNavigableRadius(GetWorld(), this->GetActorLocation(), NewRandomLocation, 1500.0f);
+
+	if (bFoundRandomLocation)
+	{
+		this->SetActorLocation(NewRandomLocation + FVector(0.0f, 0.0f, 150.0f));
+	}
+	else
+	{
+		auto* GameSession = UChattersGameSession::Get();
+
+		if (!GameSession)
+		{
+			return;
+		}
+
+		GameSession->RespawnBotAfterStuck(this);
+	}
+}
+
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
 {
+	GameSessionObject = UChattersGameSession::Get();
 	if (!GameSessionObject)
 	{
 		return nullptr;
@@ -1253,6 +1427,8 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 
 	if (Bot)
 	{
+		Bot->Team = GameSessionObject->GameModeType == ESessionGameMode::Teams ? (IDToSet % 2 ? EBotTeam::Blue : EBotTeam::Red) : EBotTeam::White;
+
 		Bot->Init(NameToSet, IDToSet);
 	}
 
@@ -1303,7 +1479,9 @@ void ABot::SetEquipment()
 
 		if (EquipmentList)
 		{
-			auto RandomEquipment = EquipmentList->GetRandomEquipment();
+			auto* EquipmentSet = EquipmentList->GetEquipmentSet(this->Team, GameSessionObject->AvailableWeapons);
+
+			auto RandomEquipment = EquipmentSet->GetRandomEquipment(this->Team);
 			if (this->HatMesh)
 			{
 				if (!RandomEquipment.Hat)
@@ -1314,7 +1492,7 @@ void ABot::SetEquipment()
 				{
 					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
 					this->HatMesh->SetRelativeTransform(RandomEquipment.Hat->GetTransform());
-
+					this->HatMesh->EmptyOverrideMaterials();
 
 					if (RandomEquipment.Hat->StaticMesh)
 					{
@@ -1326,6 +1504,8 @@ void ABot::SetEquipment()
 						}
 
 					}
+
+					this->bCanHatBeDetached = RandomEquipment.Hat->bCanDetach;
 				}
 			}
 
@@ -1350,16 +1530,21 @@ void ABot::SetEquipment()
 				}
 			}
 
-			if (RandomEquipment.Weapon)
+			UWeaponItem* RandomWeapon = EquipmentSet->GetRandomWeapon(GameSessionObject->AvailableWeapons, this->Team);
+
+			if (RandomWeapon)
 			{
 				if (this->WeaponMesh)
 				{
-					this->WeaponMesh->SetStaticMesh(RandomEquipment.Weapon->StaticMesh);
-					this->WeaponMesh->SetRelativeTransform(RandomEquipment.Weapon->GetTransform());
+					//this->WeaponMesh->ReregisterComponent();
+					this->WeaponMesh->SetStaticMesh(RandomWeapon->StaticMesh);
+					this->WeaponMesh->SetRelativeTransform(RandomWeapon->GetTransform());
+
+					this->WeaponMesh->EmptyOverrideMaterials();
 
 					UClass* WeaponInstanceClass = UWeaponInstance::StaticClass();
 
-					EWeaponType WeaponType = RandomEquipment.Weapon->Type;
+					EWeaponType WeaponType = RandomWeapon->Type;
 
 					if (WeaponType == EWeaponType::Melee)
 					{
@@ -1373,13 +1558,13 @@ void ABot::SetEquipment()
 					this->WeaponInstance = NewObject<UWeaponInstance>(this, WeaponInstanceClass);
 					if (this->WeaponInstance)
 					{
-						this->WeaponInstance->WeaponRef = RandomEquipment.Weapon;
+						this->WeaponInstance->WeaponRef = RandomWeapon;
 						this->WeaponInstance->BotOwner = this;
 						this->WeaponInstance->Init();
 
 						if (WeaponType == EWeaponType::Firearm)
 						{
-							UFirearmWeaponItem* FirearmRef = Cast<UFirearmWeaponItem>(RandomEquipment.Weapon);
+							UFirearmWeaponItem* FirearmRef = Cast<UFirearmWeaponItem>(RandomWeapon);
 							if (FirearmRef)
 							{
 								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation - this->GunAnimationRotationPoint;
@@ -1387,7 +1572,7 @@ void ABot::SetEquipment()
 						}
 						else if (WeaponType == EWeaponType::Melee)
 						{
-							auto* MeleeRef = Cast<UMeleeWeaponItem>(RandomEquipment.Weapon);
+							auto* MeleeRef = Cast<UMeleeWeaponItem>(RandomWeapon);
 							if (MeleeRef)
 							{
 								this->GunSocketRelativeLocation = FVector(0.0f, 0.0f, 50.0f) - this->GunAnimationRotationPoint;
@@ -1406,12 +1591,19 @@ void ABot::SetEquipment()
 			{
 				this->GetMesh()->SetSkeletalMeshWithoutResettingAnimation(RandomEquipment.Costume->SkeletalMesh);
 
+				this->GetMesh()->EmptyOverrideMaterials();
+
+
 				TArray<UMaterialInterface*> Materials = RandomEquipment.Costume->GetRandomMaterials();
 
 				for (int32 i = 0; i < Materials.Num(); i++)
 				{
 					this->GetMesh()->SetMaterial(i, Materials[i]);
 				}
+
+				this->HeadMesh->SetHiddenInGame(RandomEquipment.Costume->bHideHeadMesh);
+
+				this->BloodNiagaraParticle = RandomEquipment.Costume->BloodParticle ? RandomEquipment.Costume->BloodParticle : this->GetDefaultBloodParticle();
 			}
 		}
 	}
@@ -1433,6 +1625,36 @@ void ABot::Init(FString NewName, int32 NewID)
 	}
 
 	this->SetEquipment();
+	this->UpdateEquipmentTeamColors();
+}
+
+void ABot::SpawnReloadingParticle(UNiagaraSystem* Particle, FTransform Transform)
+{
+	auto* PlayerPawn = APlayerPawn::Get();
+
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	auto DistanceFromCamera = PlayerPawn->GetDistanceFromCamera(this->GetActorLocation());
+
+	if (DistanceFromCamera > 5000.0f)
+	{
+		return;
+	}
+
+	if (!Particle)
+	{
+		return;
+	}
+
+	if (!this->WeaponInstance || !this->WeaponMesh)
+	{
+		return;
+	}
+
+	UNiagaraFunctionLibrary::SpawnSystemAttached(Particle, this->WeaponMesh, TEXT("out"), Transform.GetLocation(), FRotator(Transform.GetRotation()), EAttachLocation::SnapToTarget, true, true);
 }
 
 void ABot::MoveToRandomLocation()
@@ -1486,7 +1708,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	else
 	{
 		/** If damage by enemy */
-		if (this->IsEnemy(ByBot) && ByBot->bAlive)
+		if (ByBot && this->IsEnemy(ByBot) && ByBot->bAlive)
 		{
 			/** If bot is not target already */
 			if (!this->Target.Bot || this->Target.Bot != ByBot)
@@ -1649,7 +1871,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	}
 
-	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Bow)
+	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Bow || WeaponType == EWeaponType::Melee)
 	{
 		this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
 	}
@@ -2265,4 +2487,63 @@ void ABot::RemoveBloodDecal()
 		this->FloorBloodDecalActor->Destroy();
 		this->FloorBloodDecalActor = nullptr;
 	}
+}
+
+FEyesRotation ABot::GetEyesRotation()
+{
+	FEyesRotation DefaultRotation;
+
+	if (!this->bAlive)
+	{
+		return DefaultRotation;
+	}
+
+	if (this->CombatAction == ECombatAction::Shooting)
+	{
+		return DefaultRotation;
+	}
+
+	APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+	if (!PlayerPawn)
+	{
+		return DefaultRotation;
+	}
+	
+	float DistanceFromCamera = PlayerPawn->GetDistanceFromCamera(this->GetActorLocation());
+
+	if (DistanceFromCamera > 500.0f)
+	{
+		return DefaultRotation;
+	}
+
+	FVector LeftEyeLocation = this->HeadMesh->GetSocketLocation(TEXT("eye_L"));
+	FVector RightEyeLocation = this->HeadMesh->GetSocketLocation(TEXT("eye_R"));
+
+	const FVector CameraLocation = PlayerPawn->GetCameraLocation();
+
+	auto GetEyeRotation = [this](FVector EyeLocation, FVector CameraLocation)
+	{
+		FVector RelativeCameraLocation = EyeLocation - CameraLocation;
+
+		RelativeCameraLocation = FRotator(0.0f, this->GetActorRotation().Yaw * -1.0f, 0.0f).RotateVector(RelativeCameraLocation);
+
+		FRotator EyeRotation = UKismetMathLibrary::FindLookAtRotation(FVector(0.0), RelativeCameraLocation);
+
+		EyeRotation.Yaw += 180.0f;
+		EyeRotation.Yaw = FMath::Fmod(EyeRotation.Yaw + 180.0f, 360.0f) - 180.0f;
+
+		EyeRotation.Roll = FMath::Clamp(EyeRotation.Pitch, -50.0f, 50.0f);
+		EyeRotation.Yaw = FMath::Clamp(EyeRotation.Yaw, -50.0f, 50.0f);
+		EyeRotation.Pitch = 0.0f;
+
+		return EyeRotation;
+	};
+
+	FEyesRotation EyesRotation;
+
+	EyesRotation.LeftEye = GetEyeRotation(LeftEyeLocation, CameraLocation);
+	EyesRotation.RightEye = GetEyeRotation(RightEyeLocation, CameraLocation);
+
+	return EyesRotation;
 }

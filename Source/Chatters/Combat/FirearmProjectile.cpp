@@ -4,6 +4,8 @@
 #include "FirearmProjectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "../Player/PlayerPawn.h"
+#include "../Character/Bot.h"
+#include "../Character/Equipment/Weapon/Instances/FirearmWeaponInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 
 uint32 AFirearmProjectile::TotalNumberOfProjectiles = 0;
@@ -35,6 +37,12 @@ void AFirearmProjectile::BeginPlay()
 void AFirearmProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (this->bPendingDestroying)
+	{
+		this->DestroyActor();
+		return;
+	}
 
 	if (this->bActive)
 	{
@@ -121,12 +129,13 @@ void AFirearmProjectile::OnEnd()
 	this->bActive = false;
 	this->TraceLengthAction = ETraceLengthAction::Reduce;
 
-	if (!this->BulletHitResult.HitResult.bBlockingHit)
+	if (!this->BulletHitResult.HitResult.bBlockingHit || this->bSimplified)
 	{
 		this->DestroyActor();
 	}
 
-	if (!this->BotCauser || !this->FirearmRef || (BulletHitResult.BotToDamage && !BulletHitResult.BotToDamage->bAlive))
+
+	if (!this->BotCauser || !this->FirearmInstance || !this->FirearmRef || (BulletHitResult.BotToDamage && !BulletHitResult.BotToDamage->bAlive))
 	{
 		return;
 	}
@@ -163,25 +172,17 @@ void AFirearmProjectile::OnEnd()
 					if (CriticalHitChance < 1)
 					{
 						bCriticalHit = true;
-						//this->BotCauser->SayRandomMessage();
 					}
 
-					FVector ImpulseVector = this->CauserForwardVector * FirearmRef->ImpulseForce;
+
+					FVector ImpulseVector = this->CauserForwardVector * this->FirearmRef->ImpulseForce;
 					BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
 
 					APlayerPawn* PlayerPawn = APlayerPawn::Get();
 
 					float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(BulletHitResult.HitResult.ImpactPoint) : 0.0f;
 
-					if (DistanceFromCamera <= 7000.0f && BotToDamage->BloodParticle)
-					{
-						FTransform BloodParticleTransform;
-						BloodParticleTransform.SetLocation(BulletHitResult.HitResult.ImpactPoint);
-						FRotator TestRot = UKismetMathLibrary::FindLookAtRotation(this->StartLocation, BulletHitResult.HitResult.ImpactPoint);
-						TestRot.Pitch += 90.0f;
-						BloodParticleTransform.SetRotation(FQuat(TestRot));
-						UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BotToDamage->BloodParticle, BloodParticleTransform, true);
-					}
+					BotToDamage->SpawnBloodParticle(BulletHitResult.HitResult.ImpactPoint, this->GetActorLocation());
 				}
 			}
 		}
@@ -223,11 +224,40 @@ FName AFirearmProjectile::GenerateName()
 
 void AFirearmProjectile::DestroyActor()
 {
-	if (this->Trace && this->Trace->IsValidLowLevel())
+	if (this->bDestroyed)
 	{
-		this->Trace->DestroyComponent();
+		return;
 	}
+
+
+	//if (this->Trace && this->Trace->IsValidLowLevel())
+	//{
+	//	this->Trace->DestroyComponent();
+	//}
+
+	if (this->Trace)
+	{
+		auto* TraceSystemInstance = this->Trace->GetSystemInstance();
+
+		if (!TraceSystemInstance || TraceSystemInstance->IsPendingSpawn())
+		{
+			this->bPendingDestroying = true;
+			return;
+		}
+
+		this->Trace->DestroyInstance();
+	}
+
+	this->bDestroyed = true;
+	this->bPendingDestroying = false;
 
 	this->Destroy();
 }
 
+void AFirearmProjectile::SetColor(FLinearColor Color)
+{
+	if (this->Trace)
+	{
+		this->Trace->SetVariableLinearColor(TEXT("Color"), Color);
+	}
+}

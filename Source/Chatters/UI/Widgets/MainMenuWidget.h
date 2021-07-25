@@ -10,6 +10,24 @@
 #include "Components/EditableTextBox.h"
 #include "MainMenuWidget.generated.h"
 
+
+USTRUCT(BlueprintType)
+struct FLevelWeaponIcon
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		UTexture2D* Texture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		float SizeX = 8.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		float SizeY = 8.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		FString Name;
+};
+
 USTRUCT(BlueprintType)
 struct FMainMenuLevelToPlay
 {
@@ -20,6 +38,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		UMaterialInterface* LevelPreview;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		TArray<FLevelWeaponIcon> WeaponsIcons;
 };
 
 UENUM(BlueprintType)
@@ -70,6 +91,9 @@ public:
 
 	void SetLevelParam(FString ParamKey, FString ParamValue);
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void UpdateWeaponsList(const TArray<FLevelWeaponIcon>& List);
+
 	UFUNCTION(BlueprintCallable)
 		void OnNumberInputChanged(UEditableTextBox* InputWidget);
 
@@ -88,6 +112,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void OnTwitchLogoutClick();
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void SetUpdateAvailableWidgetVisible(bool bVisible);
+
+	UFUNCTION(BlueprintCallable)
+		void OpenGameUpdateURL();
+
+	UPROPERTY()
+		TSet<FString> WeaponsAvailableList;
+
+	UFUNCTION(BlueprintCallable)
+		void OnWeaponClick(int32 WeaponID);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void SetWeaponSelected(int32 WeaponID, bool bSelected);
 private:
 	TArray<UWidget*> GetButtonWidgets();
 

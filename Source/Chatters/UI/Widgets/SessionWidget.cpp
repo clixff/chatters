@@ -6,6 +6,47 @@
 #include "../../Core/ChattersGameInstance.h"
 #include "Blueprint/WidgetTree.h"
 
+void USessionWidget::Show()
+{
+	Super::Show();
+}
+
+void USessionWidget::Hide()
+{
+	if (this->SessionNotificationsContainer)
+	{
+		auto SessionNotificatonsList = this->SessionNotificationsContainer->GetAllChildren();
+
+		for (auto* Notification : SessionNotificatonsList)
+		{
+			if (Notification)
+			{
+				auto SessionNotification = Cast<USessionNotification>(Notification);
+
+				if (SessionNotification)
+				{
+					if (SessionNotification->bDestroying)
+					{
+						SessionNotification->Destroy();
+					}
+				}
+			}
+		}
+	}
+
+	UWidget* NewRoundWidget = this->GetWidgetFromName(TEXT("NewRoundTextWidget"));
+
+	if (NewRoundWidget)
+	{
+		NewRoundWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
+
+
+	Super::Hide();
+
+}
+
+
 void USessionWidget::UpdateAliveBotsText(int32 NumberOfAlive, int32 MaxPlayers)
 {
 	FString AliveBotsString = FString::Printf(TEXT("%d / %d"), NumberOfAlive, MaxPlayers);
@@ -118,19 +159,38 @@ void USessionWidget::SetPlayCommandVisibility(bool bVisible)
 	}
 }
 
-void USessionWidget::SetTeamAliveNumber(EBotTeam Team, int32 Number)
+void USessionWidget::SetTeamAliveNumber(int32 BlueAlive, int32 RedAlive, int32 BlueMaxAlive, int32 RedMaxAlive)
 {
-	FString AliveString = FString::Printf(TEXT("%d"), Number);
-	FText AliveText = FText::FromString(AliveString);
+	auto NumberToText = [](int32 Number)
+	{
+		FString AliveString = FString::Printf(TEXT("%d"), Number);
+		return FText::FromString(AliveString);
+	};
 
-	if (Team == EBotTeam::Blue)
+	this->BlueTeamAlive = NumberToText(BlueAlive);
+	this->RedTeamAlive = NumberToText(RedAlive);
+
+	const int32 TotalAlive = BlueAlive + RedAlive;
+
+	const float BlueAlivePercent = FMath::Clamp(float(BlueAlive) / float(BlueMaxAlive), 0.0f, 1.0f);
+	const float RedAlivePercent = FMath::Clamp(float(RedAlive) / float(RedMaxAlive), 0.0f, 1.0f);
+
+	auto SetWidgetBarWidth = [this](UWidget** Widget, FName Name, float SizeX)
 	{
-		this->BlueTeamAlive = AliveText;
-	}
-	else if (Team == EBotTeam::Red)
-	{
-		this->RedTeamAlive = AliveText;
-	}
+		if (!*Widget)
+		{
+			*Widget = this->GetWidgetFromName(Name);
+		}
+
+		if (*Widget)
+		{
+			(*Widget)->SetRenderScale(FVector2D(SizeX, 1.0f));
+		}
+	};
+
+
+	SetWidgetBarWidth(&this->BlueAliveBarWidget, TEXT("Blue_Score_Bg"), BlueAlivePercent);
+	SetWidgetBarWidth(&this->RedAliveBarWidget, TEXT("Red_Score_Bg"), RedAlivePercent);
 }
 
 void USessionWidget::SetTeamsWrapperVisibility(bool bVisible)
@@ -182,6 +242,29 @@ void USessionWidget::UpdateRoundSeconds(float Seconds)
 	this->RoundTimerText = FText::FromString(RoundTimerString);
 }
 
+void USessionWidget::SetNotificationsContainerWidget()
+{
+	FName ContainerWidgetName = FName(TEXT("Notifications_Container"));
+	this->SessionNotificationsContainer = Cast<UVerticalBox>(this->GetWidgetFromName(ContainerWidgetName));
+}
+
+UVerticalBoxSlot* USessionWidget::AddNotificationToContainer(USessionNotification* Notification)
+{
+	UVerticalBoxSlot* VerticalBoxSlot = Cast<UVerticalBoxSlot>(SessionNotificationsContainer->AddChildToVerticalBox(Notification));
+
+	if (!VerticalBoxSlot)
+	{
+		return nullptr;
+	}
+
+	VerticalBoxSlot->SetHorizontalAlignment(this->KillFeedPosition == EKillFeedPosition::Right ? EHorizontalAlignment::HAlign_Right : EHorizontalAlignment::HAlign_Left);
+	VerticalBoxSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 10.0f));
+
+	Notification->VerticalBoxSlot = VerticalBoxSlot;
+
+	return VerticalBoxSlot;
+}
+
 void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon)
 {
 	if (!this->KillFeedSubclass)
@@ -189,49 +272,39 @@ void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor
 		this->KillFeedSubclass = UKillFeedElement::StaticClass();
 	}
 
-	if (!this->KillFeedContainer)
+	if (!this->SessionNotificationsContainer)
 	{
-		FName KillFeedContainerName = FName(TEXT("KillFeed_Container"));
-		this->KillFeedContainer = Cast<UVerticalBox>(this->GetWidgetFromName(KillFeedContainerName));
-		if (!this->KillFeedContainer)
+		this->SetNotificationsContainerWidget();
+
+		if (!this->SessionNotificationsContainer)
 		{
 			return;
 		}
 	}
 
-	UKillFeedElement* KillFeedElement = this->WidgetTree->ConstructWidget<UKillFeedElement>(this->KillFeedSubclass, UKillFeedElement::GenerateName());
+	UKillFeedElement* KillFeedElement = this->WidgetTree->ConstructWidget<UKillFeedElement>(this->KillFeedSubclass, USessionNotification::GenerateName());
 
 	if (!KillFeedElement)
 	{
 		return;
 	}
 
+	KillFeedElement->Init(KillerName, VictimName);
 	KillFeedElement->SetNicknameColors(KillerColor, VictimColor);
 	KillFeedElement->SetIcon(Icon);
 
-	UVerticalBoxSlot* VerticalBoxSlot = Cast<UVerticalBoxSlot>(KillFeedContainer->AddChildToVerticalBox(KillFeedElement));
+	this->AddNotificationToContainer(KillFeedElement);
+	SessionNotifications.Add(KillFeedElement);
 
-	if (!VerticalBoxSlot)
+	if (SessionNotifications.Num() > this->MaxKillFeedElements)
 	{
-		return;
-	}
-
-	VerticalBoxSlot->SetHorizontalAlignment(this->KillFeedPosition == EKillFeedPosition::Right ? EHorizontalAlignment::HAlign_Right : EHorizontalAlignment::HAlign_Left);
-	VerticalBoxSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 10.0f));
-
-	KillFeedElement->VerticalBoxSlot = VerticalBoxSlot;
-	KillFeedElement->Init(KillerName, VictimName);
-	KillFeedElements.Add(KillFeedElement);
-
-	if (this->KillFeedElements.Num() > this->MaxKillFeedElements)
-	{
-		auto* FirstElement = this->KillFeedElements[0];
+		auto* FirstElement = SessionNotifications[0];
 
 		if (FirstElement)
 		{
 			FirstElement->StartDestroying();
-			this->KillFeedElements[0] = nullptr;
-			this->KillFeedElements.RemoveAt(0, 1, true);
+			SessionNotifications[0] = nullptr;
+			SessionNotifications.RemoveAt(0, 1, true);
 		}
 	}
 }
@@ -242,11 +315,66 @@ void USessionWidget::SetKillFeedPosition(EKillFeedPosition Position)
 
 	EHorizontalAlignment HorizontalAlignment = this->KillFeedPosition == EKillFeedPosition::Right ? EHorizontalAlignment::HAlign_Right : EHorizontalAlignment::HAlign_Left;
 
-	for (auto* KillFeedElement : this->KillFeedElements)
+	for (auto* Notification : SessionNotifications)
 	{
-		if (KillFeedElement && KillFeedElement->IsValidLowLevel() && KillFeedElement->VerticalBoxSlot)
+		if (Notification && Notification->IsValidLowLevel() && Notification->VerticalBoxSlot)
 		{
-			KillFeedElement->VerticalBoxSlot->SetHorizontalAlignment(HorizontalAlignment);
+			Notification->VerticalBoxSlot->SetHorizontalAlignment(HorizontalAlignment);
+		}
+	}
+}
+
+void USessionWidget::ClearAllNotifications()
+{
+	for (auto* Notification : SessionNotifications)
+	{
+		if (Notification && Notification->IsValidLowLevel())
+		{
+			Notification->StartDestroying();
+		}
+	}
+
+	this->SessionNotifications.Empty();
+}
+
+void USessionWidget::OnViewerJoined(FString Nickname, FLinearColor NameColor)
+{
+	if (!this->ViewerNotificationClass)
+	{
+		this->ViewerNotificationClass = UViewerJoinNotification::StaticClass();
+	}
+
+	if (!this->SessionNotificationsContainer)
+	{
+		this->SetNotificationsContainerWidget();
+
+		if (!this->SessionNotificationsContainer)
+		{
+			return;
+		}
+	}
+
+	UViewerJoinNotification* Notification = this->WidgetTree->ConstructWidget<UViewerJoinNotification>(this->ViewerNotificationClass, USessionNotification::GenerateName());
+
+	if (!Notification)
+	{
+		return;
+	}
+
+	Notification->Init(Nickname, NameColor);
+
+	this->AddNotificationToContainer(Notification);
+	SessionNotifications.Add(Notification);
+
+	if (SessionNotifications.Num() > this->MaxJoiningNotificationElements)
+	{
+		auto* FirstElement = SessionNotifications[0];
+
+		if (FirstElement)
+		{
+			FirstElement->StartDestroying();
+			SessionNotifications[0] = nullptr;
+			SessionNotifications.RemoveAt(0, 1, true);
 		}
 	}
 }
@@ -255,14 +383,14 @@ void USessionWidget::NativeTick(const FGeometry& MyGeometry, float DeltaTime)
 {
 	Super::NativeTick(MyGeometry, DeltaTime);
 
-	for (int32 i = 0; i < this->KillFeedElements.Num(); i++)
+	for (int32 i = 0; i < SessionNotifications.Num(); i++)
 	{
-		auto* KillFeedElement = this->KillFeedElements[i];
+		auto* KillFeedElement = SessionNotifications[i];
 
 		if (!KillFeedElement || KillFeedElement->bDestroying)
 		{
-			this->KillFeedElements[i] = nullptr;
-			this->KillFeedElements.RemoveAt(i, 1, true);
+			SessionNotifications[i] = nullptr;
+			SessionNotifications.RemoveAt(i, 1, true);
 			i--;
 		}
 		else

@@ -19,7 +19,10 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "../Misc/Misc.h"
 #include "Components/BoxComponent.h"
+#include "../Combat/FirearmProjectile.h"
 #include "../Misc/BloodDecal.h"
+#include "NiagaraSystem.h"
+#include "Sound/SoundBase.h"
 #include "Bot.generated.h"
 
 
@@ -72,24 +75,30 @@ public:
 	float CurrentYaw = 0.0f;
 };
 
-USTRUCT()
-struct FBulletHitResult
-{
-	GENERATED_BODY()
-public:
-	FHitResult HitResult;
-	ABot* BotToDamage = nullptr;
-	AExplodingBarrel* ExplodingBarrel = nullptr;
-};
+
 
 USTRUCT()
 struct FBotTarget
 {
 	GENERATED_BODY()
 public:
-	AActor* Actor = nullptr;
-	ABot* Bot = nullptr;
+	UPROPERTY()
+		AActor* Actor = nullptr;
+	UPROPERTY()
+		ABot* Bot = nullptr;
+	UPROPERTY()
 	ETargetType TargetType = ETargetType::None;
+};
+
+USTRUCT(BlueprintType)
+struct FEyesRotation
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FRotator LeftEye = FRotator(0.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FRotator RightEye = FRotator(0.0f);
 };
 
 class UChattersGameSession;
@@ -114,6 +123,8 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	virtual void Destroyed() override;
 
 public:
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
@@ -175,10 +186,24 @@ public:
 	EWeaponType GetWeaponType();
 
 	bool IsEnemy(ABot* BotToCheck);
-private:
-	bool bReady = false;
+
+	void SetNewEnemyTarget(ABot* TargetBot);
+
+	void UpdateEquipmentTeamColors();
 
 	void SetEquipment();
+
+	void SpawnBloodParticle(FVector ImpactPoint, FVector CauserLocation);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		USoundBase* FallDamageSound = nullptr;
+
+	void SpawnReloadingParticle(UNiagaraSystem* Particle, FTransform Transform);
+
+	/** Useful when bot is stuck */
+	void RespawnAtRandomPlace();
+private:
+	bool bReady = false;
 
 	void MoveToRandomLocation();
 
@@ -192,6 +217,8 @@ private:
 
 	bool bHatAttached = false;
 
+	bool bCanHatBeDetached = false;
+
 	float SecondsAfterDeath = 0.0f;
 
 	void TryDetachHat();
@@ -202,7 +229,6 @@ private:
 
 	void FindNewEnemyTarget();
 
-	void SetNewEnemyTarget(ABot* TargetBot);
 
 	FVector MovingTarget;
 
@@ -297,8 +323,16 @@ private:
 		ABloodDecal* FloorBloodDecalActor = nullptr;
 
 	FManualTimer AimingTime = FManualTimer(0.2f);
+
+
+	bool bFallingLastTick = false;
+
+	float FallingStartZLocation = 0.0f;;
+
+	int32 StuckCount = 0;
 private:
-	FBotTarget Target;
+	UPROPERTY()
+		FBotTarget Target;
 
 	float SecondsSinceLastBarrelsCheck = 0.0f;
 public:
@@ -335,7 +369,10 @@ public:
 		UWeaponItem* GetWeaponRef();
 
 	UPROPERTY(EditDefaultsOnly)
-		UParticleSystem* BloodParticle = nullptr;
+		UNiagaraSystem* BloodNiagaraParticle = nullptr;
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		UNiagaraSystem* GetDefaultBloodParticle();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool bShouldApplyGunAnimation = false;
@@ -376,4 +413,7 @@ public:
 	void Clear();
 
 	void RemoveBloodDecal();
+
+	UFUNCTION(BlueprintCallable)
+		FEyesRotation GetEyesRotation();
 };

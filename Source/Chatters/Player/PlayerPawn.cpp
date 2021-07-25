@@ -45,6 +45,8 @@ void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	this->CachedCameraLocation = this->Camera->GetComponentLocation();
+
 	if (this->bReady)
 	{
 		this->UpdateBotNicknameWidgets();
@@ -154,7 +156,7 @@ void APlayerPawn::DetachFromBot()
 
 float APlayerPawn::GetDistanceFromCamera(FVector Location)
 {
-	FVector const CameraLocation = this->Camera->GetComponentLocation();
+	FVector const CameraLocation = this->GetCameraLocation();
 	return FVector::Dist(CameraLocation, Location);
 }
 
@@ -183,7 +185,7 @@ void APlayerPawn::UpdateBotNicknameWidgets()
 			continue;
 		}
 
-		FVector const CameraLocation = this->Camera->GetComponentToWorld().GetLocation();
+		FVector const CameraLocation = this->GetCameraLocation();
 		FVector const BotLocation = Bot->GetActorLocation();
 		float const DistanceFromBot = FVector::Dist(CameraLocation, BotLocation);
 
@@ -352,4 +354,18 @@ void APlayerPawn::Init()
 {
 	this->bReady = true;
 	APlayerPawn::Singleton = this;
+}
+
+
+FVector APlayerPawn::GetCameraLocation()
+{
+	return this->CachedCameraLocation;
+}
+
+void APlayerPawn::RespawnAttachedBot()
+{
+	if (this->bAttachedToBot && this->BotToAttach)
+	{
+		this->BotToAttach->RespawnAtRandomPlace();
+	}
 }

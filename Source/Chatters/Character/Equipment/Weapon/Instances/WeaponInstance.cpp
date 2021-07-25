@@ -19,18 +19,46 @@ void UWeaponInstance::Tick(float DeltaTime)
     {
         if (this->bShouldPlayHitAnimation)
         {
-            this->HitAnimationTime += DeltaTime;
-            if (this->HitAnimationTime >= this->WeaponRef->TimeToPlayHitAnimation)
+            if (this->bHitPrevTick)
             {
-                this->HitAnimationTime = 0.0f;
-                this->bShouldPlayHitAnimation = false;
+                this->bHitPrevTick = false;
+                this->SecondsWithoutHit.Reset();
             }
+            else
+            {
+                this->SecondsWithoutHit.Add(DeltaTime);
+
+                //if (this->SecondsWithoutHit.IsEnded())
+                //{
+                    //this->SecondsWithoutHit.Reset();
+                    //if (this->WeaponRef->bLoopingHitAnimation)
+                    //{
+                    //    this->bShouldPlayHitAnimation = false;
+                    //}
+                //}
+            }
+
+
+            if (!this->WeaponRef->bLoopingHitAnimation)
+            {
+                this->HitAnimationTime += DeltaTime;
+                if (this->HitAnimationTime >= this->WeaponRef->TimeToPlayHitAnimation)
+                {
+                    this->HitAnimationTime = 0.0f;
+                    this->bShouldPlayHitAnimation = false;
+                }
+            }
+
         }
     }
 }
 
 void UWeaponInstance::Init()
 {
+    if (this->WeaponRef)
+    {
+        this->SecondsWithoutHit.Max = this->WeaponRef->TimeToPlayHitAnimation;
+    }
 }
 
 int32 UWeaponInstance::GetDamage()

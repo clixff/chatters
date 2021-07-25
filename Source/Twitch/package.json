@@ -6,9 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
-    "start": "node --experimental-modules --es-module-specifier-resolution=node dist/index.js",
+    "start": "SET NODE_ENV=development && node --experimental-modules --es-module-specifier-resolution=node dist/index.js",
     "dev": "npm run build && npm run start",
-    "pkg": "pkg -t node14-win-x64 package.json --output ../../Binaries/Win64/twitch-app.exe"
+    "pkg": "pkg -t node14-win-x64 package.json --output ../../Binaries/Win64/ChattersTwitchApp.exe"
   },
   "author": "",
   "license": "ISC",

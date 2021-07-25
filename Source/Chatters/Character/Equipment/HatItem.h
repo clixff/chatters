@@ -14,4 +14,7 @@ class CHATTERS_API UHatItem : public UStaticMeshEquipmentItem
 {
 	GENERATED_BODY()
 	
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		bool bCanDetach = true;
 };

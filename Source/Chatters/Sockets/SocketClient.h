@@ -72,4 +72,10 @@ public:
 	void RevokeToken(FString Token);
 
 	void OnLevelLoaded();
+
+	void CheckForUpdates();
+
+	void OnGameUpdateAvailable(sio::event& ev);
+
+	void OnTargetCommand(sio::event& ev);
 };

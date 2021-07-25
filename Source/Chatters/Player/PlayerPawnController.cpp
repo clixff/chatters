@@ -6,6 +6,8 @@
 #include "../Core/ChattersGameInstance.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "../Character/Bot.h"
+#include "GameFramework/PlayerInput.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "../Core/ChattersGameSession.h"
 
 APlayerPawnController::APlayerPawnController()
@@ -65,7 +67,8 @@ void APlayerPawnController::SetupInputComponent()
 	this->InputComponent->BindAction("Slomo", IE_Released, this, &APlayerPawnController::OnSlowmoEnd);
 
 	this->InputComponent->BindAction("Esc", IE_Pressed, this, &APlayerPawnController::OnEscPressed);
-
+	this->InputComponent->BindAction("GameJoin", IE_Pressed, this, &APlayerPawnController::OnGameJoinPressed);
+	this->InputComponent->BindAction("Respawn", IE_Pressed, this, &APlayerPawnController::OnRespawnBotPressed);
 
 ;}
 
@@ -390,7 +393,7 @@ void APlayerPawnController::OnEscPressed()
 
 	if (GameInstance->GetIsInMainMenu())
 	{
-
+		//
 	}
 	else
 	{
@@ -414,5 +417,95 @@ void APlayerPawnController::OnEscPressed()
 				GameSession->PauseGame();
 			}
 		}
+	}
+}
+
+void APlayerPawnController::OnGameJoinPressed()
+{
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (!GameSession)
+	{
+		return;
+	}
+
+	if (GameSession->SessionType != ESessionType::Twitch || !GameSession->bCanViewersJoin)
+	{
+		return;
+	}
+
+	auto* GameInstance = UChattersGameInstance::Get();
+
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	auto AuthData = GameInstance->TwitchAuthData;
+
+	if (!AuthData.bSignedIn || AuthData.DisplayName.IsEmpty())
+	{
+		return;
+	}
+
+
+	ABot* Bot =  GameSession->OnViewerJoin(AuthData.DisplayName);
+
+	auto* PlayerPawnRef = this->GetPlayerPawn();
+
+	if (Bot && PlayerPawnRef)
+	{
+		PlayerPawnRef->AttachToBot(Bot);
+	}
+	
+	auto* SessionWidget = GameSession->GetSessionWidget();
+
+	if (SessionWidget)
+	{
+		SessionWidget->SetStreamerJoinTipVisible(false);
+	}
+}
+
+void APlayerPawnController::OnRespawnBotPressed()
+{
+	if (!this->bCanControl)
+	{
+		return;
+	}
+
+	auto* PlayerPawnRef = this->GetPlayerPawn();
+
+	if (!PlayerPawnRef)
+	{
+		return;
+	}
+
+	PlayerPawnRef->RespawnAttachedBot();
+}
+
+void APlayerPawnController::SetMouseSensitivity(int32 Sensitivity)
+{
+	const float MinSensitivityFloat = 0.0001f;
+	const float MaxSensitivityFloat = 0.45f;
+
+	const int32 MinSensitivity = 1;
+	const int32 MaxSensitivity = 100;
+
+	Sensitivity = FMath::Clamp(Sensitivity, MinSensitivity, MaxSensitivity);
+
+	float SensitivityScale = UKismetMathLibrary::NormalizeToRange(Sensitivity, 1, 100);
+
+	float NewSensitivity = FMath::Lerp(MinSensitivityFloat, MaxSensitivityFloat, SensitivityScale);
+
+	UE_LOG(LogTemp, Display, TEXT("[APlayerPawnController] Set mouse sensivitiy to %f"), NewSensitivity);
+
+	if (this->PlayerInput)
+	{
+		this->PlayerInput->SetMouseSensitivity(NewSensitivity);
 	}
 }

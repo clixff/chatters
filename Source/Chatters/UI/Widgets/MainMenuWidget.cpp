@@ -86,6 +86,7 @@ void UMainMenuWidget::Show()
 	if (GameInstance)
 	{
 		this->UpdateTwitchData(GameInstance->TwitchAuthData);
+		this->SetUpdateAvailableWidgetVisible(GameInstance->bUpdateAvailable);
 	}
 
 }
@@ -158,6 +159,17 @@ void UMainMenuWidget::SetSelectedLevel(int32 NewSelectedLevel)
 		auto* MapPreviewWidget = this->MapPreviewWidgets[i];
 
 		MapPreviewWidget->SetActiveStatus(i == NewSelectedLevel);
+	}
+
+	auto& SelectedLevelRef = this->LevelsList[NewSelectedLevel];
+
+	this->UpdateWeaponsList(SelectedLevelRef.WeaponsIcons);
+
+	this->WeaponsAvailableList.Empty();
+
+	for (auto& WeaponIcon : SelectedLevelRef.WeaponsIcons)
+	{
+		this->WeaponsAvailableList.Add(WeaponIcon.Name);
 	}
 }
 
@@ -323,5 +335,36 @@ void UMainMenuWidget::OnTwitchLogoutClick()
 	if (GameInstance)
 	{
 		GameInstance->OnTwitchAuthDataLoaded(false, TEXT(""));
+	}
+}
+
+void UMainMenuWidget::OpenGameUpdateURL()
+{
+	static const FString URL = TEXT("https://github.com/clixff/chatters/releases");
+
+	UKismetSystemLibrary::LaunchURL(URL);
+}
+
+void UMainMenuWidget::OnWeaponClick(int32 WeaponID)
+{
+	auto SelectedLevelRef = this->LevelsList[this->SelectedLevel];
+	auto WeaponList = SelectedLevelRef.WeaponsIcons;
+
+	if (WeaponID < WeaponList.Num())
+	{
+		auto Weapon = WeaponList[WeaponID];
+
+		bool bWeaponSelected = this->WeaponsAvailableList.Contains(Weapon.Name);
+
+		if (bWeaponSelected)
+		{
+			this->WeaponsAvailableList.Remove(Weapon.Name);
+		}
+		else
+		{
+			this->WeaponsAvailableList.Add(Weapon.Name);
+		}
+
+		this->SetWeaponSelected(WeaponID, !bWeaponSelected);
 	}
 }

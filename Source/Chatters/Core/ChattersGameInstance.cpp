@@ -46,6 +46,10 @@ void UChattersGameInstance::Init()
 
 	this->UpdateGameVolume(this->SavedSettings->GameVolume);
 
+	this->SetVSyncEnabled(this->SavedSettings->bVSync);
+
+	this->SetMaxFPS(this->SavedSettings->MaxFPS);
+
 	this->ReturnToTheMainMenu();
 
 #if UE_BUILD_SHIPPING
@@ -107,6 +111,14 @@ void UChattersGameInstance::LoadComplete(const float LoadTime, const FString& Ma
 		}
 	}
 
+
+	auto* PlayerPawnController = Cast<APlayerPawnController>(this->GetPlayerController());
+
+	if (PlayerPawnController)
+	{
+		PlayerPawnController->bCanControl = !this->bInMainMenu;
+	}
+
 	this->SetIsGamePaused(false);
 
 	if (this->SavedSettings)
@@ -124,13 +136,6 @@ void UChattersGameInstance::SetIsInMainMenu(bool bInMainMenuNew)
 	}
 
 	this->bInMainMenu = bInMainMenuNew;
-
-	auto* PlayerPawnController = Cast<APlayerPawnController>(this->GetPlayerController());
-
-	if (PlayerPawnController)
-	{
-		PlayerPawnController->bCanControl = !this->bInMainMenu;
-	}
 
 	if (bInMainMenu)
 	{
@@ -366,15 +371,18 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 
 	auto* WidgetManagerRef = this->GetWidgetManager();
 
+	TSet<FString> AvailableWeapons;
+
 	if (WidgetManagerRef)
 	{
+		if (WidgetManagerRef->MainMenuWidget)
+		{
+			WidgetManagerRef->MainMenuWidget->Hide();
+			AvailableWeapons = WidgetManagerRef->MainMenuWidget->WeaponsAvailableList;
+		}
+
 		if (WidgetManagerRef->LoadingWidget)
 		{
-			if (WidgetManagerRef->MainMenuWidget)
-			{
-				WidgetManagerRef->MainMenuWidget->Hide();
-			}
-
 			WidgetManagerRef->LoadingWidget->Show();
 		}
 	}
@@ -382,6 +390,7 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 	this->GameSession = NewObject<UChattersGameSession>(this, this->GameSessionClass, TEXT("GameSession"));
 
 	this->GameSession->Init(LevelName);
+	this->GameSession->AvailableWeapons = AvailableWeapons;
 }
 
 bool UChattersGameInstance::GetIsInMainMenu()
@@ -442,7 +451,7 @@ void UChattersGameInstance::SetGraphicsQuality(EGraphicsQualityLevel GraphicsQua
 
 	GameUserSettings->SetFullscreenMode(EWindowMode::Type::WindowedFullscreen);
 
-	GameUserSettings->SetVSyncEnabled(true);
+	//GameUserSettings->SetVSyncEnabled(true);
 
 	GameUserSettings->ApplySettings(true);
 
@@ -461,10 +470,82 @@ void UChattersGameInstance::FixShadowsQuality()
 	}
 }
 
+void UChattersGameInstance::SetVSyncEnabled(bool bEnabled)
+{
+	if (!GEngine)
+	{
+		return;
+	}
+
+	auto* GameUserSettings = GEngine->GetGameUserSettings();
+
+	if (!GameUserSettings)
+	{
+		return;
+	}
+
+	GameUserSettings->SetVSyncEnabled(bEnabled);
+
+	GameUserSettings->ApplySettings(true);
+}
+
+void UChattersGameInstance::SetMaxFPS(int32 MaxFPS)
+{
+	if (!GEngine)
+	{
+		return;
+	}
+
+	auto* GameUserSettings = GEngine->GetGameUserSettings();
+
+	if (!GameUserSettings)
+	{
+		return;
+	}
+
+	GameUserSettings->SetFrameRateLimit(MaxFPS);
+
+	GameUserSettings->ApplySettings(true);
+}
+
 float UChattersGameInstance::UpdateGameVolume_Implementation(float Volume)
 {
 	Volume = FMath::Clamp(Volume, 0.0f, 100.0f);
 
 
 	return Volume / 100.0f;
+}
+
+FString UChattersGameInstance::GetGameVersion()
+{
+	FString ProjectVersion;
+	GConfig->GetString(
+		TEXT("/Script/EngineSettings.GeneralProjectSettings"),
+		TEXT("ProjectVersion"),
+		ProjectVersion,
+		GGameIni
+	);
+
+	return ProjectVersion;
+}
+
+void UChattersGameInstance::SetUpdateAvailable(bool bUpdateAvailableValue)
+{
+	this->bUpdateAvailable = bUpdateAvailableValue;
+
+	if (this->GetWidgetManager())
+	{
+		auto* MainMenuWidget = this->GetWidgetManager()->MainMenuWidget;
+
+		if (MainMenuWidget)
+		{
+			AsyncTask(ENamedThreads::GameThread, [bUpdateAvailableValue, MainMenuWidget]() {
+
+				if (MainMenuWidget)
+				{
+					MainMenuWidget->SetUpdateAvailableWidgetVisible(bUpdateAvailableValue);
+				}
+			});
+		}
+	}
 }

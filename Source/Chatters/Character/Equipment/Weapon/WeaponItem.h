@@ -38,11 +38,17 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		int32 MaxDamage = 0;
 
+	UPROPERTY(EditDefaultsOnly)
+		float ImpulseForce = 1000.0f;
+
 	UPROPERTY(VisibleAnywhere)
 		EWeaponType Type = EWeaponType::None;
 
 	UPROPERTY(EditDefaultsOnly)
 		float TimeToPlayHitAnimation = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly)
+		bool bLoopingHitAnimation = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		UBlendSpace* IdleBlendSpace = nullptr;
@@ -58,4 +64,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		FKillFeedIcon KillFeedIcon;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		TArray<FMaterialSlots> TeamMaterials;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UBlendSpace1D* RunBlendSpace = nullptr;
 };

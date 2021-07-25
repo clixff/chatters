@@ -2,6 +2,7 @@
 
 #include "Process.h"
 #include "Misc/Paths.h"
+#include <tlhelp32.h>
 
 
 FNodeChildProcess* FNodeChildProcess::Singleton = nullptr;
@@ -20,7 +21,7 @@ FNodeChildProcess::~FNodeChildProcess()
 
 void FNodeChildProcess::StartProcess()
 {
-	static const FString ExePathString = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()) + TEXT("Binaries/Win64/") + TEXT("twitch-app.exe");
+	static const FString ExePathString = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()) + TEXT("Binaries/Win64/") + TEXT("ChattersTwitchApp.exe");
 
 	UE_LOG(LogTemp, Display, TEXT("[FNodeChildProcess] Exe path is %s"), *ExePathString);
 
@@ -34,6 +35,31 @@ void FNodeChildProcess::StartProcess()
 		UE_LOG(LogTemp, Error, TEXT("[FNodeChildProcess] CreateProcess failed: %d"), GetLastError());
 	}
 
+}
+
+void FNodeChildProcess::TerminateOldProcess()
+{
+	PROCESSENTRY32 processEntry;
+	processEntry.dwSize = sizeof(PROCESSENTRY32);
+
+	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+    if (Process32First(snapshot, &processEntry) == TRUE)
+    {
+        while (Process32Next(snapshot, &processEntry) == TRUE)
+        {
+            if (_wcsicmp(processEntry.szExeFile, L"ChattersTwitchApp.exe") == 0)
+            {
+                HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processEntry.th32ProcessID);
+
+                TerminateProcess(hProcess, 0);
+
+                CloseHandle(hProcess);
+            }
+        }
+    }
+    
+    CloseHandle(snapshot);
 }
 
 void FNodeChildProcess::Shutdown()
@@ -68,8 +94,8 @@ bool FNodeChildProcess::Init()
 uint32 FNodeChildProcess::Run()
 {
 	UE_LOG(LogTemp, Display, TEXT("[FNodeChildProcess] ::Run()"));
+	this->TerminateOldProcess();
 	this->StartProcess();
-
 	return 0;
 }
 
