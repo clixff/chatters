@@ -14,7 +14,6 @@ void USavedSettings::FixLoadedData()
 {
 	this->GameVolume = FMath::Clamp(this->GameVolume, 0, 100);
 	this->DefaultMaxPlayers = FMath::Clamp(this->DefaultMaxPlayers, 1, 1000);
-	this->MaxFPS = FMath::Clamp(this->MaxFPS, 30, 240);
 	this->MouseSensitivity = FMath::Clamp(this->MouseSensitivity, 1, 100);
 }
 
@@ -68,7 +67,7 @@ void USavedSettings::ApplyParams()
 	{
 		GameInstance->UpdateGameVolume(this->GameVolume);
 
-		GameInstance->SetMaxFPS(this->MaxFPS);
+		GameInstance->SetMaxFPS(this->FPSLimitValue);
 
 		auto* PlayerController = Cast<APlayerPawnController>(GameInstance->GetPlayerController());
 
@@ -91,7 +90,7 @@ void USavedSettings::SetDefaultParams()
 	this->DefaultMaxPlayers = 100;
 	this->TwitchToken = TEXT("");
 	this->bVSync = true;
-	this->MaxFPS = 60;
+	this->FPSLimitValue = EFPSLimitType::L_60;
 	this->MouseSensitivity = 22;
 }
 

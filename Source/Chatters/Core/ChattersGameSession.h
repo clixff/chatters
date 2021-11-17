@@ -19,7 +19,7 @@
  * 
  */
 UCLASS(BlueprintType, Blueprintable)
-class CHATTERS_API UChattersGameSession : public UObject
+class CHATTERS_API UChattersGameSession : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
 	
@@ -138,4 +138,21 @@ private:
 	int32 RoundNumber = 1;
 
 	FCriticalSection Mutex;
+
+public:
+	// Begin FTickableGameObject Interface.
+	virtual void Tick(float DeltaTime) override;
+	virtual bool IsTickable() const override;
+	virtual TStatId GetStatId() const override;
+	virtual bool IsTickableInEditor() const override;
+	virtual bool IsTickableWhenPaused() const override;
+	// End FTickableGameObject Interface.
+
+public:
+	bool bGameEndedSlomoActivated = false;
+	FManualTimer GameEndedSlomoTimeout = FManualTimer(5.0f);
+
+	FManualTimer UpdateHeadAnimationModesTimer = FManualTimer(1.0f);
+
+	void UpdateHeadAnimationModes();
 };

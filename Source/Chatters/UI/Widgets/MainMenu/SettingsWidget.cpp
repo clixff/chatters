@@ -67,7 +67,34 @@ void USettingsWidget::OnSettingChanged(FString SettingKey, FString SettingValue)
 			GameInstance->SetVSyncEnabled(Settings->bVSync);
 		}
 	}
+	else if (SettingKey == TEXT("MaxFPS"))
+	{
+		if (SettingValue == TEXT("None"))
+		{
+			Settings->FPSLimitValue = EFPSLimitType::None;
+		}
+		else if (SettingValue == TEXT("L_30"))
+		{
+			Settings->FPSLimitValue = EFPSLimitType::L_30;
+		}
+		else if (SettingValue == TEXT("L_60"))
+		{
+			Settings->FPSLimitValue = EFPSLimitType::L_60;
+		}
+		else if (SettingValue == TEXT("L_120"))
+		{
+			Settings->FPSLimitValue = EFPSLimitType::L_120;
+		}
+		else if (SettingValue == TEXT("L_240"))
+		{
+			Settings->FPSLimitValue = EFPSLimitType::L_240;
+		}
 
+		if (GameInstance)
+		{
+			GameInstance->SetMaxFPS(Settings->FPSLimitValue);
+		}
+	}
 
 	this->SetSettingValue(SettingKey, SettingValue);
 }
@@ -99,8 +126,8 @@ void USettingsWidget::Init()
 	this->SetSettingValue(TEXT("KillFeed"), USettingsWidget::KillFeedPositionToString(Settings->KillFeedPosition));
 	this->SetSettingValue(TEXT("VSync"), Settings->bVSync ? TEXT("On") : TEXT("Off"));
 	this->UpdateGameVolumeSlider(Settings->GameVolume);
-	this->UpdateMaxFpsSlider(Settings->MaxFPS);
 	this->UpdateMouseSensitivitySlider(Settings->MouseSensitivity);
+	this->SetSettingValue(TEXT("MaxFPS"), USettingsWidget::FPSLimitToString(Settings->FPSLimitValue));
 
 	this->bInitialized = true;
 }
@@ -136,14 +163,6 @@ void USettingsWidget::SetGameVolume()
 	if (this->SavedSettings)
 	{
 		this->SavedSettings->GameVolume = this->GameVolume;
-	}
-}
-
-void USettingsWidget::SetMaxFPS()
-{
-	if (this->SavedSettings)
-	{
-		this->SavedSettings->MaxFPS = this->MaxFPS;
 	}
 }
 
@@ -202,5 +221,23 @@ FString USettingsWidget::KillFeedPositionToString(EKillFeedPosition KillFeedPosi
 	else
 	{
 		return TEXT("Left");
+	}
+}
+
+FString USettingsWidget::FPSLimitToString(EFPSLimitType MaxFPS)
+{
+	switch (MaxFPS)
+	{
+	case EFPSLimitType::L_30:
+		return TEXT("L_30");
+	case EFPSLimitType::L_60:
+		return TEXT("L_60");
+	case EFPSLimitType::L_120:
+		return TEXT("L_120");
+	case EFPSLimitType::L_240:
+		return TEXT("L_240");
+	case EFPSLimitType::None:
+	default:
+		return TEXT("None");
 	}
 }

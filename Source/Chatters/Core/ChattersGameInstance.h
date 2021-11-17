@@ -86,7 +86,7 @@ public:
 
 	void SetVSyncEnabled(bool bEnabled);
 
-	void SetMaxFPS(int32 MaxFPS);
+	void SetMaxFPS(EFPSLimitType MaxFPS);
 
 	UFUNCTION(BlueprintNativeEvent)
 		float UpdateGameVolume(float Volume);

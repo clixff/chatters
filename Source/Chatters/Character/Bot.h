@@ -25,6 +25,9 @@
 #include "Sound/SoundBase.h"
 #include "Bot.generated.h"
 
+DECLARE_STATS_GROUP(TEXT("BOTS_Game"), STATGROUP_BOTS, STATCAT_Advanced);
+
+class APlayerPawn;
 
 UENUM(BlueprintType)
 enum class EYawRotatingType : uint8
@@ -125,6 +128,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void Destroyed() override;
+
 
 public:
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
@@ -338,6 +342,10 @@ private:
 public:
 	static ABot* CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject);
 public:
+	/** Capsule hitbox for melee fight  */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+		UCapsuleComponent* MeleeHitbox;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		USkeletalMeshComponent* HeadMesh;
 
@@ -416,4 +424,20 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		FEyesRotation GetEyesRotation();
+private:
+	bool bRigidBodiesSleep = false;
+
+	FManualTimer HatDetachedTimer = FManualTimer(3.5f);
+
+	FManualTimer WeaponDetachTimer = FManualTimer(3.5f);
+
+public:
+	/** Should use head animation blueprint or simple Master Pose Component */
+	bool bUseDetailedHeadAnimation = false;
+
+	/** Based on distance from camera and other states changes bUseDetailedHeadAnimation value */
+	void UpdateHeadAnimationType(APlayerPawn* PlayerRef = nullptr, bool bForce = false);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		TSubclassOf<UAnimInstance> HeadAnimationBlueprint = nullptr;
 };

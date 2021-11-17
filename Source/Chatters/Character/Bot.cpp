@@ -18,10 +18,14 @@
 #include "NiagaraFunctionLibrary.h"
 #include "../Core/ChattersGameSession.h"
 
-DECLARE_STATS_GROUP(TEXT("BOTS_Game"), STATGROUP_BOTS, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("Bot Tick Time"), STAT_StatsBotTick, STATGROUP_BOTS);
+DECLARE_CYCLE_STAT(TEXT("Bot Tick Alive Time"), STAT_StatsBotAliveTick, STATGROUP_BOTS);
+DECLARE_CYCLE_STAT(TEXT("Bot Tick Dead Time"), STAT_StatsBotDeadTick, STATGROUP_BOTS);
 DECLARE_CYCLE_STAT(TEXT("CombatTick Time"), STAT_StatsCombatTick, STATGROUP_BOTS);
 DECLARE_CYCLE_STAT(TEXT("FirearmCombatTick Time"), STAT_StatsFirearmCombatTick, STATGROUP_BOTS);
 DECLARE_CYCLE_STAT(TEXT("MeleeCombatTick Time"), STAT_StatsMeleeCombatTick, STATGROUP_BOTS);
+
+
 
 
 const float ABot::MinAimRotationValue = 0.0f;
@@ -63,6 +67,9 @@ ABot::ABot()
 	this->NameWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	this->NameWidgetComponent->SetWidgetClass(UBotNameWidget::StaticClass());
 
+	this->MeleeHitbox = CreateDefaultSubobject<UCapsuleComponent>(TEXT("MeleeHitbox"));
+	this->MeleeHitbox->SetupAttachment(GetMesh());
+
 }
 
 ABot::~ABot()
@@ -85,149 +92,195 @@ void ABot::BeginPlay()
 
 	this->MaxHealthPoints = 100;
 	this->HealthPoints = this->MaxHealthPoints;
+
+	this->UpdateHeadAnimationType(nullptr, true);
 }
 
 // Called every frame
 void ABot::Tick(float DeltaTime)
 {
+	SCOPE_CYCLE_COUNTER(STAT_StatsBotTick);
+
 	Super::Tick(DeltaTime);
 
 
 	if (this->bAlive)
 	{
-		if (this->WeaponInstance)
 		{
-			this->WeaponInstance->Tick(DeltaTime);
-
-			//if (this->bPlayerAttached)
-			//{
-			//	UE_LOG(LogTemp, Display, TEXT("[ABot] %s bShouldPlayHitAnimation: %d. No hit time: %f s"), *this->DisplayName, this->ShouldPlayWeaponHitAnimation(), this->WeaponInstance->SecondsWithoutHit.Current);
-			//}
-
-			if (this->bTestAiming)
+			SCOPE_CYCLE_COUNTER(STAT_StatsBotAliveTick);
+			if (this->WeaponInstance)
 			{
-				this->TestAimingTick(DeltaTime);
+				this->WeaponInstance->Tick(DeltaTime);
+
+				//if (this->bPlayerAttached)
+				//{
+				//	UE_LOG(LogTemp, Display, TEXT("[ABot] %s bShouldPlayHitAnimation: %d. No hit time: %f s"), *this->DisplayName, this->ShouldPlayWeaponHitAnimation(), this->WeaponInstance->SecondsWithoutHit.Current);
+				//}
+
+				if (this->bTestAiming)
+				{
+					this->TestAimingTick(DeltaTime);
+				}
+				else
+				{
+					//this->CombatTickTimeout.Add(DeltaTime);
+
+					//if (this->CombatTickTimeout.IsEnded())
+					//{
+						this->CombatTick(DeltaTime);
+					//	this->CombatTickTimeout.Reset();
+					//}
+				}
+
+			}
+
+			auto* NameWidgetObject = this->GetNameWidget();
+
+			if (NameWidgetObject)
+			{
+				NameWidgetObject->Tick(DeltaTime);
+			}
+
+			/** If not moving */
+			if (this->bReady && !this->bShouldApplyGunAnimation && this->GetActorLocation() == this->LastTickLocation)
+			{
+				this->SecondsWithoutMoving.Add(DeltaTime);
+
+				if (this->SecondsWithoutMoving.IsEnded())
+				{
+					FString OldTargetName = TEXT("nullptr");
+					float OldTargetDist = 0.0f;
+
+					if (this->Target.Actor)
+					{
+						OldTargetName = this->Target.Actor->GetName();
+						OldTargetDist = FVector::Dist(this->Target.Actor->GetActorLocation(), this->GetActorLocation());
+					}
+
+					UE_LOG(LogTemp, Warning, TEXT("[ABot] Bot %s stuck, finding new target. Combat Action was %d. Old target name is %s"), *this->DisplayName, int(this->CombatAction), *OldTargetName);
+					this->SecondsWithoutMoving.Reset();
+
+					this->StuckCount++;
+
+					if (this->StuckCount >= 10)
+					{
+						this->StuckCount = 0;
+						this->RespawnAtRandomPlace();
+					}
+
+					this->FindNewEnemyTarget();
+				}
 			}
 			else
 			{
-				//this->CombatTickTimeout.Add(DeltaTime);
-
-				//if (this->CombatTickTimeout.IsEnded())
-				//{
-					this->CombatTick(DeltaTime);
-				//	this->CombatTickTimeout.Reset();
-				//}
-			}
-
-		}
-
-		auto* NameWidgetObject = this->GetNameWidget();
-
-		if (NameWidgetObject)
-		{
-			NameWidgetObject->Tick(DeltaTime);
-		}
-
-		/** If not moving */
-		if (this->bReady && !this->bShouldApplyGunAnimation && this->GetActorLocation() == this->LastTickLocation)
-		{
-			this->SecondsWithoutMoving.Add(DeltaTime);
-
-			if (this->SecondsWithoutMoving.IsEnded())
-			{
-				FString OldTargetName = TEXT("nullptr");
-				float OldTargetDist = 0.0f;
-
-				if (this->Target.Actor)
-				{
-					OldTargetName = this->Target.Actor->GetName();
-					OldTargetDist = FVector::Dist(this->Target.Actor->GetActorLocation(), this->GetActorLocation());
-				}
-
-				UE_LOG(LogTemp, Warning, TEXT("[ABot] Bot %s stuck, finding new target. Combat Action was %d. Old target name is %s"), *this->DisplayName, int(this->CombatAction), *OldTargetName);
 				this->SecondsWithoutMoving.Reset();
-
-				this->StuckCount++;
-
-				if (this->StuckCount >= 10)
-				{
-					this->StuckCount = 0;
-					this->RespawnAtRandomPlace();
-				}
-
-				this->FindNewEnemyTarget();
+				this->StuckCount = 0;
 			}
-		}
-		else
-		{
-			this->SecondsWithoutMoving.Reset();
-			this->StuckCount = 0;
-		}
 		
-		if (this->bReady)
-		{
-			bool bFalling = this->GetMovementComponent()->IsFalling();
-
-			/** When falling starts */
-			if (bFalling && !this->bFallingLastTick)
+			if (this->bReady)
 			{
-				this->FallingStartZLocation = this->GetActorLocation().Z;
-			}
-			/** When falling ends */
-			else if (!bFalling && this->bFallingLastTick)
-			{
-				float FallDistance = FMath::Abs(this->FallingStartZLocation - this->GetActorLocation().Z);
+				bool bFalling = this->GetMovementComponent()->IsFalling();
 
-				const float MinFallDistanceToDamage = 250.0f;
-				const float MaxFallDistanceToDamage = 600.0f;
-
-				const float MinFallDamage = 5.0f;
-				const float MaxFallDamage = 100.0f;
-
-				if (FallDistance >= MinFallDistanceToDamage)
+				/** When falling starts */
+				if (bFalling && !this->bFallingLastTick)
 				{
-					FallDistance = FMath::Clamp(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
-					
-					float FallDistanceScale = UKismetMathLibrary::NormalizeToRange(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
-					
-					FallDistanceScale = FMath::Clamp(FallDistanceScale, 0.0f, 1.0f);
+					this->FallingStartZLocation = this->GetActorLocation().Z;
+				}
+				/** When falling ends */
+				else if (!bFalling && this->bFallingLastTick)
+				{
+					float FallDistance = FMath::Abs(this->FallingStartZLocation - this->GetActorLocation().Z);
 
-					int32 Damage = FMath::FloorToInt(FMath::Lerp(MinFallDamage, MaxFallDamage, FallDistanceScale));
+					const float MinFallDistanceToDamage = 250.0f;
+					const float MaxFallDistanceToDamage = 600.0f;
 
-					this->ApplyDamage(Damage, this, EWeaponType::None);
+					const float MinFallDamage = 5.0f;
+					const float MaxFallDamage = 100.0f;
 
-					if (this->FallDamageSound)
+					if (FallDistance >= MinFallDistanceToDamage)
 					{
-						UGameplayStatics::PlaySoundAtLocation(GetWorld(), this->FallDamageSound, this->GetActorLocation(), FMath::RandRange(0.7f, 0.85f));
+						FallDistance = FMath::Clamp(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
+					
+						float FallDistanceScale = UKismetMathLibrary::NormalizeToRange(FallDistance, MinFallDistanceToDamage, MaxFallDistanceToDamage);
+					
+						FallDistanceScale = FMath::Clamp(FallDistanceScale, 0.0f, 1.0f);
+
+						int32 Damage = FMath::FloorToInt(FMath::Lerp(MinFallDamage, MaxFallDamage, FallDistanceScale));
+
+						this->ApplyDamage(Damage, this, EWeaponType::None);
+
+						if (this->FallDamageSound)
+						{
+							UGameplayStatics::PlaySoundAtLocation(GetWorld(), this->FallDamageSound, this->GetActorLocation(), FMath::RandRange(0.7f, 0.85f));
+						}
 					}
+
 				}
 
+				this->bFallingLastTick = bFalling;
 			}
 
-			this->bFallingLastTick = bFalling;
+			this->LastTickLocation = this->GetActorLocation();
 		}
-
-		this->LastTickLocation = this->GetActorLocation();
 	}
 	else
 	{
-		if (this->SecondsAfterDeath < 100.0f)
 		{
-			this->SecondsAfterDeath += DeltaTime;
-			if (this->SecondsAfterDeath > 100.0f)
+			SCOPE_CYCLE_COUNTER(STAT_StatsBotDeadTick);
+			if (this->SecondsAfterDeath < 100.0f)
 			{
-				this->SecondsAfterDeath = 100.0f;
+				this->SecondsAfterDeath += DeltaTime;
+				if (this->SecondsAfterDeath > 100.0f)
+				{
+					this->SecondsAfterDeath = 100.0f;
+				}
 			}
-		}
 
-		if (this->bHatAttached && this->bCanHatBeDetached && this->SecondsAfterDeath <= 25.0f)
-		{
-			this->TryDetachHat();
-		}
+			if (this->bHatAttached && this->bCanHatBeDetached && this->SecondsAfterDeath <= 25.0f)
+			{
+				this->TryDetachHat();
+			}
 
-		if (this->SecondsAfterDeath >= 4.0f && !this->bCheckedBloodDecalCreation)
-		{
-			this->CreateFloorBloodDecal();
+			if (this->SecondsAfterDeath >= 4.0f && !this->bCheckedBloodDecalCreation)
+			{
+				this->CreateFloorBloodDecal();
+			}
+
+			if (!this->bRigidBodiesSleep && this->SecondsAfterDeath >= 4.0f)
+			{
+				this->bRigidBodiesSleep = true;
+				//this->GetMesh()->SetSimulatePhysics(false);
+				//this->GetMesh()->SetAllBodiesSimulatePhysics(false);
+				this->GetMesh()->PutAllRigidBodiesToSleep();
+				this->HeadMesh->PutAllRigidBodiesToSleep();
+				this->GetMesh()->bPauseAnims = true;
+				this->HeadMesh->bPauseAnims = true;
+			}
+
+			if (!bHatAttached && bCanHatBeDetached)
+			{
+				if (!HatDetachedTimer.IsEnded())
+				{
+					HatDetachedTimer.Add(DeltaTime);
+
+					if (HatDetachedTimer.IsEnded())
+					{
+						this->HatMesh->SetSimulatePhysics(false);
+						this->HatMesh->PutAllRigidBodiesToSleep();
+					}
+				}
+			}
+
+			if (!WeaponDetachTimer.IsEnded())
+			{
+				WeaponDetachTimer.Add(DeltaTime);
+				
+				if (WeaponDetachTimer.IsEnded())
+				{
+					this->WeaponMesh->SetSimulatePhysics(false);
+					this->WeaponMesh->PutAllRigidBodiesToSleep();
+				}
+			}
 		}
 	}
 }
@@ -461,6 +514,8 @@ void ABot::CombatTick(float DeltaTime)
 
 	if (this->WeaponInstance->WeaponRef)
 	{
+		EWeaponType WeaponType = this->WeaponInstance->WeaponRef->Type;
+
 		if (this->Target.Actor && this->Target.TargetType != ETargetType::None)
 		{
 			if (this->Target.TargetType == ETargetType::Bot && this->Target.Bot && !this->Target.Bot->bAlive)
@@ -473,8 +528,6 @@ void ABot::CombatTick(float DeltaTime)
 				float TargetDist = FVector::Dist(this->GetActorLocation(), this->Target.Actor->GetActorLocation());
 
 				auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
-
-				EWeaponType WeaponType = this->WeaponInstance->WeaponRef->Type;
 
 				float MaxDist = 150.0f;
 				float RealMaxDist = MaxDist;
@@ -634,7 +687,10 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	AExplodingBarrel* TargetBarrel = nullptr;
 	bool bCanShoot = FirearmInstance->CanShoot();
 
-	if (!bReloading)
+	/** Temporarily do not find new barrels because of UE5 PhysX no support */
+	bool bFindBarrels = true;
+
+	if (bFindBarrels && !bReloading)
 	{
 		const float MinTimeToFindNewBarrel = 5.0f;
 
@@ -1270,7 +1326,7 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(this->GetActorLocation()) : 0.0f;
 
-	if (HitResult.bBlockingHit && HitResult.GetActor() == BotHit)
+	if (HitResult.bBlockingHit && HitResult.GetActor() == BotHit && DistanceFromCamera < 5000.0f)
 	{
 		BotHit->SpawnBloodParticle(HitResult.ImpactPoint, this->GetActorLocation());
 	}
@@ -1280,7 +1336,7 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	BotHit->ApplyDamage(MeleeInstance->GetDamage(), this, EWeaponType::Melee, ImpulseVector, ImpulseLocation, HitResult.bBlockingHit ? HitResult.BoneName : NAME_None, bCritical);
 
-	if (MeleeInstance->BotsHit.Num() == 1 && MeleeRef->DamageSound)
+	if (MeleeInstance->BotsHit.Num() == 1 && MeleeRef->DamageSound && DistanceFromCamera < 5000.0f)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), MeleeRef->DamageSound, this->WeaponMesh->GetComponentLocation(), FMath::RandRange(0.7f, 0.85f));
 	}
@@ -1555,7 +1611,10 @@ void ABot::SetEquipment()
 						WeaponInstanceClass = UFirearmWeaponInstance::StaticClass();
 					}
 
+					this->SetMeleeCollisionEnabled(false);
+
 					this->WeaponInstance = NewObject<UWeaponInstance>(this, WeaponInstanceClass);
+
 					if (this->WeaponInstance)
 					{
 						this->WeaponInstance->WeaponRef = RandomWeapon;
@@ -1569,6 +1628,7 @@ void ABot::SetEquipment()
 							{
 								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation - this->GunAnimationRotationPoint;
 							}
+							
 						}
 						else if (WeaponType == EWeaponType::Melee)
 						{
@@ -1853,6 +1913,8 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	this->SetActorLocation(this->GetActorLocation());
 
+	this->UpdateHeadAnimationType(nullptr, true);
+
 	auto* AIController = this->GetAIController();
 
 	if (AIController)
@@ -1864,6 +1926,18 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 	{
 		this->GetMesh()->SetSimulatePhysics(true);
 		this->GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
+		this->GetMesh()->SetGenerateOverlapEvents(false);
+	}
+
+	if (this->MeleeCollision)
+	{
+		this->MeleeCollision->SetGenerateOverlapEvents(false);
+	}
+
+	if (this->MeleeHitbox)
+	{
+		this->MeleeHitbox->SetGenerateOverlapEvents(false);
+		this->MeleeHitbox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
 	if (this->GetCapsuleComponent())
@@ -2108,6 +2182,8 @@ void ABot::TryDetachHat()
 			
 			const FVector HatPhysicsImpulse = HatLocation * -1000.0f;
 
+			HatDetachedTimer.Reset();
+
 			//this->HatMesh->AddImpulseAtLocation(HatPhysicsImpulse, this->HatMesh->GetComponentLocation());
 
 		}
@@ -2124,6 +2200,8 @@ void ABot::DeatachWeapon()
 		this->WeaponMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
 		this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 		this->WeaponMesh->SetSimulatePhysics(true);
+
+		WeaponDetachTimer.Reset();
 	}
 }
 
@@ -2472,6 +2550,7 @@ void ABot::SetMeleeCollisionEnabled(bool bEnabled)
 	if (this->MeleeCollision)
 	{
 		this->MeleeCollision->SetCollisionEnabled(bEnabled ? ECollisionEnabled::Type::QueryOnly : ECollisionEnabled::Type::NoCollision);
+		this->MeleeCollision->SetGenerateOverlapEvents(bEnabled);
 	}
 }
 
@@ -2546,4 +2625,48 @@ FEyesRotation ABot::GetEyesRotation()
 	EyesRotation.RightEye = GetEyeRotation(RightEyeLocation, CameraLocation);
 
 	return EyesRotation;
+}
+
+void ABot::UpdateHeadAnimationType(APlayerPawn* PlayerRef, bool bForce)
+{
+	bool bNewHeadAnimationDetailedMode = false;
+
+	if (!this->bAlive)
+	{
+		bNewHeadAnimationDetailedMode = false;
+	}
+	else
+	{
+		if (this->CombatAction == ECombatAction::IDLE)
+		{
+			if (!PlayerRef)
+			{
+				PlayerRef = APlayerPawn::Get();
+			}
+
+			if (PlayerRef)
+			{
+				/** Distance from camera */
+				float Distance = PlayerRef->GetDistanceFromCamera(this->GetActorLocation());
+
+				bNewHeadAnimationDetailedMode = Distance <= 3000.0f;
+			}
+		}
+	}
+
+	if (bForce || bNewHeadAnimationDetailedMode != this->bUseDetailedHeadAnimation)
+	{
+		if (bNewHeadAnimationDetailedMode)
+		{
+			this->HeadMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+			this->HeadMesh->SetAnimInstanceClass(this->HeadAnimationBlueprint);
+			this->HeadMesh->SetMasterPoseComponent(nullptr, true);
+		}
+		else
+		{
+			this->HeadMesh->SetMasterPoseComponent(this->GetMesh(), true);
+		}
+	}
+
+	this->bUseDetailedHeadAnimation = bNewHeadAnimationDetailedMode;
 }

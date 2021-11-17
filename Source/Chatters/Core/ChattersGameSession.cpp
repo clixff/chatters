@@ -306,6 +306,15 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 					this->SessionWidget->PlayWinnerAnimation(BotWinner->DisplayName, BotWinner->GetTeamColor());
 					this->SessionWidget->bUpdateRoundTimer = false;
 				}
+
+				auto* PlayerController = UChattersGameInstance::GetPlayerController();
+
+				if (PlayerController)
+				{
+					PlayerController->ConsoleCommand(TEXT("slomo 0.06"));
+					this->bGameEndedSlomoActivated = true;
+					GameEndedSlomoTimeout.Reset();
+				}
 			}
 
 			break;
@@ -791,4 +800,66 @@ void UChattersGameSession::RespawnBotAfterStuck(ABot* Bot)
 	auto SpawnPoint = this->GetAvailableSpawnPoint(false);
 
 	Bot->SetActorLocation(SpawnPoint.GetLocation());
+}
+
+void UChattersGameSession::Tick(float DeltaTime)
+{
+	if (bGameEndedSlomoActivated)
+	{
+		GameEndedSlomoTimeout.Add(DeltaTime);
+
+		if (GameEndedSlomoTimeout.IsEnded())
+		{
+			bGameEndedSlomoActivated = false;
+			
+			auto* PlayerController = UChattersGameInstance::GetPlayerController();
+
+			if (PlayerController)
+			{
+				PlayerController->ConsoleCommand(TEXT("slomo 1.0"));
+			}
+		}
+	}
+
+	UpdateHeadAnimationModesTimer.Add(DeltaTime);
+
+	if (UpdateHeadAnimationModesTimer.IsEnded())
+	{
+		UpdateHeadAnimationModesTimer.Reset();
+
+		this->UpdateHeadAnimationModes();
+	}
+
+}
+
+bool UChattersGameSession::IsTickable() const
+{
+	return !IsDefaultSubobject();
+}
+
+TStatId UChattersGameSession::GetStatId() const
+{
+	return UObject::GetStatID();
+}
+
+bool UChattersGameSession::IsTickableInEditor() const
+{
+	return false;
+}
+
+bool UChattersGameSession::IsTickableWhenPaused() const
+{
+	return false;
+}
+
+void UChattersGameSession::UpdateHeadAnimationModes()
+{
+	auto* PlayerRef = APlayerPawn::Get();
+	for (auto* Bot : AliveBots)
+	{
+		if (Bot)
+		{
+			Bot->UpdateHeadAnimationType(PlayerRef, false);
+		}
+	}
 }

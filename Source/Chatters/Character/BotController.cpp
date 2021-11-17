@@ -6,6 +6,9 @@
 #include "NavigationSystem.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 
+DECLARE_CYCLE_STAT(TEXT("Bot Controller Tick Time"), STAT_StatsBotControllerTick, STATGROUP_BOTS);
+
+
 ABotController::ABotController()
 {
 
@@ -57,4 +60,10 @@ void ABotController::MoveToNewLocation(FVector Location)
 
 
 	//UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, Location);
+}
+
+void ABotController::Tick(float DeltaTime)
+{
+	SCOPE_CYCLE_COUNTER(STAT_StatsBotControllerTick);
+	Super::Tick(DeltaTime);
 }

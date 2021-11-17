@@ -40,7 +40,7 @@ public:
 		bool bVSync = true;
 
 	UPROPERTY(VisibleAnywhere, Category = "Settings")
-		int32 MaxFPS = 120;
+		EFPSLimitType FPSLimitValue = EFPSLimitType::L_60;
 
 	UPROPERTY(VisibleAnywhere, Category = "Settings")
 		int32 MouseSensitivity = 22;

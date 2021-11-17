@@ -48,7 +48,7 @@ void UChattersGameInstance::Init()
 
 	this->SetVSyncEnabled(this->SavedSettings->bVSync);
 
-	this->SetMaxFPS(this->SavedSettings->MaxFPS);
+	this->SetMaxFPS(this->SavedSettings->FPSLimitValue);
 
 	this->ReturnToTheMainMenu();
 
@@ -489,7 +489,7 @@ void UChattersGameInstance::SetVSyncEnabled(bool bEnabled)
 	GameUserSettings->ApplySettings(true);
 }
 
-void UChattersGameInstance::SetMaxFPS(int32 MaxFPS)
+void UChattersGameInstance::SetMaxFPS(EFPSLimitType MaxFPS)
 {
 	if (!GEngine)
 	{
@@ -503,7 +503,29 @@ void UChattersGameInstance::SetMaxFPS(int32 MaxFPS)
 		return;
 	}
 
-	GameUserSettings->SetFrameRateLimit(MaxFPS);
+	int32 FPS = 0;
+
+	switch (MaxFPS)
+	{
+	case EFPSLimitType::L_30:
+		FPS = 30;
+		break;
+	case EFPSLimitType::L_60:
+		FPS = 60;
+		break;
+	case EFPSLimitType::L_120:
+		FPS = 120;
+		break;
+	case EFPSLimitType::L_240:
+		FPS = 240;
+		break;
+	case EFPSLimitType::None:
+		FPS = 99999;
+	default:
+		break;
+	}
+
+	GameUserSettings->SetFrameRateLimit(FPS);
 
 	GameUserSettings->ApplySettings(true);
 }

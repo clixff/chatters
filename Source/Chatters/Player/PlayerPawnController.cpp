@@ -374,12 +374,22 @@ void APlayerPawnController::AttachPlayerToAliveBot(EAttachCameraToBotType Type)
 
 void APlayerPawnController::OnSlowmoStart()
 {
-	this->ConsoleCommand(TEXT("slomo 0.1"));
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (GameSession && !GameSession->bGameEndedSlomoActivated)
+	{
+		this->ConsoleCommand(TEXT("slomo 0.1"));
+	}
 }
 
 void APlayerPawnController::OnSlowmoEnd()
 {
-	this->ConsoleCommand(TEXT("slomo 1.0"));
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (GameSession && !GameSession->bGameEndedSlomoActivated)
+	{
+		this->ConsoleCommand(TEXT("slomo 1.0"));
+	}
 }
 
 void APlayerPawnController::OnEscPressed()

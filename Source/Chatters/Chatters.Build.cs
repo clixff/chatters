@@ -18,6 +18,19 @@ public class Chatters : ModuleRules
 		PublicDefinitions.Add("ASIO_STANDALONE");
 		PublicDefinitions.Add("_WEBSOCKETPP_CPP11_INTERNAL_");
 		PublicDefinitions.Add("_WEBSOCKETPP_CPP11_FUNCTIONAL_");
+		PublicDefinitions.Add("WIN32_LEAN_AND_MEAN");
+		PublicDefinitions.Add("SIO_TLS=0");
+
+		if (Target.Configuration == UnrealTargetConfiguration.Debug)
+        {
+			PublicDefinitions.Add("_DEBUG=1");
+			PublicDefinitions.Add("DEBUG=1");
+		}
+		else
+        {
+			PublicDefinitions.Add("_DEBUG=0");
+			PublicDefinitions.Add("DEBUG=0");
+		}
 
 		PrivateIncludePaths.Add("..\\ThirdParty\\socket.io-client-cpp\\lib\\asio\\asio\\include");
 		PrivateIncludePaths.Add("..\\ThirdParty\\socket.io-client-cpp\\lib\\websocketpp");

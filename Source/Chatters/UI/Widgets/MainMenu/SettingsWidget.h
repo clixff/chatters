@@ -27,25 +27,16 @@ public:
 		float GameVolume = 100.0f;
 
 	UPROPERTY(BlueprintReadWrite)
-		int32 MaxFPS = 120.0f;
-
-	UPROPERTY(BlueprintReadWrite)
 		int32 MouseSensitivity = 5;
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 		void UpdateGameVolumeSlider(float Volume);
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-		void UpdateMaxFpsSlider(int32 NewMaxFPS);
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 		void UpdateMouseSensitivitySlider(int32 NewMouseSensitivity);
 
 	UFUNCTION(BlueprintCallable)
 		void SetGameVolume();
-
-	UFUNCTION(BlueprintCallable)
-		void SetMaxFPS();
 
 	UFUNCTION(BlueprintCallable)
 		void SetMouseSensitivity();
@@ -59,6 +50,8 @@ private:
 	static FString GraphicsQualityToString(EGraphicsQualityLevel GraphicsQuality);
 
 	static FString KillFeedPositionToString(EKillFeedPosition KillFeedPosition);
+
+	static FString FPSLimitToString(EFPSLimitType MaxFPS);
 
 	bool bInitialized = false;
 

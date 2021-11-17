@@ -20,4 +20,9 @@ public:
 
 public:
 	void MoveToNewLocation(FVector Location);
+
+protected:
+
+	virtual void Tick(float DeltaTime) override;
+
 };

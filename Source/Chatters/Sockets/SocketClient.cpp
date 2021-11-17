@@ -8,7 +8,6 @@
 #include "SocketClient.h"
 
 FSocketClient* FSocketClient::Singleton = nullptr;
-std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> FSocketClient::StringConverter;
 
 FSocketClient::FSocketClient()
 {
@@ -81,18 +80,12 @@ void FSocketClient::Stop()
 
 FString FSocketClient::ConvertFromANSI(std::string RawString)
 {
-	std::wstring wideString = FSocketClient::StringConverter.from_bytes(RawString);
-
-	FString StringMessage = FString(wideString.c_str());
-
-	return StringMessage;
+	return FString(UTF8_TO_TCHAR(RawString.c_str()));
 }
 
 std::string FSocketClient::ConvertToANSI(FString RawString)
 {
-	std::string string = FSocketClient::StringConverter.to_bytes(*RawString);
-
-	return string;
+	return std::string(TCHAR_TO_UTF8(*RawString));
 }
 
 void FSocketClient::OnConnect()

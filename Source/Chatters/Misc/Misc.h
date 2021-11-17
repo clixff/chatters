@@ -145,3 +145,13 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 		FString DisplayName = TEXT("");
 };
+
+UENUM(BlueprintType)
+enum class EFPSLimitType : uint8
+{
+	None,
+	L_30,
+	L_60,
+	L_120,
+	L_240
+};
