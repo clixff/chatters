@@ -138,6 +138,11 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	this->SessionWidget->SetTeamsWrapperVisibility(this->GameModeType == ESessionGameMode::Teams);
 	this->SessionWidget->UpdateRoundSeconds(0.0f);
 
+	if (this->GameModeType == ESessionGameMode::Deathmatch)
+	{
+		this->SessionWidget->SetLeaderboardVisibility(true);
+	}
+
 	auto* Settings = USavedSettings::Get();
 
 	if (Settings)
@@ -259,7 +264,10 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 		auto* AliveBot = this->AliveBots[i];
 		if (AliveBot && AliveBot->ID == BotID)
 		{
-			this->AliveBots.RemoveAt(i, 1, true);
+			if (GameModeType != ESessionGameMode::Deathmatch)
+			{
+				this->AliveBots.RemoveAt(i, 1, true);
+			}
 
 			if (AliveBot->Team == EBotTeam::Blue)
 			{
@@ -299,21 +307,9 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 
 			if (this->AliveBots.Num() == 1)
 			{
-				auto* BotWinner = this->AliveBots[0];
-				BotWinner->StopMovementAfterRound();
-				if (this->SessionWidget)
+				if (this->GameModeType != ESessionGameMode::Deathmatch)
 				{
-					this->SessionWidget->PlayWinnerAnimation(BotWinner->DisplayName, BotWinner->GetTeamColor());
-					this->SessionWidget->bUpdateRoundTimer = false;
-				}
-
-				auto* PlayerController = UChattersGameInstance::GetPlayerController();
-
-				if (PlayerController)
-				{
-					PlayerController->ConsoleCommand(TEXT("slomo 0.06"));
-					this->bGameEndedSlomoActivated = true;
-					GameEndedSlomoTimeout.Reset();
+					this->OnGameEnded(this->AliveBots[0]);
 				}
 			}
 
@@ -333,12 +329,14 @@ void UChattersGameSession::Start()
 		{
 			this->SessionWidget->SetStartGameSessionTipVisibility(false);
 			this->SessionWidget->SetPlayCommandVisibility(false);
-			this->SessionWidget->bUpdateRoundTimer = true;
 			this->SessionWidget->SetRoundTimerVisibility(true);
 			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
 			this->SessionWidget->SetStreamerJoinTipVisible(false);
 			this->SessionWidget->ClearAllNotifications();
 		}
+
+
+		bUpdateRoundTimer = true;
 
 		this->bCanViewersJoin = false;
 
@@ -350,8 +348,31 @@ void UChattersGameSession::Start()
 
 			if (Bot)
 			{
+				if (this->GameModeType == ESessionGameMode::Deathmatch)
+				{
+					FDeathmatchLeaderboardElement LeaderboardElement;
+					LeaderboardElement.Nickname = Bot->DisplayName;
+					LeaderboardElement.Kills = 0;
+					LeaderboardElement.ID = Bot->ID;
+					this->DeathmatchLeaderboard.Add(LeaderboardElement);
+				}
+
 				Bot->OnGameSessionStarted(this->SessionMode);
 			}
+		}
+
+		if (this->GameModeType == ESessionGameMode::Deathmatch)
+		{
+			this->RoundTime = 60.0f * 3.0f;
+			if (this->SessionWidget)
+			{
+				this->SessionWidget->UpdateLeaderboard(this->DeathmatchLeaderboard);
+				this->SessionWidget->SetLeaderboardTipVisibility(true);
+			}
+		}
+		else
+		{
+			this->RoundTime = 0.0f;
 		}
 	}
 }
@@ -697,8 +718,8 @@ void UChattersGameSession::OnTeamsBattleEnd()
 		this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
 		this->SessionWidget->PlayNewRoundAnimation(this->RoundNumber);
 		this->SessionWidget->UpdateRoundSeconds(0.0f);
-		this->SessionWidget->bUpdateRoundTimer = false;
 	}
+	bUpdateRoundTimer = false;
 }
 
 FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint)
@@ -830,6 +851,32 @@ void UChattersGameSession::Tick(float DeltaTime)
 		this->UpdateHeadAnimationModes();
 	}
 
+	if (bUpdateRoundTimer && !UChattersGameInstance::Get()->GetIsGamePaused())
+	{
+		if (this->GameModeType == ESessionGameMode::Deathmatch)
+		{
+			RoundTime -= DeltaTime;
+			if (RoundTime < 0.0f)
+			{
+				RoundTime = 0.0f;
+			}
+
+			if (RoundTime == 0.0f)
+			{
+				this->bDeathmatchTimeEnded = true;
+				this->FindDeathmatchWinner();
+			}
+		}
+		else
+		{
+			RoundTime += DeltaTime;
+		}
+
+		if (this->SessionWidget)
+		{
+			this->SessionWidget->UpdateRoundSeconds(RoundTime);
+		}
+	}
 }
 
 bool UChattersGameSession::IsTickable() const
@@ -860,6 +907,126 @@ void UChattersGameSession::UpdateHeadAnimationModes()
 		if (Bot)
 		{
 			Bot->UpdateHeadAnimationType(PlayerRef, false);
+		}
+	}
+}
+
+void UChattersGameSession::OnBotKill(ABot* Bot)
+{
+	if (this->GameModeType == ESessionGameMode::Deathmatch && !bDeathmatchRoundEnded)
+	{
+		for (auto& LeaderboardElement : this->DeathmatchLeaderboard)
+		{
+			if (LeaderboardElement.Nickname == Bot->DisplayName)
+			{
+				LeaderboardElement.Kills++;
+				break;
+			}
+		}
+
+		DeathmatchLeaderboard.Sort([](const FDeathmatchLeaderboardElement& LHS, const FDeathmatchLeaderboardElement& RHS)
+			{
+				if (LHS.Kills == RHS.Kills)
+				{
+					return LHS.ID < RHS.ID;
+				}
+					
+				return LHS.Kills > RHS.Kills;
+			});
+
+		if (this->SessionWidget)
+		{
+			this->SessionWidget->UpdateLeaderboard(DeathmatchLeaderboard);
+		}
+
+		if (this->bDeathmatchTimeEnded)
+		{
+			this->FindDeathmatchWinner();
+		}
+	}
+}
+
+void UChattersGameSession::OnGameEnded(ABot* Winner)
+{
+	this->bDeathmatchRoundEnded = true;
+
+	Winner->StopMovementAfterRound();
+	if (this->SessionWidget)
+	{
+		this->SessionWidget->PlayWinnerAnimation(Winner->DisplayName, Winner->GetTeamColor());
+	}
+
+	bUpdateRoundTimer = false;
+
+	auto* PlayerController = UChattersGameInstance::GetPlayerController();
+
+	if (PlayerController)
+	{
+		PlayerController->ConsoleCommand(TEXT("slomo 0.06"));
+		this->bGameEndedSlomoActivated = true;
+		GameEndedSlomoTimeout.Reset();
+	}
+
+	if (this->GameModeType == ESessionGameMode::Deathmatch)
+	{
+		for (auto* Bot : this->AliveBots)
+		{
+			if (Bot)
+			{
+				Bot->StopMovementAfterRound();
+			}
+		}
+	}
+}
+
+void UChattersGameSession::FindDeathmatchWinner()
+{
+	if (this->bDeathmatchTimeEnded && DeathmatchLeaderboard.Num() > 1)
+	{
+		auto& FirstPlace = DeathmatchLeaderboard[0];
+		auto& SecondPlace = DeathmatchLeaderboard[1];
+
+		if (FirstPlace.Kills != SecondPlace.Kills)
+		{
+			ABot** Winner = this->BotsMap.Find(FirstPlace.Nickname.ToLower());
+
+			if (Winner && *Winner)
+			{
+				OnGameEnded(*Winner);
+			}
+		}
+	}
+}
+
+void UChattersGameSession::SelectDeathmatchLeader(int32 Index)
+{
+	if (this->SessionWidget)
+	{
+		this->SessionWidget->SetLeaderboardTipVisibility(false);
+	}
+
+	if (Index < this->DeathmatchLeaderboard.Num())
+	{
+		auto& Leader =this->DeathmatchLeaderboard[Index];
+
+		ABot** Bot = this->BotsMap.Find(Leader.Nickname.ToLower());
+
+		if (Bot && *Bot)
+		{
+			auto* World = GetWorld();
+
+			if (World)
+			{
+				auto* PlayerController = World->GetFirstPlayerController();
+				if (PlayerController)
+				{
+					auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
+					if (PlayerPawn)
+					{
+						PlayerPawn->AttachToBot(*Bot);
+					}
+				}
+			}
 		}
 	}
 }

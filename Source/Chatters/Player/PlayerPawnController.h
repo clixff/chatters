@@ -106,5 +106,7 @@ private:
 	void OnGameJoinPressed();
 
 	void OnRespawnBotPressed();
-
+	
+	void SelectLeaderboardBot(int32 Index);
+	DECLARE_DELEGATE_OneParam(FSelectLeaderboardBotDelegate, int32)
 };

@@ -155,3 +155,18 @@ enum class EFPSLimitType : uint8
 	L_120,
 	L_240
 };
+
+USTRUCT(BlueprintType)
+struct FDeathmatchLeaderboardElement
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		FString Nickname = TEXT("");
+
+	UPROPERTY()
+		int32 Kills = 0;
+
+	UPROPERTY()
+		int32 ID = 0;
+};

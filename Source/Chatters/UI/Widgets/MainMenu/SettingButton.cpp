@@ -40,9 +40,13 @@ void USettingButton::OnClick()
 			{
 				SavedSettings->DefaultSessionGameMode = ESessionGameMode::Default;
 			}
-			else
+			else if (this->SettingValue == TEXT("Teams"))
 			{
 				SavedSettings->DefaultSessionGameMode = ESessionGameMode::Teams;
+			}
+			else
+			{
+				SavedSettings->DefaultSessionGameMode = ESessionGameMode::Deathmatch;
 			}
 		}
 
@@ -106,12 +110,14 @@ FString USettingButton::SessionTypeToString(ESessionType SessionType)
 
 FString USettingButton::GameModeTypeToString(ESessionGameMode GameModeType)
 {
-	if (GameModeType == ESessionGameMode::Teams)
+	switch (GameModeType)
 	{
+	case ESessionGameMode::Teams:
 		return TEXT("Teams");
-	}
-	else
-	{
+	case ESessionGameMode::Deathmatch:
+		return TEXT("Deathmatch");
+	case ESessionGameMode::Default:
+	default:
 		return TEXT("Default");
 	}
 }

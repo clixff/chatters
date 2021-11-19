@@ -108,6 +108,22 @@ void ABot::Tick(float DeltaTime)
 	{
 		{
 			SCOPE_CYCLE_COUNTER(STAT_StatsBotAliveTick);
+
+			/** Enable collision for revived players after 3 seconds */
+			if (this->bReviveCollisionTimerActive)
+			{
+				ReviveCollisionTimer.Add(DeltaTime);
+
+				if (ReviveCollisionTimer.IsEnded())
+				{
+					this->bReviveCollisionTimerActive = false;
+					ReviveCollisionTimer.Reset();
+
+					this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				}
+			}
+
 			if (this->WeaponInstance)
 			{
 				this->WeaponInstance->Tick(DeltaTime);
@@ -246,7 +262,7 @@ void ABot::Tick(float DeltaTime)
 				this->CreateFloorBloodDecal();
 			}
 
-			if (!this->bRigidBodiesSleep && this->SecondsAfterDeath >= 4.0f)
+			if (!this->bShouldReviveBot && !this->bRigidBodiesSleep && this->SecondsAfterDeath >= 4.0f)
 			{
 				this->bRigidBodiesSleep = true;
 				//this->GetMesh()->SetSimulatePhysics(false);
@@ -279,6 +295,17 @@ void ABot::Tick(float DeltaTime)
 				{
 					this->WeaponMesh->SetSimulatePhysics(false);
 					this->WeaponMesh->PutAllRigidBodiesToSleep();
+				}
+			}
+
+			if (this->bShouldReviveBot)
+			{
+				this->BotReviveDeathmatchTimer.Add(DeltaTime);
+
+				if (this->BotReviveDeathmatchTimer.IsEnded())
+				{
+					this->BotReviveDeathmatchTimer.Reset();
+					this->ReviveBotDeatchmatch();
 				}
 			}
 		}
@@ -1926,6 +1953,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 	{
 		this->GetMesh()->SetSimulatePhysics(true);
 		this->GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
+		this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		this->GetMesh()->SetGenerateOverlapEvents(false);
 	}
 
@@ -1978,6 +2006,8 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		CharacterMovementComponent->bUseRVOAvoidance = false;
 	}
 
+	auto* GameSessionObject = this->GetGameSession();
+
 	if (Killer && this->IsEnemy(Killer))
 	{
 		Killer->Kills++;
@@ -1985,6 +2015,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		if (NameWidgetRef)
 		{
 			NameWidgetRef->UpdateKillsNumber(Killer->Kills);
+		}
+
+		if (GameSessionObject)
+		{
+			GameSessionObject->OnBotKill(Killer);
 		}
 	}
 
@@ -1998,10 +2033,13 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		}
 	}
 
-	auto* GameSessionObject = this->GetGameSession();
-
 	if (GameSessionObject)
 	{
+		if (GameSessionObject->GameModeType == ESessionGameMode::Deathmatch)
+		{
+			bShouldReviveBot = true;
+		}
+
 		auto* SessionWidget = GameSessionObject->GetSessionWidget();
 		if (SessionWidget)
 		{
@@ -2195,6 +2233,10 @@ void ABot::DeatachWeapon()
 	if (this->WeaponMesh && this->WeaponInstance)
 	{
 		this->WeaponInstance->BotOwner = nullptr;
+		if (this->WeaponInstance->IsValidLowLevel())
+		{
+			this->WeaponInstance->ConditionalBeginDestroy();
+		}
 		this->WeaponInstance = nullptr;
 		this->WeaponMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		this->WeaponMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
@@ -2669,4 +2711,104 @@ void ABot::UpdateHeadAnimationType(APlayerPawn* PlayerRef, bool bForce)
 	}
 
 	this->bUseDetailedHeadAnimation = bNewHeadAnimationDetailedMode;
+}
+
+void ABot::ReviveBotDeatchmatch()
+{
+	this->bShouldReviveBot = false;
+
+	auto* GameSession = this->GetGameSession();
+
+	if (!GameSession->bDeathmatchRoundEnded)
+	{
+		this->bAlive = true;
+
+		this->HealthPoints = this->MaxHealthPoints;
+
+		this->GetMesh()->SetSimulatePhysics(false);
+
+		this->GetMesh()->SetCollisionProfileName(FName(TEXT("CharacterMesh")), true);
+		//this->GetMesh()->PutAllRigidBodiesToSleep();
+		this->GetMesh()->WakeAllRigidBodies();
+		this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+		this->HeadMesh->SetSimulatePhysics(false);
+		this->HatMesh->SetSimulatePhysics(false);
+		this->WeaponMesh->SetSimulatePhysics(false);
+
+		this->MeleeHitbox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		this->MeleeHitbox->SetGenerateOverlapEvents(true);
+
+		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+
+		if (this->NameWidgetComponent)
+		{
+			this->NameWidgetComponent->SetVisibility(true);
+		}
+
+		auto* NameWidgetRef = GetNameWidget();
+
+		if (NameWidgetRef)
+		{
+			float HealthValue = this->GetHeathValue();
+			NameWidgetRef->UpdateHealth(HealthValue);
+		}
+
+		if (this->HatMesh)
+		{
+			this->bHatAttached = true;
+			this->HatMesh->WakeAllRigidBodies();
+			this->HatMesh->AttachToComponent(this->HeadMesh, FAttachmentTransformRules::KeepRelativeTransform, FName(TEXT("head_")));
+			this->HatMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+
+		auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
+
+		if (CharacterMovementComponent)
+		{
+			CharacterMovementComponent->bUseRVOAvoidance = true;
+		}
+
+		SecondsAfterDeath = 0.0f;
+
+		this->bRigidBodiesSleep = false;
+		//this->GetMesh()->WakeAllRigidBodies();
+		//this->HeadMesh->WakeAllRigidBodies();
+		this->GetMesh()->bPauseAnims = false;
+		this->HeadMesh->bPauseAnims = false;
+
+		HatDetachedTimer.Reset();
+		WeaponDetachTimer.Reset();
+
+		this->WeaponMesh->WakeAllRigidBodies();
+
+		this->WeaponMesh->SetCollisionProfileName(TEXT("NoCollision"), true);
+		this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		this->WeaponMesh->AttachToComponent(this->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName(TEXT("R_arm_4")));
+
+		if (this->WeaponInstance && this->WeaponInstance->IsValidLowLevel() && !this->WeaponInstance->IsPendingKill())
+		{
+			this->WeaponInstance->ConditionalBeginDestroy();
+			this->WeaponInstance = nullptr;
+		}
+
+		this->SetEquipment();
+
+		FTransform SpawnPoint = GameSession->GetAvailableSpawnPoint(false);
+
+		this->SetActorLocation(SpawnPoint.GetLocation());
+		this->SetActorRotation(SpawnPoint.GetRotation().Rotator());
+
+		this->GetMesh()->AttachToComponent(this->GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+
+		this->GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -92.0f));
+		this->GetMesh()->SetRelativeRotation((FRotator(0.0f, -90.0f, 0.0f)));
+
+		FVector RelativeLocation = this->GetMesh()->GetRelativeLocation();
+
+		this->OnGameSessionStarted(GameSession->SessionMode);
+
+		this->bReviveCollisionTimerActive = true;
+		this->ReviveCollisionTimer.Reset();
+	}
 }

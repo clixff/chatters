@@ -440,4 +440,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		TSubclassOf<UAnimInstance> HeadAnimationBlueprint = nullptr;
+
+	FManualTimer BotReviveDeathmatchTimer = FManualTimer(3.0f);
+
+	bool bShouldReviveBot = false;
+
+	void ReviveBotDeatchmatch();
+
+	FManualTimer ReviveCollisionTimer = FManualTimer(3.0f);
+
+	bool bReviveCollisionTimerActive = false;
 };

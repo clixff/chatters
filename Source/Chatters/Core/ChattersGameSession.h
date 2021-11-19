@@ -11,7 +11,6 @@
 #include "../Misc/Misc.h"
 #include "../Character/Equipment/EquipmentList.h"
 #include "../Props/ExplodingBarrel.h"
-#include "../Misc/Misc.h"
 #include "../Combat/FirearmProjectile.h"
 #include "ChattersGameSession.generated.h"
 
@@ -155,4 +154,22 @@ public:
 	FManualTimer UpdateHeadAnimationModesTimer = FManualTimer(1.0f);
 
 	void UpdateHeadAnimationModes();
+
+	float RoundTime = 0.0f;
+
+	bool bUpdateRoundTimer = false;
+
+	bool bDeathmatchTimeEnded = false;
+
+	bool bDeathmatchRoundEnded = false;
+
+	TArray<FDeathmatchLeaderboardElement> DeathmatchLeaderboard;
+
+	void OnBotKill(ABot* Bot);
+
+	void OnGameEnded(ABot* Winner);
+
+	void FindDeathmatchWinner();
+
+	void SelectDeathmatchLeader(int32 Index);
 };

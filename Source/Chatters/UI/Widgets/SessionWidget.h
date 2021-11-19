@@ -157,4 +157,14 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
 
 	FManualTimer FPSUpdateTimer = FManualTimer(0.1f);
+public:
+	void SetLeaderboardVisibility(bool bVisible);
+
+	void UpdateLeaderboard(TArray<FDeathmatchLeaderboardElement>& Leaders);
+
+	UVerticalBox* LeaderboardVerticalBox = nullptr;
+
+	UVerticalBox* GetLeaderboardContainer();
+
+	void SetLeaderboardTipVisibility(bool bVisible);
 };

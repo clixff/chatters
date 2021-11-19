@@ -4,7 +4,9 @@
 #include "SessionWidget.h"
 #include "Internationalization/Text.h"
 #include "../../Core/ChattersGameInstance.h"
+#include "Session/LeaderboardElement.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/CanvasPanelSlot.h"
 
 void USessionWidget::Show()
 {
@@ -322,6 +324,27 @@ void USessionWidget::SetKillFeedPosition(EKillFeedPosition Position)
 			Notification->VerticalBoxSlot->SetHorizontalAlignment(HorizontalAlignment);
 		}
 	}
+
+	auto* LeaderboardWidget = this->GetWidgetFromName(TEXT("Deathmatch_Wrapper_2"));
+
+	if (LeaderboardWidget)
+	{
+		auto* LeaderboardSlot = Cast<UCanvasPanelSlot>(LeaderboardWidget->Slot);
+
+		if (LeaderboardSlot)
+		{
+			float AnchorValue = 0.0f;
+
+			if (Position == EKillFeedPosition::Left)
+			{
+				AnchorValue = 1.0f;
+			}
+
+			LeaderboardSlot->SetAnchors(FAnchors(AnchorValue, 0.5f, AnchorValue, 0.5f));
+			LeaderboardSlot->SetAlignment(FVector2D(AnchorValue, 0.5f));
+		}
+	}
+
 }
 
 void USessionWidget::ClearAllNotifications()
@@ -409,7 +432,78 @@ void USessionWidget::NativeTick(const FGeometry& MyGeometry, float DeltaTime)
 
 	if (this->bUpdateRoundTimer)
 	{
-		this->RoundSecondsFloat += DeltaTime;
-		this->UpdateRoundSeconds(RoundSecondsFloat);
+		//this->RoundSecondsFloat += DeltaTime;
+		//this->UpdateRoundSeconds(RoundSecondsFloat);
+	}
+}
+
+void USessionWidget::SetLeaderboardVisibility(bool bVisible)
+{
+	auto* Widget = this->GetWidgetFromName(TEXT("Deathmatch_Leaderboard_Wrapper"));
+
+	if (Widget)
+	{
+		Widget->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+}
+
+void USessionWidget::UpdateLeaderboard(TArray<FDeathmatchLeaderboardElement>& Leaders)
+{
+	auto* LeaderboardContainer = this->GetLeaderboardContainer();
+
+	if (!LeaderboardContainer)
+	{
+		return;
+	}
+
+	auto ContainerChildren = LeaderboardContainer->GetAllChildren();
+
+	for (int32 i = 0; i < 5; i++)
+	{
+		if (i >= ContainerChildren.Num())
+		{
+			continue;
+		}
+
+		auto* Widget = Cast<ULeaderboardElement>(ContainerChildren[i]);
+
+		if (!Widget)
+		{
+			continue;
+		}
+
+		bool bVisible = i < Leaders.Num();
+
+		if (bVisible)
+		{
+			Widget->SetVisibility(ESlateVisibility::HitTestInvisible);
+			Widget->NicknameText = FText::FromString(Leaders[i].Nickname);
+			FString ScoreString = FString::FromInt(Leaders[i].Kills);
+			Widget->ScoreText = FText::FromString(ScoreString);
+		}
+		else
+		{
+			Widget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+UVerticalBox* USessionWidget::GetLeaderboardContainer()
+{
+	if (!this->LeaderboardVerticalBox)
+	{
+		this->LeaderboardVerticalBox = Cast<UVerticalBox>(this->GetWidgetFromName(TEXT("Leaderboard_Container")));
+	}
+
+	return this->LeaderboardVerticalBox;
+}
+
+void USessionWidget::SetLeaderboardTipVisibility(bool bVisible)
+{
+	auto* Widget = this->GetWidgetFromName(TEXT("Leaderboard_Tip"));
+
+	if (Widget)
+	{
+		Widget->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }

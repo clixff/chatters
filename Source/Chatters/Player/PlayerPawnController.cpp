@@ -70,6 +70,13 @@ void APlayerPawnController::SetupInputComponent()
 	this->InputComponent->BindAction("GameJoin", IE_Pressed, this, &APlayerPawnController::OnGameJoinPressed);
 	this->InputComponent->BindAction("Respawn", IE_Pressed, this, &APlayerPawnController::OnRespawnBotPressed);
 
+	for (int32 i = 0; i < 5; i++)
+	{
+		FString KeyID = FString::Printf(TEXT("Key_%d"), i+1);
+
+		this->InputComponent->BindAction<FSelectLeaderboardBotDelegate>(*KeyID, IE_Pressed, this, &APlayerPawnController::SelectLeaderboardBot, i);
+	}
+
 ;}
 
 void APlayerPawnController::BeginPlay()
@@ -496,6 +503,19 @@ void APlayerPawnController::OnRespawnBotPressed()
 	}
 
 	PlayerPawnRef->RespawnAttachedBot();
+}
+
+void APlayerPawnController::SelectLeaderboardBot(int32 Index)
+{
+	auto* GameSession = UChattersGameSession::Get();
+
+	if (GameSession)
+	{
+		if (GameSession->GameModeType == ESessionGameMode::Deathmatch)
+		{
+			GameSession->SelectDeathmatchLeader(Index);
+		}
+	}
 }
 
 void APlayerPawnController::SetMouseSensitivity(int32 Sensitivity)
