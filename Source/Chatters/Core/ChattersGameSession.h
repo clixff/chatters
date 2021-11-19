@@ -12,6 +12,7 @@
 #include "../Character/Equipment/EquipmentList.h"
 #include "../Props/ExplodingBarrel.h"
 #include "../Combat/FirearmProjectile.h"
+#include "../Misc/Train.h"
 #include "ChattersGameSession.generated.h"
 
 /**
@@ -172,4 +173,6 @@ public:
 	void FindDeathmatchWinner();
 
 	void SelectDeathmatchLeader(int32 Index);
+
+	ATrain* TrainRef = nullptr;
 };

@@ -361,6 +361,14 @@ void UChattersGameSession::Start()
 			}
 		}
 
+		if (this->TrainRef)
+		{
+			if (this->GameModeType != ESessionGameMode::Teams || RoundNumber == 1)
+			{
+				this->TrainRef->Activate();
+			}
+		}
+
 		if (this->GameModeType == ESessionGameMode::Deathmatch)
 		{
 			this->RoundTime = 60.0f * 3.0f;
