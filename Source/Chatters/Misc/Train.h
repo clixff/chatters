@@ -9,6 +9,7 @@
 #include "Components/SplineComponent.h"
 #include "Sound/SoundBase.h"
 #include "Components/AudioComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Train.generated.h"
 
 UCLASS()
@@ -30,7 +31,7 @@ public:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		UStaticMeshComponent* Mesh = nullptr;
+		USkeletalMeshComponent* SKMesh = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UBoxComponent* Collision = nullptr;

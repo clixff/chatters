@@ -17,17 +17,17 @@ ATrain::ATrain()
 	this->Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	this->SetRootComponent(Root);
 
-	this->Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	this->Mesh->SetupAttachment(Root);
+	this->SKMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
+	this->SKMesh->SetupAttachment(Root);
 
 	this->Collision = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision"));
-	this->Collision->SetupAttachment(Mesh);
+	this->Collision->SetupAttachment(SKMesh);
 
 	this->Spline = CreateDefaultSubobject<USplineComponent>(TEXT("Spline"));
 	this->Spline->SetupAttachment(Root);
 
 	this->Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("Audio"));
-	this->Sound->SetupAttachment(Mesh);
+	this->Sound->SetupAttachment(SKMesh);
 }
 
 // Called when the game starts or when spawned
@@ -56,7 +56,7 @@ void ATrain::Tick(float DeltaTime)
 
 		FVector Location = FMath::Lerp(Start, End, PathValue);
 
-		this->Mesh->SetWorldLocation(Location);
+		this->SKMesh->SetWorldLocation(Location);
 
 		if (PathValue == 1.0f)
 		{
@@ -68,6 +68,8 @@ void ATrain::Tick(float DeltaTime)
 			}
 
 			this->SetActorHiddenInGame(true);
+
+			this->SKMesh->bPauseAnims = true;
 		}
 	}
 }
@@ -86,6 +88,8 @@ void ATrain::Activate()
 	}
 
 	this->SetActorHiddenInGame(false);
+
+	this->SKMesh->bPauseAnims = false;
 }
 
 void ATrain::TrainCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -99,7 +103,7 @@ void ATrain::TrainCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 	FVector HitLocation = Bot->GetActorLocation();
 
-	FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(Mesh->GetComponentLocation(), HitLocation).Vector() * this->ImpulseForce;
+	FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(SKMesh->GetComponentLocation(), HitLocation).Vector() * this->ImpulseForce;
 
 	Bot->ApplyDamage(100, Bot, EWeaponType::Melee, ImpulseVector, HitLocation);
 
