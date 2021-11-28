@@ -8,6 +8,7 @@
 #include "Particles/ParticleSystem.h"
 #include "../../../Combat/FirearmProjectile.h"
 #include "NiagaraSystem.h"
+#include "../../../Misc/Animation/BowstringAnimation.h"
 #include "FirearmWeaponItem.generated.h"
 
 
@@ -67,4 +68,25 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Reloading particle")
 		float ReloadingParticleStartSecond = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile Mesh")
+		UStaticMesh* ProjectileStaticMesh = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile Mesh")
+		FTransform ProjectileMeshTransform;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile Mesh")
+		float ProjectileMeshRespawnTime = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Bowstring")
+		USkeletalMesh* BowstringMesh = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Bowstring")
+		TSubclassOf<UBowstringAnimation> BowstringAnimation = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Bowstring")
+		float BowstringDetachTime = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Bowstring")
+		float BowstringAttachTime = 1.5f;
 };

@@ -418,7 +418,7 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 		this->Target.TargetType = ETargetType::None;
 		this->Target.Actor = nullptr;
 		this->Target.Bot = nullptr;
-		this->CombatAction = ECombatAction::IDLE;
+		SetWeaponProjectileMeshVisibility(false);
 		this->bShouldApplyGunAnimation = false;
 		return;
 	}
@@ -429,6 +429,7 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 
 
 	this->CombatAction = ECombatAction::IDLE;
+	SetWeaponProjectileMeshVisibility(false);
 
 	if (this->Target.Bot)
 	{
@@ -523,6 +524,7 @@ void ABot::MoveToTarget()
 	/** Allow to update target location every 1 second */
 	this->UpdateMovingTargetTimeout = 1.0f;
 	this->CombatAction = ECombatAction::Moving;
+	SetWeaponProjectileMeshVisibility(false);
 	FVector TargetLocation = this->Target.Actor->GetActorLocation();
 
 	if (this->Target.TargetType == ETargetType::ExplodingBarrel)
@@ -969,6 +971,10 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	this->CombatAction = ECombatAction::Shooting;
 
+	if (bProjectileMeshExists && !bProjectileMeshVisibility)
+	{
+		SetWeaponProjectileMeshVisibility(true);
+	}
 
 	float BotSpeed = this->GetSpeed();
 
@@ -1619,6 +1625,7 @@ void ABot::SetEquipment()
 			{
 				if (this->WeaponMesh)
 				{
+					this->bProjectileMeshExists = false;
 					//this->WeaponMesh->ReregisterComponent();
 					this->WeaponMesh->SetStaticMesh(RandomWeapon->StaticMesh);
 					this->WeaponMesh->SetRelativeTransform(RandomWeapon->GetTransform());
@@ -1654,6 +1661,7 @@ void ABot::SetEquipment()
 							if (FirearmRef)
 							{
 								this->GunSocketRelativeLocation = FirearmRef->SocketRelativeLocation - this->GunAnimationRotationPoint;
+
 							}
 							
 						}
@@ -2131,6 +2139,7 @@ void ABot::ResetOnNewRound()
 	this->AimingAngle = 50.0f;
 	
 	this->CombatAction = ECombatAction::IDLE;
+	SetWeaponProjectileMeshVisibility(false);
 	this->bShouldApplyGunAnimation = false;
 	this->Target.Actor = nullptr;
 	this->Target.Bot = nullptr;
@@ -2236,6 +2245,27 @@ void ABot::DeatachWeapon()
 		if (this->WeaponInstance->IsValidLowLevel())
 		{
 			this->WeaponInstance->ConditionalBeginDestroy();
+
+			/** Try to cast to fiream instance and destroy projectile mesh */
+			auto* FirearmInstance = Cast<UFirearmWeaponInstance>(WeaponInstance);
+
+			if (FirearmInstance && FirearmInstance->ProjectileMeshActor)
+			{
+				if (FirearmInstance->ProjectileMeshActor)
+				{
+
+				}
+				FirearmInstance->ProjectileMeshActor->Destroy();
+
+				if (FirearmInstance->BowstringComponent)
+				{
+					FirearmInstance->BowstringComponent->DetachFromParent(false, false);
+					FirearmInstance->BowstringComponent->UnregisterComponent();
+					FirearmInstance->BowstringComponent->DestroyComponent();
+					FirearmInstance->BowstringComponent = nullptr;
+				}
+			}
+
 		}
 		this->WeaponInstance = nullptr;
 		this->WeaponMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
@@ -2811,4 +2841,32 @@ void ABot::ReviveBotDeatchmatch()
 		this->bReviveCollisionTimerActive = true;
 		this->ReviveCollisionTimer.Reset();
 	}
+}
+
+void ABot::SetWeaponProjectileMeshVisibility(bool bVisible)
+{
+	if (!bProjectileMeshExists)
+	{
+		false;
+	}
+
+	if (!this->WeaponInstance || !this->WeaponInstance->WeaponRef)
+	{
+		return;
+	}
+
+	if (this->WeaponInstance->WeaponRef->Type != EWeaponType::Firearm)
+	{
+		return;
+	}
+
+	auto* FirearmInstance = Cast<UFirearmWeaponInstance>(WeaponInstance);
+
+	if (!FirearmInstance)
+	{
+		return;
+	}
+
+	FirearmInstance->SetProjectileMeshVisibility(bVisible);
+	bProjectileMeshVisibility = bVisible;
 }

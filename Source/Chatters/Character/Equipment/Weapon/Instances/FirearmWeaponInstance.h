@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "WeaponInstance.h"
 #include "../FirearmWeaponItem.h"
+#include "Engine/StaticMeshActor.h"
 #include "FirearmWeaponInstance.generated.h"
 
 UENUM(BlueprintType)
@@ -43,6 +44,24 @@ public:
 	void OnShoot();
 
 	FLinearColor TraceColor;
+
+	UPROPERTY()
+		AStaticMeshActor* ProjectileMeshActor = nullptr;
+
+	FManualTimer ProjectileMeshRespawnTimer = FManualTimer(0.5f);
+
+	void SetProjectileMeshVisibility(bool bVisible);
+
+	UPROPERTY()
+		USkeletalMeshComponent* BowstringComponent = nullptr;
+
+	UPROPERTY()
+		UBowstringAnimation* BowstringAnimInstance = nullptr;
+
+	FManualTimer BowstringDetachTimer = FManualTimer(0.5f);
+	FManualTimer BowstringAttachTimer = FManualTimer(0.5f);
+
+	bool bShouldAttachBowstring = true;
 private:
 	void StartReloading();
 

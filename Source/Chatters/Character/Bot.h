@@ -450,4 +450,12 @@ public:
 	FManualTimer ReviveCollisionTimer = FManualTimer(3.0f);
 
 	bool bReviveCollisionTimerActive = false;
+
+private:
+	/** Set visibility for projectile mesh (for example, arrow) */
+	void SetWeaponProjectileMeshVisibility(bool bVisible);
+public:
+	bool bProjectileMeshExists = false;
+	bool bProjectileMeshVisibility = false;
+
 };
