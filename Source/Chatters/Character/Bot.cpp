@@ -308,6 +308,15 @@ void ABot::Tick(float DeltaTime)
 					this->ReviveBotDeatchmatch();
 				}
 			}
+
+			if (!RemoveProjectileMeshesTimeout.IsEnded())
+			{
+				RemoveProjectileMeshesTimeout.Add(DeltaTime);
+				if (RemoveProjectileMeshesTimeout.IsEnded())
+				{
+					RemoveAllAttachedProjectileMeshes();
+				}
+			}
 		}
 	}
 }
@@ -953,9 +962,10 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		}
 	}
 
+	bool bCanMoveWhenShooting = FirearmRef->bCanMoveWhenShooting;
+
 	/** If the bot can shoot or reloading and still moving, stop it */
-	//if ((bCanActuallyShoot || bReloading) && this->bMovingToRandomCombatLocation)
-	if (bReloading && this->bMovingToRandomCombatLocation)
+	if ((bReloading || (!bCanMoveWhenShooting && bCanActuallyShoot)) && this->bMovingToRandomCombatLocation)
 	{
 		if (AIController)
 		{
@@ -978,7 +988,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	float BotSpeed = this->GetSpeed();
 
-	if (bCanActuallyShoot)
+	if (bCanActuallyShoot && (bCanMoveWhenShooting || BotSpeed < 5.0f))
 	{
 		this->Shoot(true);
 	}
@@ -1950,6 +1960,8 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	this->UpdateHeadAnimationType(nullptr, true);
 
+	RemoveProjectileMeshesTimeout.Reset();
+
 	auto* AIController = this->GetAIController();
 
 	if (AIController)
@@ -2168,6 +2180,8 @@ void ABot::ResetOnNewRound()
 	this->UpdateNameColor();
 	
 	this->SmoothRotation.bActive = false;
+
+	RemoveAllAttachedProjectileMeshes();
 
 	if (this->WeaponInstance && this->WeaponInstance->WeaponRef)
 	{
@@ -2495,7 +2509,9 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 		}
 
 		FHitResult HitResult;
-		World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3);
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+		World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3, Params);
 
 #if !UE_BUILD_SHIPPING
 
@@ -2840,6 +2856,8 @@ void ABot::ReviveBotDeatchmatch()
 
 		this->bReviveCollisionTimerActive = true;
 		this->ReviveCollisionTimer.Reset();
+
+		RemoveAllAttachedProjectileMeshes();
 	}
 }
 
@@ -2869,4 +2887,66 @@ void ABot::SetWeaponProjectileMeshVisibility(bool bVisible)
 
 	FirearmInstance->SetProjectileMeshVisibility(bVisible);
 	bProjectileMeshVisibility = bVisible;
+}
+
+void ABot::AttachProjectileMeshToBody(UStaticMesh* StaticMesh, FVector Location, FRotator Rotation, FName BoneName)
+{
+	if (ProjectileMeshesAttached.Num() >= 3)
+	{
+		if (ProjectileMeshesAttached[0])
+		{
+			ProjectileMeshesAttached[0]->DetachFromParent(false, false);
+			ProjectileMeshesAttached[0]->UnregisterComponent();
+			ProjectileMeshesAttached[0]->DestroyComponent();
+		}
+
+		ProjectileMeshesAttached.RemoveAt(0);
+	}
+
+	if (!StaticMesh)
+	{
+		return;
+	}
+
+	FString ComponentName = FString::Printf(TEXT("Projectile_%d"), ProjectileMeshCounter);
+	ProjectileMeshCounter++;
+
+	auto* ProjectileMesh = NewObject<UStaticMeshComponent>(this, *ComponentName);
+
+	if (ProjectileMesh)
+	{
+		ProjectileMeshesAttached.Add(ProjectileMesh);
+		ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		USkeletalMeshComponent* SkeletalMesh = (BoneName == TEXT("spine_6") || BoneName == TEXT("head_")) ? HeadMesh : GetMesh();
+
+		/** If head mesh doesn't exists */
+		if (!SkeletalMesh)
+		{
+			SkeletalMesh = GetMesh();
+		}
+
+		ProjectileMesh->AttachTo(SkeletalMesh, BoneName, EAttachLocation::SnapToTarget);
+		ProjectileMesh->SetStaticMesh(StaticMesh);
+		ProjectileMesh->RegisterComponent();
+		ProjectileMesh->SetWorldLocation(Location);
+		ProjectileMesh->SetWorldRotation(Rotation);
+		this->AddInstanceComponent(ProjectileMesh);
+	}
+
+}
+
+void ABot::RemoveAllAttachedProjectileMeshes()
+{
+	for (auto* MeshRef : ProjectileMeshesAttached)
+	{
+		if (MeshRef)
+		{
+			MeshRef->DetachFromParent(false, false);
+			MeshRef->UnregisterComponent();
+			MeshRef->DestroyComponent();
+		}
+	}
+	
+	this->ProjectileMeshesAttached.Empty();
 }

@@ -454,8 +454,19 @@ public:
 private:
 	/** Set visibility for projectile mesh (for example, arrow) */
 	void SetWeaponProjectileMeshVisibility(bool bVisible);
+
+	UPROPERTY()
+		TArray<UStaticMeshComponent*> ProjectileMeshesAttached;
+
+	FManualTimer RemoveProjectileMeshesTimeout = FManualTimer(10.0f);
 public:
 	bool bProjectileMeshExists = false;
 	bool bProjectileMeshVisibility = false;
 
+	void AttachProjectileMeshToBody(UStaticMesh* StaticMesh, FVector Location, FRotator Rotation, FName BoneName);
+
+	/** Attached projectile mesh counter */
+	int32 ProjectileMeshCounter = 0;
+
+	void RemoveAllAttachedProjectileMeshes();
 };

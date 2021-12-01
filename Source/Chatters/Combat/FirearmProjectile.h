@@ -77,6 +77,8 @@ public:
 	UFirearmWeaponItem* FirearmRef = nullptr;
 	UFirearmWeaponInstance* FirearmInstance = nullptr;
 
+	FVector RelativeImpactLocation;
+
 	UPROPERTY(VisibleAnywhere, BlueprintREadOnly)
 		UNiagaraComponent* Trace = nullptr;
 

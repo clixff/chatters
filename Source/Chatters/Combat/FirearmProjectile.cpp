@@ -122,6 +122,13 @@ void AFirearmProjectile::Init(FVector InitStartLocation, FVector InitEndLocation
 	this->SetActorRotation(NewRotation);
 	this->SetTraceLocation();
 	this->TraceLengthAction = ETraceLengthAction::Increase;
+
+	if (HitResult.BotToDamage)
+	{
+		FVector BoneLocationInWorld = HitResult.BotToDamage->GetMesh()->GetSocketLocation(HitResult.HitResult.BoneName);
+
+		this->RelativeImpactLocation = EndLocation - BoneLocationInWorld;
+	}
 }
 
 void AFirearmProjectile::OnEnd()
@@ -166,6 +173,23 @@ void AFirearmProjectile::OnEnd()
 				}
 				else
 				{
+
+					if (FirearmRef && FirearmRef->ProjectileStaticMesh && FirearmRef->bCanProjectileMeshBeAttachedToEnemy)
+					{
+						/** Do line trace again to check collision */
+						FHitResult NewHitResult;
+						FCollisionQueryParams Params;
+						Params.AddIgnoredActor(BotCauser);
+						GetWorld()->LineTraceSingleByChannel(NewHitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3, Params);
+
+						FName BoneName = NewHitResult.BoneName;
+
+						if (NewHitResult.bBlockingHit && NewHitResult.GetActor() == BotToDamage)
+						{
+							BotToDamage->AttachProjectileMeshToBody(FirearmRef->ProjectileStaticMesh, NewHitResult.ImpactPoint, GetActorRotation(), BoneName);
+						}
+					}
+
 					int32 CriticalHitChance = FMath::RandRange(0, 9);
 					bool bCriticalHit = false;
 

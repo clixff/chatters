@@ -40,6 +40,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		USoundBase* ShootSound;
 
+	UPROPERTY(EditDefaultsOnly)
+		bool bCanMoveWhenShooting = true;
+
 	UPROPERTY(EditDefaultsOnly, Category="Transform")
 		FVector SocketRelativeLocation;
 
@@ -77,6 +80,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile Mesh")
 		float ProjectileMeshRespawnTime = 0.5f;
+
+	/** For example, arrow */
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile Mesh")
+		bool bCanProjectileMeshBeAttachedToEnemy = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Bowstring")
 		USkeletalMesh* BowstringMesh = nullptr;
