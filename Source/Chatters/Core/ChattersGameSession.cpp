@@ -369,6 +369,14 @@ void UChattersGameSession::Start()
 			}
 		}
 
+		if (this->WeatherManagerRef)
+		{
+			if (this->GameModeType != ESessionGameMode::Teams || RoundNumber == 1)
+			{
+				this->WeatherManagerRef->Activate();
+			}
+		}
+
 		if (this->GameModeType == ESessionGameMode::Deathmatch)
 		{
 			this->RoundTime = 60.0f * 3.0f;

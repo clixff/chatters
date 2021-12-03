@@ -173,14 +173,13 @@ void AFirearmProjectile::OnEnd()
 				}
 				else
 				{
-
 					if (FirearmRef && FirearmRef->ProjectileStaticMesh && FirearmRef->bCanProjectileMeshBeAttachedToEnemy)
 					{
 						/** Do line trace again to check collision */
 						FHitResult NewHitResult;
 						FCollisionQueryParams Params;
 						Params.AddIgnoredActor(BotCauser);
-						GetWorld()->LineTraceSingleByChannel(NewHitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3, Params);
+						GetWorld()->LineTraceSingleByChannel(NewHitResult, StartLocation, RealEndLocation, ECollisionChannel::ECC_GameTraceChannel3, Params);
 
 						FName BoneName = NewHitResult.BoneName;
 
@@ -200,13 +199,21 @@ void AFirearmProjectile::OnEnd()
 
 
 					FVector ImpulseVector = this->CauserForwardVector * this->FirearmRef->ImpulseForce;
-					BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, BulletHitResult.HitResult.ImpactPoint, BulletHitResult.HitResult.BoneName, bCriticalHit);
+					BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, RealEndLocation, BulletHitResult.HitResult.BoneName, bCriticalHit);
 
 					APlayerPawn* PlayerPawn = APlayerPawn::Get();
 
-					float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(BulletHitResult.HitResult.ImpactPoint) : 0.0f;
+					float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(RealEndLocation) : 0.0f;
 
-					BotToDamage->SpawnBloodParticle(BulletHitResult.HitResult.ImpactPoint, this->GetActorLocation());
+					if (DistanceFromCamera < 5000.0f)
+					{
+						BotToDamage->SpawnBloodParticle(RealEndLocation, this->GetActorLocation());
+
+						if (FirearmRef && FirearmRef->DamageSound)
+						{
+							UGameplayStatics::PlaySoundAtLocation(GetWorld(), FirearmRef->DamageSound, RealEndLocation, FMath::RandRange(0.7f, 0.85f));
+						}
+					}
 				}
 			}
 		}
@@ -219,7 +226,15 @@ void AFirearmProjectile::OnEnd()
 
 void AFirearmProjectile::SetTraceLocation()
 {
-	FVector NewLocation = FMath::Lerp(this->StartLocation, this->EndLocation, this->DistanceScale);
+	RealEndLocation = this->EndLocation;
+
+	if (!bSimplified && BulletHitResult.BotToDamage)
+	{
+		FVector BoneLocation = BulletHitResult.BotToDamage->GetMesh()->GetSocketLocation(BulletHitResult.HitResult.BoneName);
+		RealEndLocation = BoneLocation + RelativeImpactLocation;
+	}
+
+	FVector NewLocation = FMath::Lerp(this->StartLocation, RealEndLocation, this->DistanceScale);
 	this->SetActorLocation(NewLocation);
 }
 

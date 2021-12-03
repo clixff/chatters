@@ -13,6 +13,7 @@
 #include "../Props/ExplodingBarrel.h"
 #include "../Combat/FirearmProjectile.h"
 #include "../Misc/Train.h"
+#include "../Misc/Weather/WeatherManager.h"
 #include "ChattersGameSession.generated.h"
 
 /**
@@ -175,4 +176,7 @@ public:
 	void SelectDeathmatchLeader(int32 Index);
 
 	ATrain* TrainRef = nullptr;
+
+	UPROPERTY()
+		AWeatherManager* WeatherManagerRef = nullptr;
 };

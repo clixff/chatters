@@ -41,6 +41,9 @@ public:
 		USoundBase* ShootSound;
 
 	UPROPERTY(EditDefaultsOnly)
+		USoundBase* DamageSound = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
 		bool bCanMoveWhenShooting = true;
 
 	UPROPERTY(EditDefaultsOnly, Category="Transform")

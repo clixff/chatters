@@ -116,4 +116,6 @@ public:
 	void SetColor(FLinearColor Color);
 private:
 	bool bPendingDestroying = false;
+
+	FVector RealEndLocation;
 };

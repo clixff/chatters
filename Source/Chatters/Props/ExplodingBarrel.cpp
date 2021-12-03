@@ -5,6 +5,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "../Character/Bot.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "../Player/PlayerPawn.h"
+#include "../Core/ChattersGameInstance.h"
 #include "../Core/ChattersGameSession.h"
 
 // Sets default values
