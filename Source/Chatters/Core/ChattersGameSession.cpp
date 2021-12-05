@@ -967,6 +967,7 @@ void UChattersGameSession::OnGameEnded(ABot* Winner)
 	this->bDeathmatchRoundEnded = true;
 
 	Winner->StopMovementAfterRound();
+	Winner->bWinner = true;
 	if (this->SessionWidget)
 	{
 		this->SessionWidget->PlayWinnerAnimation(Winner->DisplayName, Winner->GetTeamColor());

@@ -139,13 +139,7 @@ void ABot::Tick(float DeltaTime)
 				}
 				else
 				{
-					//this->CombatTickTimeout.Add(DeltaTime);
-
-					//if (this->CombatTickTimeout.IsEnded())
-					//{
-						this->CombatTick(DeltaTime);
-					//	this->CombatTickTimeout.Reset();
-					//}
+					this->CombatTick(DeltaTime);
 				}
 
 			}
@@ -890,6 +884,13 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		this->SecondsAimingWithoutHitting.Reset();
 	}
 
+	bool bCanMoveWhenShooting = FirearmRef->bCanMoveWhenShooting;
+
+	//if (!bCanMoveWhenShooting && FirearmInstance->Phase != EFirearmPhase::IDLE)
+	//{
+	//	bCanFindNewPlace = false;
+	//}
+
 	if (this->CombatStyle == ECombatStyle::Defense)
 	{
 		if (this->bMovingToRandomCombatLocation)
@@ -962,7 +963,6 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		}
 	}
 
-	bool bCanMoveWhenShooting = FirearmRef->bCanMoveWhenShooting;
 
 	/** If the bot can shoot or reloading and still moving, stop it */
 	if ((bReloading || (!bCanMoveWhenShooting && bCanActuallyShoot)) && this->bMovingToRandomCombatLocation)
@@ -2949,4 +2949,26 @@ void ABot::RemoveAllAttachedProjectileMeshes()
 	}
 	
 	this->ProjectileMeshesAttached.Empty();
+}
+
+void ABot::WinnerTick(float DeltaTime)
+{
+	if (this->WeaponInstance)
+	{
+		auto* FirearmInstance = Cast<UFirearmWeaponInstance>(WeaponInstance);
+
+		if (FirearmInstance)
+		{
+			auto* PlayerPawn = APlayerPawn::Get();
+
+			if (PlayerPawn)
+			{
+				FVector CameraLocation = PlayerPawn->GetCameraLocation();
+
+				this->AimAt(CameraLocation);
+				this->SmoothRotatingTick(DeltaTime);
+				bShouldApplyGunAnimation = true;
+			}
+		}
+	}
 }

@@ -469,4 +469,8 @@ public:
 	int32 ProjectileMeshCounter = 0;
 
 	void RemoveAllAttachedProjectileMeshes();
+
+	bool bWinner = false;
+
+	void WinnerTick(float DeltaTime);
 };
