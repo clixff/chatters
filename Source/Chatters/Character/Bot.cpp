@@ -2839,6 +2839,7 @@ void ABot::ReviveBotDeatchmatch()
 		}
 
 		this->SetEquipment();
+		this->UpdateEquipmentTeamColors();
 
 		FTransform SpawnPoint = GameSession->GetAvailableSpawnPoint(false);
 
