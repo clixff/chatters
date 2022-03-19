@@ -660,7 +660,8 @@ void ABot::CombatTick(float DeltaTime)
 					{
 						if (!this->ShouldPlayWeaponReloadingAnimation() && !this->ShouldPlayWeaponHitAnimation())
 						{
-							this->AimAt(this->Target.Actor->GetActorLocation());
+							FVector AimLoc = Target.Actor->GetActorLocation();
+							this->AimAt(AimLoc);
 							this->bUseControllerRotationYaw = false;
 							this->SmoothRotatingTick(DeltaTime);
 							this->MoveToTarget();
@@ -820,6 +821,10 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 	if (this->Target.TargetType == ETargetType::Bot)
 	{
 		AimTargetLocation = this->Target.Bot->GetMesh()->GetSocketTransform(TEXT("spine_5")).GetLocation();
+		if (Target.Bot->CanHatBeDetached() && Target.Bot->HatMesh->GetStaticMesh())
+		{
+			//AimTargetLocation = Target.Bot->HatMesh->GetComponentLocation();
+		}
 	}
 	else
 	{
@@ -1129,7 +1134,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition(GunRotation, false);
 
-			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, this->bTestAiming);
+			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, false);
 
 			FTransform ProjectileTransform;
 			ProjectileTransform.SetLocation(OutBulletLocation);
@@ -1508,6 +1513,11 @@ void ABot::RespawnAtRandomPlace()
 	}
 }
 
+bool ABot::CanHatBeDetached()
+{
+	return bHatAttached && bCanHatBeDetached;
+}
+
 ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclassOf<ABot> Subclass, UChattersGameSession* GameSessionObject)
 {
 	GameSessionObject = UChattersGameSession::Get();
@@ -1583,12 +1593,16 @@ void ABot::SetEquipment()
 			auto RandomEquipment = EquipmentSet->GetRandomEquipment(this->Team);
 			if (this->HatMesh)
 			{
+				bHatAttached = RandomEquipment.Hat != nullptr;
 				if (!RandomEquipment.Hat)
 				{
 					this->HatMesh->SetStaticMesh(nullptr);
+					this->HatMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				}
 				else
 				{
+					this->HatMesh->SetCollisionProfileName(FName(TEXT("Hat")), true);
+					this->HatMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
 					this->HatMesh->SetRelativeTransform(RandomEquipment.Hat->GetTransform());
 					this->HatMesh->EmptyOverrideMaterials();
@@ -1601,9 +1615,7 @@ void ABot::SetEquipment()
 						{
 							this->HatMesh->SetMaterial(i, Materials[i]);
 						}
-
 					}
-
 					this->bCanHatBeDetached = RandomEquipment.Hat->bCanDetach;
 				}
 			}
@@ -2008,7 +2020,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	if (this->HatMesh)
 	{
-		this->bHatAttached = true;
+		//this->bHatAttached = true;
 	}
 
 	if (this->WeaponInstance)
@@ -2226,28 +2238,40 @@ void ABot::TryDetachHat()
 {
 	if (this->bHatAttached && this->HatMesh && this->GetMesh())
 	{
-		FRotator HeadRotation = this->GetMesh()->GetSocketRotation(FName(TEXT("head_")));
+		this->bHatAttached = false;
+		this->HatMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		this->HatMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
+		this->HatMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+		this->HatMesh->SetSimulatePhysics(true);
 
-		if (HeadRotation.Roll > 150.0f || HeadRotation.Roll < 75.0f || HeadRotation.Pitch > 50.0f || HeadRotation.Pitch < -50.0f)
-		{
-			this->bHatAttached = false;
-			this->HatMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-			this->HatMesh->SetCollisionProfileName(FName(TEXT("OufitPhysics")), true);
-			this->HatMesh->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
-			this->HatMesh->SetSimulatePhysics(true);
+		const FVector HeadLocation = this->GetMesh()->GetSocketLocation(TEXT("head_"));
+		FVector HatLocation = HeadLocation - this->HatMesh->GetComponentLocation();
 
-			const FVector HeadLocation = this->GetMesh()->GetSocketLocation(TEXT("head_"));
-			FVector HatLocation = HeadLocation - this->HatMesh->GetComponentLocation();
-
-			HatLocation.Normalize();
+		HatLocation.Normalize();
 			
-			const FVector HatPhysicsImpulse = HatLocation * -1000.0f;
+		const FVector HatPhysicsImpulse = HatLocation * -1000.0f;
 
-			HatDetachedTimer.Reset();
+		HatDetachedTimer.Reset();
 
-			//this->HatMesh->AddImpulseAtLocation(HatPhysicsImpulse, this->HatMesh->GetComponentLocation());
+		//this->HatMesh->AddImpulseAtLocation(HatPhysicsImpulse, this->HatMesh->GetComponentLocation());
+	}
+}
 
-		}
+void ABot::DetachHatAfterShot(FBulletHitResult BulletHitResult, float ImpulseForce, FVector ShotLocation)
+{
+	TryDetachHat();
+	FVector ImpactPoint = ShotLocation;
+
+	FVector StartLocation = BulletHitResult.HitResult.TraceStart;
+	FVector ShotDirection = ShotLocation - StartLocation;
+	ShotDirection.Normalize();
+	FVector ImpulseVector = ShotDirection * ImpulseForce;
+
+	HatMesh->AddImpulseAtLocation(ImpulseVector, ImpactPoint, BulletHitResult.HitResult.BoneName);
+
+	if (HatDamageSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), HatDamageSound, ShotLocation, FMath::RandRange(0.7f, 0.85f));
 	}
 }
 
@@ -2540,6 +2564,7 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 				if (Bot)
 				{
 					BulletHitResult.BotToDamage = Bot;
+					BulletHitResult.bHatDamage = HitResult.GetComponent() == Bot->HatMesh;
 					return BulletHitResult;
 				}
 

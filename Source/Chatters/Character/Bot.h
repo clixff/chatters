@@ -206,6 +206,15 @@ public:
 
 	/** Useful when bot is stuck */
 	void RespawnAtRandomPlace();
+
+	bool CanHatBeDetached();
+
+	void TryDetachHat();
+
+	void DetachHatAfterShot(FBulletHitResult BulletHitResult, float ImpulseForce, FVector ShotLocation);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		USoundBase* HatDamageSound = nullptr;
 private:
 	bool bReady = false;
 
@@ -225,7 +234,6 @@ private:
 
 	float SecondsAfterDeath = 0.0f;
 
-	void TryDetachHat();
 
 	void DeatachWeapon();
 

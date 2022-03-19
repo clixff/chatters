@@ -199,19 +199,30 @@ void AFirearmProjectile::OnEnd()
 
 
 					FVector ImpulseVector = this->CauserForwardVector * this->FirearmRef->ImpulseForce;
-					BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, RealEndLocation, BulletHitResult.HitResult.BoneName, bCriticalHit);
 
-					APlayerPawn* PlayerPawn = APlayerPawn::Get();
-
-					float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(RealEndLocation) : 0.0f;
-
-					if (DistanceFromCamera < 5000.0f)
+					if (BulletHitResult.bHatDamage)
 					{
-						BotToDamage->SpawnBloodParticle(RealEndLocation, this->GetActorLocation());
-
-						if (FirearmRef && FirearmRef->DamageSound)
+						if (BotToDamage->CanHatBeDetached())
 						{
-							UGameplayStatics::PlaySoundAtLocation(GetWorld(), FirearmRef->DamageSound, RealEndLocation, FMath::RandRange(0.7f, 0.85f));
+							BotToDamage->DetachHatAfterShot(BulletHitResult, FirearmRef->ImpulseForce, RealEndLocation);
+						}
+					}
+					else
+					{
+						BotToDamage->ApplyDamage(this->FirearmInstance->GetDamage(), this->BotCauser, EWeaponType::Firearm, ImpulseVector, RealEndLocation, BulletHitResult.HitResult.BoneName, bCriticalHit);
+
+						APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+						float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(RealEndLocation) : 0.0f;
+
+						if (DistanceFromCamera < 5000.0f)
+						{
+							BotToDamage->SpawnBloodParticle(RealEndLocation, this->GetActorLocation());
+
+							if (FirearmRef && FirearmRef->DamageSound)
+							{
+								UGameplayStatics::PlaySoundAtLocation(GetWorld(), FirearmRef->DamageSound, RealEndLocation, FMath::RandRange(0.7f, 0.85f));
+							}
 						}
 					}
 				}

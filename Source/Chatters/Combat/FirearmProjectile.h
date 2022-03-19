@@ -27,6 +27,7 @@ public:
 	FHitResult HitResult;
 	ABot* BotToDamage = nullptr;
 	AExplodingBarrel* ExplodingBarrel = nullptr;
+	bool bHatDamage = false;
 };
 
 
