@@ -1630,6 +1630,14 @@ void ABot::SetEquipment()
 				{
 					this->BeardMesh->SetStaticMesh(RandomEquipment.BeardStyle->StaticMesh);
 					this->BeardMesh->SetRelativeTransform(RandomEquipment.BeardStyle->GetTransform());
+					this->BeardMesh->EmptyOverrideMaterials();
+
+					TArray<UMaterialInterface*> Materials = RandomEquipment.BeardStyle->GetRandomMaterials();
+
+					for (int32 i = 0; i < Materials.Num(); i++)
+					{
+						this->BeardMesh->SetMaterial(i, Materials[i]);
+					}
 				}
 			}
 
