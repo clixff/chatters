@@ -1601,10 +1601,9 @@ void ABot::SetEquipment()
 				}
 				else
 				{
-					this->HatMesh->SetCollisionProfileName(FName(TEXT("Hat")), true);
-					this->HatMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+					HatTransform = RandomEquipment.Hat->GetTransform();
+					AttachHat();
 					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
-					this->HatMesh->SetRelativeTransform(RandomEquipment.Hat->GetTransform());
 					this->HatMesh->EmptyOverrideMaterials();
 
 					if (RandomEquipment.Hat->StaticMesh)
@@ -1780,6 +1779,15 @@ void ABot::SpawnReloadingParticle(UNiagaraSystem* Particle, FTransform Transform
 	}
 
 	UNiagaraFunctionLibrary::SpawnSystemAttached(Particle, this->WeaponMesh, TEXT("out"), Transform.GetLocation(), FRotator(Transform.GetRotation()), EAttachLocation::SnapToTarget, true, true);
+}
+
+void ABot::AttachHat()
+{
+	HatMesh->SetSimulatePhysics(false);
+	HatMesh->AttachToComponent(HeadMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("head_"));
+	HatMesh->SetCollisionProfileName(FName(TEXT("Hat")), true);
+	HatMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	HatMesh->SetRelativeTransform(HatTransform);
 }
 
 void ABot::MoveToRandomLocation()
@@ -2224,6 +2232,8 @@ void ABot::ResetOnNewRound()
 			}
 		}
 	}
+
+	AttachHat();
 }
 
 void ABot::OnGameSessionStarted(ESessionMode SessionMode)

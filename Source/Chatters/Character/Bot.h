@@ -215,7 +215,11 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		USoundBase* HatDamageSound = nullptr;
+
+	void AttachHat();
 private:
+	FTransform HatTransform;
+
 	bool bReady = false;
 
 	void MoveToRandomLocation();
