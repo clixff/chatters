@@ -6,6 +6,8 @@
 #include "../Player/PlayerPawn.h"
 #include "../Character/Bot.h"
 #include "../Character/Equipment/Weapon/Instances/FirearmWeaponInstance.h"
+#include "NiagaraFunctionLibrary.h"
+#include "../Misc/BulletHolesManager.h"
 #include "Kismet/KismetMathLibrary.h"
 
 uint32 AFirearmProjectile::TotalNumberOfProjectiles = 0;
@@ -129,6 +131,11 @@ void AFirearmProjectile::Init(FVector InitStartLocation, FVector InitEndLocation
 
 		this->RelativeImpactLocation = EndLocation - BoneLocationInWorld;
 	}
+
+	if (HitResult.HitResult.bBlockingHit && !HitResult.BotToDamage && !HitResult.ExplodingBarrel)
+	{
+		bShotAtWall = true;
+	}
 }
 
 void AFirearmProjectile::OnEnd()
@@ -231,6 +238,21 @@ void AFirearmProjectile::OnEnd()
 		else if (BulletHitResult.ExplodingBarrel)
 		{
 			BulletHitResult.ExplodingBarrel->Explode(this->BotCauser);
+		}
+		else if (bShotAtWall && !bSimplified)
+		{
+			FRotator ShotRotation = UKismetMathLibrary::FindLookAtRotation(RealEndLocation, StartLocation);
+
+			if (WallParticle)
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), WallParticle, RealEndLocation, ShotRotation);
+			}
+
+			if (BulletHoleMaterial)
+			{
+				ShotRotation = BulletHitResult.HitResult.ImpactNormal.Rotation();
+				ABulletHolesManager::AddDecal(RealEndLocation, ShotRotation, BulletHoleMaterial);
+			}
 		}
 	}
 }

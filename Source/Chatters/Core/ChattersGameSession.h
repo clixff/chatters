@@ -14,6 +14,7 @@
 #include "../Combat/FirearmProjectile.h"
 #include "../Misc/Train.h"
 #include "../Misc/Weather/WeatherManager.h"
+#include "../Misc/BulletHolesManager.h"
 #include "ChattersGameSession.generated.h"
 
 /**
@@ -179,4 +180,7 @@ public:
 
 	UPROPERTY()
 		AWeatherManager* WeatherManagerRef = nullptr;
+
+	UPROPERTY()
+		ABulletHolesManager* BulletHolesManager = nullptr;
 };

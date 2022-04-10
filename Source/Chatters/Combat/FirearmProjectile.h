@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "../Props/ExplodingBarrel.h"
 #include "NiagaraComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "FirearmProjectile.generated.h"
 
 enum class ETraceLengthAction : uint8
@@ -115,8 +116,16 @@ public:
 	bool bSimplified = false;
 
 	void SetColor(FLinearColor Color);
+
+	UPROPERTY(EditDefaultsOnly)
+		UNiagaraSystem* WallParticle = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		UMaterialInterface* BulletHoleMaterial = nullptr;
 private:
 	bool bPendingDestroying = false;
 
 	FVector RealEndLocation;
+
+	bool bShotAtWall = false;
 };
