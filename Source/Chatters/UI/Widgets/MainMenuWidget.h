@@ -8,6 +8,7 @@
 #include "MainMenu/MapPreview.h"
 #include "../../Misc/Misc.h"
 #include "Components/EditableTextBox.h"
+#include "../../Misc/DayTime/DayTimeManager.h"
 #include "MainMenuWidget.generated.h"
 
 
@@ -126,6 +127,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 		void SetWeaponSelected(int32 WeaponID, bool bSelected);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		ETimeOfDay TimeOfDay = ETimeOfDay::Day;
 private:
 	TArray<UWidget*> GetButtonWidgets();
 

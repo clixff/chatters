@@ -7,6 +7,7 @@
 #include "../Misc/Process/Process.h"
 #include "../Sockets/SocketClient.h"
 #include "Async/Async.h"
+#include "../Misc/DayTime/DayTimeManager.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -372,6 +373,7 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 	auto* WidgetManagerRef = this->GetWidgetManager();
 
 	TSet<FString> AvailableWeapons;
+	ETimeOfDay TimeOfDay = ETimeOfDay::Day;
 
 	if (WidgetManagerRef)
 	{
@@ -379,6 +381,7 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 		{
 			WidgetManagerRef->MainMenuWidget->Hide();
 			AvailableWeapons = WidgetManagerRef->MainMenuWidget->WeaponsAvailableList;
+			TimeOfDay = WidgetManagerRef->MainMenuWidget->TimeOfDay;
 		}
 
 		if (WidgetManagerRef->LoadingWidget)
@@ -387,10 +390,11 @@ void UChattersGameInstance::StartGameSession(FString LevelName)
 		}
 	}
 
-	this->GameSession = NewObject<UChattersGameSession>(this, this->GameSessionClass, TEXT("GameSession"));
+	GameSession = NewObject<UChattersGameSession>(this, this->GameSessionClass, TEXT("GameSession"));
 
-	this->GameSession->Init(LevelName);
-	this->GameSession->AvailableWeapons = AvailableWeapons;
+	GameSession->Init(LevelName);
+	GameSession->AvailableWeapons = AvailableWeapons;
+	GameSession->TimeOfDay = TimeOfDay;
 }
 
 bool UChattersGameInstance::GetIsInMainMenu()

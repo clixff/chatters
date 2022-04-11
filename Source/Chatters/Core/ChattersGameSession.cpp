@@ -241,6 +241,25 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		
 	this->SessionWidget->Show();
 
+	if (DayTimeManagerRef)
+	{
+		if (TimeOfDay == ETimeOfDay::Day)
+		{
+			if (GameModeType == ESessionGameMode::Teams)
+			{
+				DayTimeManagerRef->SetSunRotationAtDay(0);
+			}
+			else
+			{
+				DayTimeManagerRef->SetSunRotationAtDay(-1);
+			}
+		}
+		else
+		{
+			DayTimeManagerRef->SetNightTime();
+		}
+
+	}
 
 	auto* GameInstance = UChattersGameInstance::Get();
 
@@ -736,6 +755,14 @@ void UChattersGameSession::OnTeamsBattleEnd()
 		this->SessionWidget->UpdateRoundSeconds(0.0f);
 	}
 	bUpdateRoundTimer = false;
+
+	if (DayTimeManagerRef)
+	{
+		if (TimeOfDay == ETimeOfDay::Day)
+		{
+			DayTimeManagerRef->SetSunRotationAtDay(RoundNumber - 1);
+		}
+	}
 }
 
 FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint)

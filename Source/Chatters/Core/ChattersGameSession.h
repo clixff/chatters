@@ -15,6 +15,7 @@
 #include "../Misc/Train.h"
 #include "../Misc/Weather/WeatherManager.h"
 #include "../Misc/BulletHolesManager.h"
+#include "../Misc/DayTime/DayTimeManager.h"
 #include "ChattersGameSession.generated.h"
 
 /**
@@ -183,4 +184,10 @@ public:
 
 	UPROPERTY()
 		ABulletHolesManager* BulletHolesManager = nullptr;
+
+	UPROPERTY()
+		ADayTimeManager* DayTimeManagerRef = nullptr;
+
+	UPROPERTY()
+		ETimeOfDay TimeOfDay = ETimeOfDay::Day;
 };
