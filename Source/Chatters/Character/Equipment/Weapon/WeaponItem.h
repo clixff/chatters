@@ -54,9 +54,6 @@ public:
 		UBlendSpace* IdleBlendSpace = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		UBlendSpace1D* HitBlendSpace = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		UAnimSequence* ReloadingAnimation = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -70,4 +67,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		UBlendSpace1D* RunBlendSpace = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UAnimSequence* HitAnimationRef;
 };

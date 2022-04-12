@@ -55,9 +55,10 @@ void UWeaponInstance::Tick(float DeltaTime)
 
 void UWeaponInstance::Init()
 {
-    if (this->WeaponRef)
+    if (WeaponRef)
     {
-        this->SecondsWithoutHit.Max = this->WeaponRef->TimeToPlayHitAnimation;
+        HitAnimationSequence = WeaponRef->HitAnimationRef;
+        TimeToPlayHitAnimation = SecondsWithoutHit.Max = WeaponRef->TimeToPlayHitAnimation;
     }
 }
 

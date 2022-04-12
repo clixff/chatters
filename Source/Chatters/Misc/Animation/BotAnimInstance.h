@@ -7,6 +7,7 @@
 #include "../../Character/Bot.h"
 #include "Animation/BlendSpace1D.h"
 #include "../../Character/Equipment/Weapon/WeaponItem.h"
+#include "../../Character/Equipment/Weapon/Instances/WeaponInstance.h"
 #include "BotAnimInstance.generated.h"
 
 /**
@@ -38,6 +39,9 @@ public:
 		UWeaponItem* WeaponRef = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UWeaponInstance* WeaponInstance = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float GunPitchRotation = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -51,6 +55,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UBlendSpace1D* DefaultRunBlendSpace = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UAnimSequence* HitAnimation = nullptr;
 
 private:
 	UPROPERTY()

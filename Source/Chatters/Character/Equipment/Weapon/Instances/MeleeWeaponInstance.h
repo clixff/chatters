@@ -34,4 +34,7 @@ public:
 
 	float TimeToEnableCollision = 0.0f;
 	float TimeToDisableCollision = 1.0f;
+
+	UPROPERTY()
+		FMeleeAnimation HitAnimation;
 };

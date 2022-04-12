@@ -47,21 +47,25 @@ void UMeleeWeaponInstance::OnHit()
 	this->BotsHit.Empty();
 	this->Phase = EMeleePhase::Hit;
 
-	auto* Ref = this->GetMeleeRef();
+	auto* Ref = GetMeleeRef();
 
 	if (Ref)
 	{
-		this->TimeoutValue = Ref->HitTimeout;
-		this->bShouldPlayHitAnimation = true;
-		this->HitAnimationTime = 0.0f;
+		HitAnimation = Ref->GetRandomHitAnimation();
 
-		float EnableCollisionTimePercent = Ref->AnimationTimeToDamage.GetLowerBoundValue();
-		float DisableCollisionTimePercent = Ref->AnimationTimeToDamage.GetUpperBoundValue();
+		TimeToPlayHitAnimation = HitAnimation.AnimationTimeSeconds;
+		HitAnimationSequence = HitAnimation.DamageAnimation;
+		TimeoutValue = Ref->HitTimeout;
+		bShouldPlayHitAnimation = true;
+		HitAnimationTime = 0.0f;
 
-		this->TimeToEnableCollision = (1.0f - EnableCollisionTimePercent) * Ref->HitTimeout;
-		this->TimeToDisableCollision = (1.0f - DisableCollisionTimePercent) * Ref->HitTimeout;
+		float EnableCollisionTimePercent = HitAnimation.AnimationTimeToDamage.GetLowerBoundValue();
+		float DisableCollisionTimePercent = HitAnimation.AnimationTimeToDamage.GetUpperBoundValue();
 
-		this->bHitPrevTick = true;
+		TimeToEnableCollision = (1.0f - EnableCollisionTimePercent) * Ref->HitTimeout;
+		TimeToDisableCollision = (1.0f - DisableCollisionTimePercent) * Ref->HitTimeout;
+
+		bHitPrevTick = true;
 	}
 }
 

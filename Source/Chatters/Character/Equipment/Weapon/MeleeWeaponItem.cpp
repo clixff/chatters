@@ -12,3 +12,15 @@ UMeleeWeaponItem::~UMeleeWeaponItem()
 {
 
 }
+
+FMeleeAnimation UMeleeWeaponItem::GetRandomHitAnimation()
+{
+	FMeleeAnimation Anim;
+
+	if (HitAnimations.Num())
+	{
+		Anim = HitAnimations[FMath::RandRange(0, HitAnimations.Num() - 1)];
+	}
+
+	return Anim;
+}

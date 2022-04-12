@@ -19,6 +19,7 @@ void UBotAnimInstance::AnimTick(float DeltaTime)
 	this->GunPitchRotation = Bot->GetGunPitchRotation();
 
 	this->WeaponRef = Bot->GetWeaponRef();
+	this->WeaponInstance = Bot->WeaponInstance;
 
 	if (this->WeaponRef && this->WeaponRef->RunBlendSpace)
 	{
@@ -42,6 +43,11 @@ void UBotAnimInstance::AnimTick(float DeltaTime)
 	else
 	{
 		this->bShouldApplyGunAnimation = Bot->bShouldApplyGunAnimation;
+	}
+
+	if (WeaponInstance)
+	{
+		HitAnimation = WeaponInstance->HitAnimationSequence;
 	}
 }
 

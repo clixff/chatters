@@ -42,4 +42,9 @@ public:
 	bool bHitPrevTick = false;
 
 	FManualTimer SecondsWithoutHit = FManualTimer(0.2f);
+
+	float TimeToPlayHitAnimation = 0.0f;
+
+	UPROPERTY()
+		UAnimSequence* HitAnimationSequence = nullptr;
 };

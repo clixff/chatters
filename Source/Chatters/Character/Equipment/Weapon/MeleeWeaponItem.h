@@ -14,6 +14,21 @@ enum class EMeleePhase : uint8
 	Hit
 };
 
+USTRUCT(BlueprintType)
+struct FMeleeAnimation
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		UAnimSequence* DamageAnimation = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		float AnimationTimeSeconds = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		FFloatRange AnimationTimeToDamage = FFloatRange(0.0f, 1.0f);
+};
+
 /**
  * 
  */
@@ -41,5 +56,7 @@ public:
 		USoundBase* DamageSound = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
-		FFloatRange AnimationTimeToDamage = FFloatRange(0.0f, 1.0f);
+		TArray<FMeleeAnimation> HitAnimations;
+
+	FMeleeAnimation GetRandomHitAnimation();
 };
