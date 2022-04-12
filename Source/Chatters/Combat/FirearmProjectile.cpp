@@ -253,6 +253,11 @@ void AFirearmProjectile::OnEnd()
 				ShotRotation = BulletHitResult.HitResult.ImpactNormal.Rotation();
 				ABulletHolesManager::AddDecal(RealEndLocation, ShotRotation, BulletHoleMaterial);
 			}
+
+			if (WallDamageSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), WallDamageSound, RealEndLocation);
+			}
 		}
 	}
 }

@@ -1827,7 +1827,18 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 
 	if (bCritical)
 	{
-		Damage = FMath::RoundToInt(Damage * 1.5f);
+		if (ByBot && ByBot != this)
+		{
+			auto* ByWeaponRef = ByBot->GetWeaponRef();
+			if (ByWeaponRef)
+			{
+				Damage = FMath::RoundToInt(float(ByWeaponRef->MaxDamage) * FMath::RandRange(1.25f, 1.5f));
+			}
+		}
+		else
+		{
+			Damage = FMath::RoundToInt(Damage * 1.5f);
+		}
 	}
 
 	auto OldHP = this->HealthPoints;

@@ -7,6 +7,7 @@
 #include "../Props/ExplodingBarrel.h"
 #include "NiagaraComponent.h"
 #include "Materials/MaterialInterface.h"
+#include "Sound/SoundBase.h"
 #include "FirearmProjectile.generated.h"
 
 enum class ETraceLengthAction : uint8
@@ -122,6 +123,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		UMaterialInterface* BulletHoleMaterial = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		USoundBase* WallDamageSound = nullptr;
 private:
 	bool bPendingDestroying = false;
 
