@@ -11,7 +11,9 @@ UENUM(BlueprintType)
 enum class EKillFeedIconType : uint8
 {
 	Default,
-	Explosion
+	Explosion,
+	Train,
+	Fall
 };
 
 USTRUCT(BlueprintType)
@@ -59,4 +61,10 @@ public:
 public:
 	UPROPERTY(EditDefaultsOnly, Category="Icons")
 		FKillFeedIcon ExplosionIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Icons")
+		FKillFeedIcon TrainIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Icons")
+		FKillFeedIcon FallIcon;
 };

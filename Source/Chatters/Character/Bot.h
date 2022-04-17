@@ -134,7 +134,8 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
 		FString DisplayName = FString();
 
-	int32 ID;
+	UPROPERTY(VisibleAnywhere)
+		int32 ID;
 
 	UPROPERTY(VisibleAnywhere, Category = "Bot")
 		int32 HealthPoints;

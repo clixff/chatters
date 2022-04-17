@@ -217,7 +217,7 @@ void ABot::Tick(float DeltaTime)
 
 						int32 Damage = FMath::FloorToInt(FMath::Lerp(MinFallDamage, MaxFallDamage, FallDistanceScale));
 
-						this->ApplyDamage(Damage, this, EWeaponType::None);
+						this->ApplyDamage(Damage, this, EWeaponType::Fall);
 
 						if (this->FallDamageSound)
 						{
@@ -1175,6 +1175,30 @@ void ABot::Shoot(bool bBulletOffset)
 					UGameplayStatics::SpawnEmitterAtLocation(World, FirearmRef->ShotParticle, ParticleTransform, true);
 				}
 			}
+
+			auto* GameSessionRef = GetGameSession();
+
+			if (GameSessionRef)
+			{
+				auto& Stat = GameSessionRef->PlayerStats[this->ID];
+				Stat.Shots++;
+				if ((BulletHitResult.ExplodingBarrel || BulletHitResult.BotToDamage) && BulletHitResult.HitResult.GetActor() == Target.Actor)
+				{
+					Stat.Hits++;
+				}
+				
+				if (BulletHitResult.bHatDamage)
+				{
+					Stat.HatsDropped++;
+				}
+
+				if (BulletHitResult.ExplodingBarrel)
+				{
+					Stat.BarrelsExploded++;
+				}
+
+				Stat.Accuracy = (float(Stat.Hits) / float(Stat.Shots)) * 100.0f;
+			}
 		}
 	}
 }
@@ -1209,6 +1233,15 @@ void ABot::MeleeHit()
 		if (MeleeRef->HitSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), MeleeRef->HitSound, this->WeaponMesh->GetComponentLocation(), FMath::RandRange(0.7f, 0.85f));
+		}
+
+		auto* GameSessionRef = GetGameSession();
+
+		if (GameSessionRef)
+		{
+			auto& Stat = GameSessionRef->PlayerStats[this->ID];
+			Stat.Shots++;
+			Stat.Accuracy = (float(Stat.Hits) / float(Stat.Shots)) * 100.0f;
 		}
 	}
 }
@@ -1331,11 +1364,6 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 		return;
 	}
 
-	//if (BotHit->GetMesh() != OtherComp || BotHit->HeadMesh != OtherComp)
-	//{
-	//	return;
-	//}
-
 	if (MeleeInstance->BotsHit.Contains(BotHit) || MeleeInstance->BotsHit.Num())
 	{
 		return;
@@ -1389,8 +1417,19 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), MeleeRef->DamageSound, this->WeaponMesh->GetComponentLocation(), FMath::RandRange(0.7f, 0.85f));
 	}
 
-	//MeleeInstance->bShouldPlayHitAnimation = false;
-	//MeleeInstance->HitAnimationTime = 0.0f;
+	auto* GameSessionRef = GetGameSession();
+
+	if (GameSessionRef)
+	{
+		auto& Stat = GameSessionRef->PlayerStats[this->ID];
+		Stat.Shots++;
+		if (IsEnemy(BotHit))
+		{
+			Stat.Hits++;
+			Stat.Accuracy = (float(Stat.Hits) / float(Stat.Shots)) * 100.0f;
+		}
+	}
+
 }
 
 bool ABot::TraceToTargetResult(bool bIgnoreBots)
@@ -1845,6 +1884,26 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 
 	this->HealthPoints -= Damage;
 
+
+	auto* GameSessionObject = this->GetGameSession();
+
+	if (GameSessionObject)
+	{
+		if (bPlayerAttached)
+		{
+			auto* SessionWidget = GameSessionObject->GetSessionWidget();
+			if (SessionWidget)
+			{
+				SessionWidget->UpdateSpectatorBotHealth(this->HealthPoints);
+			}
+		}
+
+		if (ByBot && ByBot != this)
+		{
+			GameSessionObject->PlayerStats[ByBot->ID].Damage += Damage;
+		}
+	}
+
 	if (this->HealthPoints <= 0)
 	{
 		this->HealthPoints = 0;
@@ -1879,18 +1938,6 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		NameWidgetObject->ShowDamageNumber(Damage, bCritical);
 	}
 
-	if (this->bPlayerAttached)
-	{
-		auto* GameSessionObject = this->GetGameSession();
-		if (GameSessionObject)
-		{
-			auto* SessionWidget = GameSessionObject->GetSessionWidget();
-			if (SessionWidget)
-			{
-				SessionWidget->UpdateSpectatorBotHealth(this->HealthPoints);
-			}
-		}
-	}
 }
 
 float ABot::GetHeathValue()
@@ -2033,7 +2080,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	}
 
-	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Bow || WeaponType == EWeaponType::Melee)
+	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Melee)
 	{
 		this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
 	}
@@ -2068,6 +2115,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	auto* GameSessionObject = this->GetGameSession();
 
+	if (GameSessionObject && GameSessionObject->BotNameDiedFirst.IsEmpty())
+	{
+		GameSessionObject->BotNameDiedFirst = this->DisplayName;
+	}
+
 	if (Killer && this->IsEnemy(Killer))
 	{
 		Killer->Kills++;
@@ -2080,6 +2132,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		if (GameSessionObject)
 		{
 			GameSessionObject->OnBotKill(Killer);
+			GameSessionObject->PlayerStats[Killer->ID].Kills++;
 		}
 	}
 
@@ -2116,16 +2169,23 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 			FKillFeedIcon KillFeedIcon;
 
-			if (WeaponType == EWeaponType::Explosion)
+			switch (WeaponType)
 			{
+			case EWeaponType::Explosion:
 				KillFeedIcon.IconType = EKillFeedIconType::Explosion;
-			}
-			else
-			{
+				break;
+			case EWeaponType::Train:
+				KillFeedIcon.IconType = EKillFeedIconType::Train;
+				break;
+			case EWeaponType::Fall:
+				KillFeedIcon.IconType = EKillFeedIconType::Fall;
+				break;
+			default:
 				if (Killer->WeaponInstance && Killer->WeaponInstance->WeaponRef)
 				{
 					KillFeedIcon = Killer->WeaponInstance->WeaponRef->KillFeedIcon;
 				}
+				break;
 			}
 
 			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon);

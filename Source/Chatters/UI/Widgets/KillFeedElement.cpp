@@ -24,9 +24,17 @@ void UKillFeedElement::SetNicknameColors(FLinearColor KillerColor, FLinearColor 
 
 void UKillFeedElement::SetIcon(FKillFeedIcon& Icon)
 {
-	if (Icon.IconType == EKillFeedIconType::Explosion)
+	switch (Icon.IconType)
 	{
+	case EKillFeedIconType::Explosion:
 		Icon = this->ExplosionIcon;
+		break;
+	case EKillFeedIconType::Train:
+		Icon = this->TrainIcon;
+		break;
+	case EKillFeedIconType::Fall:
+		Icon = this->FallIcon;
+		break;
 	}
 
 	if (!Icon.Texture)

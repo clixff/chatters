@@ -40,13 +40,6 @@ void UPauseMenuWidget::Hide()
 	}
 
 	this->PlayFadeOutAnimation();
-
-	auto GameSession = UChattersGameSession::Get();
-
-	if (GameSession && GameSession->GetSessionWidget())
-	{
-		GameSession->GetSessionWidget()->Show();;
-	}
 }
 
 void UPauseMenuWidget::SetTab_Implementation(const EPauseMenuTab& NewTab, bool bPlayAnimation)
@@ -75,13 +68,6 @@ void UPauseMenuWidget::UnpauseGame()
 	}
 
 	Super::Hide();
-
-	auto* GameInstance = UChattersGameInstance::Get();
-
-	if (GameInstance)
-	{
-		GameInstance->ToggleMouseCursor(false);
-	}
 }
 
 void UPauseMenuWidget::PlayFadeInAnimation()

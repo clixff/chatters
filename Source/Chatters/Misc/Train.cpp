@@ -105,7 +105,7 @@ void ATrain::TrainCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 	FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(SKMesh->GetComponentLocation(), HitLocation).Vector() * this->ImpulseForce;
 
-	Bot->ApplyDamage(100, Bot, EWeaponType::Melee, ImpulseVector, HitLocation);
+	Bot->ApplyDamage(100, Bot, EWeaponType::Train, ImpulseVector, HitLocation);
 
 	if (this->HitSound)
 	{

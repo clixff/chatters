@@ -16,7 +16,32 @@
 #include "../Misc/Weather/WeatherManager.h"
 #include "../Misc/BulletHolesManager.h"
 #include "../Misc/DayTime/DayTimeManager.h"
+#include "Engine/PostProcessVolume.h"
+#include "../UI/Widgets/Session/PlayerStatsWidget.h"
 #include "ChattersGameSession.generated.h"
+
+USTRUCT(BlueprintType)
+struct FGamePlayerStats
+{
+	GENERATED_BODY()
+public:
+	FString DisplayName;
+
+	int32 Kills = 0;
+
+	int32 Shots = 0;
+	int32 Hits = 0;
+
+	float Accuracy = 0.0f;
+
+	int32 BarrelsExploded = 0;
+
+	int32 HatsDropped = 0;
+
+	int32 Damage = 0;
+
+	float WalkedMeters = 0.0f;
+};
 
 /**
  * 
@@ -69,6 +94,7 @@ public:
 	void OnViewerMessage(FString Name, FString Message);
 
 	void OnViewerTargetCommand(FString ViewerName, FString TargetName);
+
 public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<ABot> BotSubclass;
@@ -142,6 +168,11 @@ private:
 
 	FCriticalSection Mutex;
 
+	UPROPERTY(VisibleAnywhere)
+		UPlayerStatsWidget* PlayerStatsWidget = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		TSubclassOf<UPlayerStatsWidget> PlayerStatsWidgetClass;
 public:
 	// Begin FTickableGameObject Interface.
 	virtual void Tick(float DeltaTime) override;
@@ -153,7 +184,7 @@ public:
 
 public:
 	bool bGameEndedSlomoActivated = false;
-	FManualTimer GameEndedSlomoTimeout = FManualTimer(5.0f);
+	FManualTimer GameEndedSlomoTimeout = FManualTimer(10.0f);
 
 	FManualTimer UpdateHeadAnimationModesTimer = FManualTimer(1.0f);
 
@@ -190,4 +221,25 @@ public:
 
 	UPROPERTY()
 		ETimeOfDay TimeOfDay = ETimeOfDay::Day;
+
+	UPROPERTY()
+		TArray<FGamePlayerStats> PlayerStats;
+
+	UPROPERTY()
+		FString BotNameDiedFirst;
+
+	bool bGameEnded = false;
+
+	UPlayerStatsWidget* GetPlayerStatsWidget();
+private:
+	UPROPERTY()
+		APostProcessVolume* PostProcessVolume = nullptr;
+
+	APostProcessVolume* GetPostProcessVolume();
+
+	bool bActivateGameEndEffects = false;
+
+	float GameEndBloomMin = -1.0f;
+
+	void TransferPlayersStatsToWidget();
 };

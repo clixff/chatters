@@ -7,6 +7,7 @@
 #include "../Player/PlayerPawnController.h"
 #include "./Settings/SavedSettings.h"
 #include "../Sockets/SocketClient.h"
+#include "Kismet/GameplayStatics.h"
 #include "Managers/MapManager.h"
 
 UChattersGameSession* UChattersGameSession::Singleton = nullptr;
@@ -361,12 +362,24 @@ void UChattersGameSession::Start()
 
 		this->AvailableBotSpawnPoints = this->BotSpawnPoints;
 
+		bool bFirstRound = (this->GameModeType != ESessionGameMode::Teams || RoundNumber == 1);
+
+		if (bFirstRound)
+		{
+			PlayerStats.SetNum(Bots.Num());
+		}
+
 		for (int32 i = 0; i < this->Bots.Num(); i++)
 		{
 			auto* Bot = this->Bots[i];
 
 			if (Bot)
 			{
+				if (bFirstRound)
+				{
+					PlayerStats[i].DisplayName = Bot->DisplayName;
+				}
+
 				if (this->GameModeType == ESessionGameMode::Deathmatch)
 				{
 					FDeathmatchLeaderboardElement LeaderboardElement;
@@ -390,7 +403,7 @@ void UChattersGameSession::Start()
 
 		if (this->WeatherManagerRef)
 		{
-			if (this->GameModeType != ESessionGameMode::Teams || RoundNumber == 1)
+			if (bFirstRound)
 			{
 				this->WeatherManagerRef->Activate();
 			}
@@ -409,6 +422,8 @@ void UChattersGameSession::Start()
 		{
 			this->RoundTime = 0.0f;
 		}
+
+
 	}
 }
 
@@ -803,6 +818,11 @@ UPauseMenuWidget* UChattersGameSession::GetPauseMenuWidget()
 
 void UChattersGameSession::PauseGame()
 {
+	if (bActivateGameEndEffects)
+	{
+		return;
+	}
+
 	auto* PauseMenuWidgetPtr = this->GetPauseMenuWidget();
 
 	if (PauseMenuWidgetPtr)
@@ -838,16 +858,20 @@ void UChattersGameSession::UnpauseGame()
 	{
 		auto* PlayerController = Cast<APlayerPawnController>(GameInstance->GetPlayerController());
 
-		if (PlayerController)
+		if (PlayerController && !bGameEnded)
 		{
 			PlayerController->bCanControl = true;
 		}
 
-		UChattersGameInstance::SetUIControlMode(false);
+		if (!bGameEnded)
+		{
+			UChattersGameInstance::SetUIControlMode(false);
+			GameInstance->ToggleMouseCursor(false);
+		}
 
 		GameInstance->SetIsGamePaused(false);
 
-		if (this->SessionWidget)
+		if (this->SessionWidget && !bGameEnded && !bActivateGameEndEffects)
 		{
 			this->SessionWidget->Show();
 		}
@@ -868,20 +892,48 @@ void UChattersGameSession::RespawnBotAfterStuck(ABot* Bot)
 
 void UChattersGameSession::Tick(float DeltaTime)
 {
-	if (bGameEndedSlomoActivated)
+	if (bActivateGameEndEffects)
 	{
 		GameEndedSlomoTimeout.Add(DeltaTime);
 
+		auto* PostProcess = GetPostProcessVolume();
+
+		if (PostProcess)
+		{
+			if (GameEndBloomMin == -1.0f)
+			{
+				GameEndBloomMin = PostProcess->Settings.BloomIntensity;
+			}
+
+			float GameEndBloomMax = 8.0f;
+			float BloomValue = FMath::Lerp(GameEndBloomMin, GameEndBloomMax, GameEndedSlomoTimeout.Current / GameEndedSlomoTimeout.Max);
+
+			PostProcess->Settings.BloomIntensity = BloomValue;
+		}
+
 		if (GameEndedSlomoTimeout.IsEnded())
 		{
-			bGameEndedSlomoActivated = false;
-			
-			auto* PlayerController = UChattersGameInstance::GetPlayerController();
+			bActivateGameEndEffects = false;
+
+			auto* GameInstance = UChattersGameInstance::Get();
+			auto* PlayerController = Cast<APlayerPawnController>(UChattersGameInstance::GetPlayerController());
 
 			if (PlayerController)
 			{
 				PlayerController->ConsoleCommand(TEXT("slomo 1.0"));
+				PlayerController->bCanControl = false;
 			}
+
+			PostProcess->Settings.BloomIntensity = 8.0f;
+			if (SessionWidget)
+			{
+				SessionWidget->Hide();
+			}
+
+			bGameEnded = true;
+
+			UChattersGameInstance::SetUIControlMode(true);
+			GameInstance->ToggleMouseCursor(true);
 		}
 	}
 
@@ -992,13 +1044,10 @@ void UChattersGameSession::OnBotKill(ABot* Bot)
 void UChattersGameSession::OnGameEnded(ABot* Winner)
 {
 	this->bDeathmatchRoundEnded = true;
+	bActivateGameEndEffects = true;
 
 	Winner->StopMovementAfterRound();
 	Winner->bWinner = true;
-	if (this->SessionWidget)
-	{
-		this->SessionWidget->PlayWinnerAnimation(Winner->DisplayName, Winner->GetTeamColor());
-	}
 
 	bUpdateRoundTimer = false;
 
@@ -1020,6 +1069,23 @@ void UChattersGameSession::OnGameEnded(ABot* Winner)
 				Bot->StopMovementAfterRound();
 			}
 		}
+	}
+
+	auto* StatsWidgetRef = GetPlayerStatsWidget();
+
+	if (StatsWidgetRef)
+	{
+		StatsWidgetRef->Show();
+		StatsWidgetRef->Init();
+		if (Winner)
+		{
+			StatsWidgetRef->WinnerName = FText::FromString(Winner->DisplayName);
+		}
+
+		FString EmptyStr = TEXT("");
+		StatsWidgetRef->UpdateStatsType(EPlayerStatsType::DiedFirst, BotNameDiedFirst, EmptyStr);
+
+		TransferPlayersStatsToWidget();
 	}
 }
 
@@ -1072,5 +1138,110 @@ void UChattersGameSession::SelectDeathmatchLeader(int32 Index)
 				}
 			}
 		}
+	}
+}
+
+UPlayerStatsWidget* UChattersGameSession::GetPlayerStatsWidget()
+{
+	if (!PlayerStatsWidget)
+	{
+		if (!PlayerStatsWidgetClass)
+		{
+			PlayerStatsWidgetClass = UPlayerStatsWidget::StaticClass();
+		}
+
+		PlayerStatsWidget = UCustomWidgetBase::CreateUserWidget(PlayerStatsWidgetClass);
+	}
+
+	return PlayerStatsWidget;
+}
+
+APostProcessVolume* UChattersGameSession::GetPostProcessVolume()
+{
+	if (!PostProcessVolume)
+	{
+		PostProcessVolume = Cast<APostProcessVolume>(UGameplayStatics::GetActorOfClass(GetWorld(), APostProcessVolume::StaticClass()));
+	}
+
+	return PostProcessVolume;
+}
+
+void UChattersGameSession::TransferPlayersStatsToWidget()
+{
+	auto* StatsWidgetRef = GetPlayerStatsWidget();
+
+	if (!StatsWidgetRef)
+	{
+		return;
+	}
+
+	struct FPlayerStatsResult
+	{
+		int32 PlayerID = -1;
+		int32 Result = 0;
+		FString Name;
+	};
+
+	TMap<EPlayerStatsType, FPlayerStatsResult> PlayerStatsResults;
+
+	auto UpdateStats = [this, &PlayerStatsResults](int32 PlayerID, int32 Result, EPlayerStatsType Type, FGamePlayerStats& Stat)
+	{
+		if (!PlayerStatsResults.Contains(Type))
+		{
+			PlayerStatsResults.Add(Type);
+		}
+
+		auto OldStat = PlayerStatsResults.Find(Type);
+
+		if (!OldStat)
+		{
+			return;
+		}
+
+		if (Result > OldStat->Result)
+		{
+			FPlayerStatsResult NewStat;
+			NewStat.Result = Result;
+			NewStat.PlayerID = PlayerID;
+			NewStat.Name = Stat.DisplayName;
+			PlayerStatsResults.Add(Type, NewStat);
+		}
+	};
+
+	for (int32 i = 0; i < PlayerStats.Num(); i++)
+	{
+		auto& Stat = PlayerStats[i];
+		UpdateStats(i, Stat.Kills, EPlayerStatsType::MostKills, Stat);
+		UpdateStats(i, Stat.Hits, EPlayerStatsType::MostHits, Stat);
+		UpdateStats(i, Stat.Shots, EPlayerStatsType::MostShots, Stat);
+		UpdateStats(i, Stat.BarrelsExploded, EPlayerStatsType::Barrels, Stat);
+		UpdateStats(i, Stat.HatsDropped, EPlayerStatsType::Hats, Stat);
+		UpdateStats(i, Stat.Damage, EPlayerStatsType::MostDamage, Stat);
+		UpdateStats(i, FMath::FloorToInt(Stat.Accuracy * 100.0f), EPlayerStatsType::Accuracy, Stat);
+	}
+
+	for (auto Result : PlayerStatsResults)
+	{
+		auto PlayerID = Result.Value.PlayerID;
+		FString BotName = TEXT("");
+		FString ResultString = TEXT("");
+		if (PlayerID != -1)
+		{
+			BotName = Result.Value.Name;
+
+			if (Result.Key == EPlayerStatsType::Accuracy)
+			{
+				ResultString = FString::Printf(TEXT("%.2f%%"), (float(Result.Value.Result) / 100.0f));
+			}
+			else
+			{
+				ResultString = FString::FromInt(Result.Value.Result);
+			}
+
+			ResultString = FString::Printf(TEXT("(%s)"), *ResultString);
+		}
+
+
+		StatsWidgetRef->UpdateStatsType(Result.Key, BotName, ResultString);
 	}
 }
