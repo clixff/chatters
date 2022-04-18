@@ -8,6 +8,7 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Engine/SkyLight.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "DayTimeManager.generated.h"
 
 UENUM(BlueprintType)
@@ -75,4 +76,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Night")
 		TArray<AActor*> NightStreetLights;
+
+	UPROPERTY()
+		TMap<FString, UHierarchicalInstancedStaticMeshComponent*> StreetLightHISMCs;
 };

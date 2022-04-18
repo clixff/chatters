@@ -5,6 +5,7 @@
 #include "../../Core/ChattersGameSession.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "../../Props/StreetLight.h"
 #include "Components/SkyLightComponent.h"
 
 // Sets default values
@@ -109,6 +110,61 @@ void ADayTimeManager::SetNightTime()
 		{
 			LightComponent->SourceType = ESkyLightSourceType::SLS_CapturedScene;
 			LightComponent->RecaptureSky();
+		}
+	}
+
+	for (auto* StreetLightActor : NightStreetLights)
+	{
+		auto* StreetLight = Cast<AStreetLight>(StreetLightActor);
+		if (!StreetLight)
+		{
+			continue;
+		}
+
+		if (!StreetLight->StaticMesh || !StreetLight->StaticMesh->GetStaticMesh())
+		{
+			continue;
+		}
+
+		auto* StaticMesh = StreetLight->StaticMesh->GetStaticMesh();
+
+		FString MeshName = StaticMesh->GetName();
+
+		UHierarchicalInstancedStaticMeshComponent* HISM = nullptr;
+
+		if (StreetLightHISMCs.Contains(MeshName))
+		{
+			HISM = StreetLightHISMCs[MeshName];
+		}
+		else
+		{
+			FString ComponentName = FString::Printf(TEXT("HISM_%s"), *MeshName);
+			HISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, *ComponentName);
+			StreetLightHISMCs.Add(MeshName, HISM);
+			HISM->SetStaticMesh(StaticMesh);
+
+			//auto Materials = StreetLight->StaticMesh->GetMaterials();
+
+			//for (int32 i = 0; i < Materials.Num(); i++)
+			//{
+			//	HISM->SetMaterial(i, Materials[i]);
+			//}
+
+			HISM->SetCanEverAffectNavigation(false);
+			HISM->SetCastShadow(false);
+			HISM->SetMobility(EComponentMobility::Static);
+			HISM->AttachTo(GetRootComponent(), NAME_None, EAttachLocation::SnapToTarget);
+			HISM->RegisterComponent();
+			AddInstanceComponent(HISM);
+		}
+
+		if (HISM)
+		{
+			StreetLight->StaticMesh->SetVisibility(false);
+			StreetLight->StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+			FTransform LightTransform = StreetLight->StaticMesh->GetComponentTransform();
+			HISM->AddInstance(LightTransform);
 		}
 	}
 }
