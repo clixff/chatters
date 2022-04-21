@@ -1642,6 +1642,7 @@ void ABot::SetEquipment()
 				else
 				{
 					HatTransform = RandomEquipment.Hat->GetTransform();
+					bCanHatBeDetached = RandomEquipment.Hat->bCanDetach;
 					AttachHat();
 					this->HatMesh->SetStaticMesh(RandomEquipment.Hat->StaticMesh);
 					this->HatMesh->EmptyOverrideMaterials();
@@ -1655,7 +1656,6 @@ void ABot::SetEquipment()
 							this->HatMesh->SetMaterial(i, Materials[i]);
 						}
 					}
-					this->bCanHatBeDetached = RandomEquipment.Hat->bCanDetach;
 				}
 			}
 
@@ -1826,7 +1826,7 @@ void ABot::AttachHat()
 	HatMesh->SetSimulatePhysics(false);
 	HatMesh->AttachToComponent(HeadMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("head_"));
 	HatMesh->SetCollisionProfileName(FName(TEXT("Hat")), true);
-	HatMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	HatMesh->SetCollisionEnabled(bCanHatBeDetached ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 	HatMesh->SetRelativeTransform(HatTransform);
 }
 
@@ -2080,9 +2080,14 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	}
 
-	if (WeaponType == EWeaponType::Firearm || WeaponType == EWeaponType::Explosion || WeaponType == EWeaponType::Melee)
+	switch (WeaponType)
 	{
+	case EWeaponType::Firearm:
+	case EWeaponType::Explosion:
+	case EWeaponType::Melee:
+	case EWeaponType::Train:
 		this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
+		break;
 	}
 
 	this->bMovingToRandomLocation = false;
