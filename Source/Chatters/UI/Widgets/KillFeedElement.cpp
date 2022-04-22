@@ -35,6 +35,12 @@ void UKillFeedElement::SetIcon(FKillFeedIcon& Icon)
 	case EKillFeedIconType::Fall:
 		Icon = this->FallIcon;
 		break;
+	case EKillFeedIconType::Walker:
+		Icon = this->WalkerIcon;
+		break;
+	case EKillFeedIconType::Bomber:
+		Icon = this->BomberIcon;
+		break;
 	}
 
 	if (!Icon.Texture)

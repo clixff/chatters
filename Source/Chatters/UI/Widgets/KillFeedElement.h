@@ -13,7 +13,9 @@ enum class EKillFeedIconType : uint8
 	Default,
 	Explosion,
 	Train,
-	Fall
+	Fall,
+	Walker,
+	Bomber
 };
 
 USTRUCT(BlueprintType)
@@ -67,4 +69,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Icons")
 		FKillFeedIcon FallIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Icons")
+		FKillFeedIcon WalkerIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Icons")
+		FKillFeedIcon BomberIcon;
 };

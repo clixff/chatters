@@ -19,7 +19,9 @@ enum class EWeaponType : uint8
 	Firearm,
 	Explosion,
 	Train,
-	Fall
+	Fall,
+	Walker,
+	Bomber
 };
 
 /**

@@ -2086,6 +2086,8 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 	case EWeaponType::Explosion:
 	case EWeaponType::Melee:
 	case EWeaponType::Train:
+	case EWeaponType::Walker:
+	case EWeaponType::Bomber:
 		this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
 		break;
 	}
@@ -2184,6 +2186,12 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 				break;
 			case EWeaponType::Fall:
 				KillFeedIcon.IconType = EKillFeedIconType::Fall;
+				break;
+			case EWeaponType::Walker:
+				KillFeedIcon.IconType = EKillFeedIconType::Walker;
+				break;
+			case EWeaponType::Bomber:
+				KillFeedIcon.IconType = EKillFeedIconType::Bomber;
 				break;
 			default:
 				if (Killer->WeaponInstance && Killer->WeaponInstance->WeaponRef)

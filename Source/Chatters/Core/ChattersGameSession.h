@@ -18,6 +18,7 @@
 #include "../Misc/DayTime/DayTimeManager.h"
 #include "Engine/PostProcessVolume.h"
 #include "../UI/Widgets/Session/PlayerStatsWidget.h"
+#include "../Props/Activate/ActivateProp.h"
 #include "ChattersGameSession.generated.h"
 
 USTRUCT(BlueprintType)
@@ -231,6 +232,13 @@ public:
 	bool bGameEnded = false;
 
 	UPlayerStatsWidget* GetPlayerStatsWidget();
+
+	UPROPERTY()
+		TArray<AActivateProp*> PropsToActivate;
+
+	void DeactivateProps();
+
+	void AddExplosionAtLocation(FVector Location, UParticleSystem* ExplosionParticle, FVector ParticleScale, USoundBase* Sound, float Radius, float ImpulseForce, EWeaponType WeaponType = EWeaponType::Explosion);
 private:
 	UPROPERTY()
 		APostProcessVolume* PostProcessVolume = nullptr;

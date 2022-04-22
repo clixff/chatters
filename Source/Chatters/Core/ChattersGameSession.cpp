@@ -9,6 +9,8 @@
 #include "../Sockets/SocketClient.h"
 #include "Kismet/GameplayStatics.h"
 #include "Managers/MapManager.h"
+#include "Kismet/KismetMathLibrary.h"
+
 
 UChattersGameSession* UChattersGameSession::Singleton = nullptr;
 
@@ -323,6 +325,8 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 					FTimerHandle Timer;
 					World->GetTimerManager().SetTimer(Timer, this, &UChattersGameSession::OnTeamsBattleEnd, 5.0f, false);
 				}
+
+				DeactivateProps();
 			}
 
 			if (this->AliveBots.Num() == 1)
@@ -369,6 +373,18 @@ void UChattersGameSession::Start()
 			PlayerStats.SetNum(Bots.Num());
 		}
 
+		for (auto* Prop : PropsToActivate)
+		{
+			if (Prop)
+			{
+				bool bShouldActivate = Prop->bActivateEveryRound || bFirstRound;
+				if (bShouldActivate)
+				{
+					Prop->Activate();
+				}
+			}
+		}
+
 		for (int32 i = 0; i < this->Bots.Num(); i++)
 		{
 			auto* Bot = this->Bots[i];
@@ -395,7 +411,7 @@ void UChattersGameSession::Start()
 
 		if (this->TrainRef)
 		{
-			if (this->GameModeType != ESessionGameMode::Teams || RoundNumber == 1)
+			if (bFirstRound)
 			{
 				this->TrainRef->Activate();
 			}
@@ -1087,6 +1103,8 @@ void UChattersGameSession::OnGameEnded(ABot* Winner)
 
 		TransferPlayersStatsToWidget();
 	}
+
+	DeactivateProps();
 }
 
 void UChattersGameSession::FindDeathmatchWinner()
@@ -1154,6 +1172,52 @@ UPlayerStatsWidget* UChattersGameSession::GetPlayerStatsWidget()
 	}
 
 	return PlayerStatsWidget;
+}
+
+void UChattersGameSession::DeactivateProps()
+{
+	for (auto* Prop : PropsToActivate)
+	{
+		if (Prop)
+		{
+			Prop->Deactivate();
+		}
+	}
+}
+
+void UChattersGameSession::AddExplosionAtLocation(FVector Location, UParticleSystem* ExplosionParticle, FVector ParticleScale, USoundBase* Sound, float Radius, float ImpulseForce, EWeaponType WeaponType)
+{
+	if (ExplosionParticle)
+	{
+		FTransform ParticleTransform;
+		ParticleTransform.SetLocation(Location);
+		ParticleTransform.SetScale3D(ParticleScale);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionParticle, ParticleTransform, true);
+	}
+
+	if (Sound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, Location, FMath::RandRange(0.8f, 1.0f));
+	}
+
+	auto AliveBotsCopy = AliveBots;
+
+	for (auto* Bot : AliveBotsCopy)
+	{
+		if (!Bot->GetIsAlive())
+		{
+			return;
+		}
+
+		FVector BotLocation = Bot->GetActorLocation();
+		float Distance = FVector::Dist(BotLocation, Location);
+		if (Distance <= Radius)
+		{
+			FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(Location, BotLocation).Vector() * (ImpulseForce);
+
+			Bot->ApplyDamage(100.0f, Bot, WeaponType, ImpulseVector, BotLocation);
+		}
+	}
 }
 
 APostProcessVolume* UChattersGameSession::GetPostProcessVolume()
