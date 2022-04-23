@@ -113,7 +113,7 @@ void AScifiWalker::Attack()
 	TargetLocation = Bot->GetActorLocation();
 
 	FVector Offset;
-	const float RandOffsetMax = 200.0f;
+	const float RandOffsetMax = 500.0f;
 	Offset.X = FMath::RandRange(-RandOffsetMax, RandOffsetMax);
 	Offset.Y = FMath::RandRange(-RandOffsetMax, RandOffsetMax);
 	Offset.Z = FMath::RandRange(-RandOffsetMax, RandOffsetMax);
