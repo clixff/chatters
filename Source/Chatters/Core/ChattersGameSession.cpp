@@ -1206,7 +1206,7 @@ void UChattersGameSession::AddExplosionAtLocation(FVector Location, UParticleSys
 	{
 		if (!Bot->GetIsAlive())
 		{
-			return;
+			continue;
 		}
 
 		FVector BotLocation = Bot->GetActorLocation();

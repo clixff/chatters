@@ -195,12 +195,15 @@ void AScifiBomber::StartFlying()
 
 	AttackLocation = FVector2D(Bot->GetActorLocation());
 
+	const float OffsetMax = 1500.0f;
+	FVector2D Offset;
+	Offset.X = FMath::RandRange(-OffsetMax, OffsetMax);
+	Offset.Y = FMath::RandRange(-OffsetMax, OffsetMax);
+
+	AttackLocation += Offset;
+
 	StartLocation.Y = AttackLocation.Y;
 	EndLocation.Y = StartLocation.Y;
-
-	//AttackLocation.Y = StartLocation.Y;
-	//AttackLocation.X = FMath::RandRange(XRange.GetLowerBoundValue(), XRange.GetUpperBoundValue());
-
 	bAttacked = false;
 
 	StaticMesh->SetWorldLocation(FVector(StartLocation, FlyingHeight));
