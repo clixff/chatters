@@ -150,7 +150,7 @@ void ADayTimeManager::SetNightTime()
 			//	HISM->SetMaterial(i, Materials[i]);
 			//}
 
-			HISM->SetCanEverAffectNavigation(false);
+			HISM->SetCanEverAffectNavigation(StreetLight->StaticMesh->CanEverAffectNavigation());
 			HISM->SetCastShadow(false);
 			HISM->SetMobility(EComponentMobility::Static);
 			HISM->AttachTo(GetRootComponent(), NAME_None, EAttachLocation::SnapToTarget);
