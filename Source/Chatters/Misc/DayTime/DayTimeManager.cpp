@@ -143,13 +143,6 @@ void ADayTimeManager::SetNightTime()
 			StreetLightHISMCs.Add(MeshName, HISM);
 			HISM->SetStaticMesh(StaticMesh);
 
-			//auto Materials = StreetLight->StaticMesh->GetMaterials();
-
-			//for (int32 i = 0; i < Materials.Num(); i++)
-			//{
-			//	HISM->SetMaterial(i, Materials[i]);
-			//}
-
 			HISM->SetCanEverAffectNavigation(StreetLight->StaticMesh->CanEverAffectNavigation());
 			HISM->SetCastShadow(false);
 			HISM->SetMobility(EComponentMobility::Static);
