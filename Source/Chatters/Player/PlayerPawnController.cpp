@@ -48,6 +48,7 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAxis("MoveForward", this, &APlayerPawnController::MoveForward);
 	this->InputComponent->BindAxis("MoveRight", this, &APlayerPawnController::MoveRight);
+	this->InputComponent->BindAxis("MoveUp", this, &APlayerPawnController::MoveUp);
 
 	this->InputComponent->BindAxis("TurnX", this, &APlayerPawnController::TurnX);
 	this->InputComponent->BindAxis("TurnY", this, &APlayerPawnController::TurnY);
@@ -88,12 +89,17 @@ void APlayerPawnController::BeginPlay()
 
 void APlayerPawnController::MoveForward(float Value)
 {
-	this->MovePawn(EAxis::Type::X, Value);
+	MovePawn(EAxis::Type::X, Value);
 }
 
 void APlayerPawnController::MoveRight(float Value)
 {
-	this->MovePawn(EAxis::Type::Y, Value);
+	MovePawn(EAxis::Type::Y, Value);
+}
+
+void APlayerPawnController::MoveUp(float Value)
+{
+	MovePawn(EAxis::Type::Z, Value);
 }
 
 void APlayerPawnController::TurnX(float Value)
@@ -153,13 +159,19 @@ void APlayerPawnController::MovePawn(EAxis::Type Axis, float Value)
 			PlayerPawnActor->DetachFromBot();
 		}
 
-		FString AxisString = Axis == EAxis::Type::X ? TEXT("X") : TEXT("Y");
-		FRotator const ControlSpaceRotation = this->GetControlRotation();
-		FVector WorldDirection = FRotationMatrix(ControlSpaceRotation).GetScaledAxis(Axis);
+		FVector DirectionVector;
 
-		//UE_LOG(LogTemp, Display, TEXT("[APlayerPawnController] Move player pawn on %s. Value: %f. Direction: %s. Rotation: %s"), *AxisString, Value, *(WorldDirection.ToString()), *(ControlSpaceRotation.ToString()));
+		if (Axis != EAxis::Type::Z)
+		{
+			FRotator const ControlSpaceRotation = this->GetControlRotation();
+			DirectionVector = FRotationMatrix(ControlSpaceRotation).GetScaledAxis(Axis);
+		}
+		else
+		{
+			DirectionVector = FVector::UpVector;
+		}
 
-		PlayerPawnActor->AddMovementInput(WorldDirection, Value, true);
+		PlayerPawnActor->AddMovementInput(DirectionVector, Value, true);
 	}
 }
 
