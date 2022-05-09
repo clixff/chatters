@@ -86,6 +86,5 @@ void ABulletHolesManager::AddDecalPrivate(FVector Location, FRotator Rotation, U
 		DecalComponent->SetFadeScreenSize(0.001f);
 		AddInstanceComponent(DecalComponent);
 	}
-
 }
 

@@ -73,4 +73,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		UAnimSequence* HitAnimationRef;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		FFloatRange HitSoundPitchRange = FFloatRange(1.0f, 1.0f);
 };

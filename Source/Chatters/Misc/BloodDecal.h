@@ -8,6 +8,7 @@
 #include "Misc.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Curves/CurveFloat.h"
+#include "Engine/Texture2D.h"
 #include "BloodDecal.generated.h"
 
 UCLASS()
@@ -44,12 +45,15 @@ public:
 		UMaterialInstanceDynamic* DecalMaterial = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		UCurveFloat* ScaleCurve = nullptr;
+		UCurveFloat* OpacityCurve = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-		UCurveFloat* OpacityCurve = nullptr;
+		UCurveFloat* ColorMultiplierCurve = nullptr;
 
 	float LifeTime = 0.0f;
 
 	void DestroyDecal();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		TArray<UTexture2D*> OpacityMasksList;
 };

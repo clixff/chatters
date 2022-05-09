@@ -251,7 +251,7 @@ void ABot::Tick(float DeltaTime)
 				this->TryDetachHat();
 			}
 
-			if (this->SecondsAfterDeath >= 4.0f && !this->bCheckedBloodDecalCreation)
+			if (this->SecondsAfterDeath >= 2.0f && !this->bCheckedBloodDecalCreation)
 			{
 				this->CreateFloorBloodDecal();
 			}
@@ -1163,7 +1163,10 @@ void ABot::Shoot(bool bBulletOffset)
 			{
 				if (FirearmRef->ShootSound)
 				{
-					UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutBulletLocation, FMath::RandRange(0.7f, 0.85f));
+					float MinSoundPitch = FirearmRef->HitSoundPitchRange.GetLowerBoundValue();
+					float ManSoundPitch = FirearmRef->HitSoundPitchRange.GetUpperBoundValue();
+					float SoundPitch = FMath::RandRange(MinSoundPitch, ManSoundPitch);
+					UGameplayStatics::PlaySoundAtLocation(World, FirearmRef->ShootSound, OutBulletLocation, FMath::RandRange(0.7f, 0.85f), SoundPitch);
 				}
 
 				if (FirearmRef->ShotParticle)
@@ -1487,10 +1490,10 @@ void ABot::CreateFloorBloodDecal()
 	}
 
 	UWorld* WorldObject = this->GetWorld();
-	FVector PivotLocation = this->GetMesh()->GetSocketLocation(TEXT("spine_3"));
-	FVector DecalLocation = PivotLocation + FVector(0.0f, 0.0f, -50.0f);
+	FName BoneName = DeathBoneName == NAME_None ? TEXT("spine_3") : DeathBoneName;
+	FVector PivotLocation = this->GetMesh()->GetSocketLocation(BoneName) + FVector(0.0f, 0.0f, 10.0f);
+	FVector DecalLocation = PivotLocation + FVector(0.0f, 0.0f, -60.0f);
 
-	
 	FCollisionObjectQueryParams CollisionParams;
 
 	CollisionParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
@@ -1505,7 +1508,11 @@ void ABot::CreateFloorBloodDecal()
 
 	FTransform DecalSpawnTransform;
 	DecalSpawnTransform.SetLocation(HitResult.ImpactPoint);
-	DecalSpawnTransform.SetRotation(FQuat(FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f)));
+	
+	FRotator DecalRotation = FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
+	//DecalRotation += HitResult.ImpactNormal.Rotation();
+
+	DecalSpawnTransform.SetRotation(FQuat(DecalRotation));
 
 	this->FloorBloodDecalActor = WorldObject->SpawnActor<ABloodDecal>(this->FloorBloodDecalSubclass, DecalSpawnTransform);
 	this->FloorBloodDecalActor->BotOwner = this;
@@ -1912,16 +1919,33 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	else
 	{
 		/** If damage by enemy */
-		if (ByBot && this->IsEnemy(ByBot) && ByBot->bAlive)
+		if (ByBot && IsEnemy(ByBot) && ByBot->bAlive)
 		{
 			/** If bot is not target already */
-			if (!this->Target.Bot || this->Target.Bot != ByBot)
+			if (!Target.Bot || Target.Bot != ByBot)
 			{
+				bool bSetDamagerAsNewTarget = false;
+
 				/** If the current target is not aiming at us */
-				if (this->Target.Bot->Target.Bot != this)
+				if (Target.Bot->Target.Bot != this)
+				{
+					bSetDamagerAsNewTarget = true;
+				}
+				else
+				{
+					auto OldTargetWeaponType = Target.Bot->GetWeaponType();
+					auto DamagerWeaponType = ByBot->GetWeaponType();
+
+					if (OldTargetWeaponType == EWeaponType::Firearm && DamagerWeaponType == EWeaponType::Melee)
+					{
+						bSetDamagerAsNewTarget = true;
+					}
+				}
+
+				if (bSetDamagerAsNewTarget)
 				{
 					/** Set the damager as new target */
-					this->SetNewEnemyTarget(ByBot);
+					SetNewEnemyTarget(ByBot);
 				}
 			}
 		}
@@ -2048,6 +2072,8 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 	this->UpdateHeadAnimationType(nullptr, true);
 
 	RemoveProjectileMeshesTimeout.Reset();
+
+	DeathBoneName = BoneHit;
 
 	auto* AIController = this->GetAIController();
 

@@ -486,4 +486,6 @@ public:
 	bool bWinner = false;
 
 	void WinnerTick(float DeltaTime);
+private:
+	FName DeathBoneName = NAME_None;
 };

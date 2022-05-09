@@ -36,6 +36,15 @@ void ABloodDecal::BeginPlay()
 			return;
 		}
 
+		if (OpacityMasksList.Num())
+		{
+			auto* OpacityMask = OpacityMasksList[FMath::RandRange(0, OpacityMasksList.Num() - 1)];
+			if (OpacityMask)
+			{
+				DecalMaterial->SetTextureParameterValue(TEXT("Mask"), OpacityMask);
+			}
+		}
+
 		this->Decal->SetDecalMaterial(this->DecalMaterial);
 	}
 }
@@ -52,16 +61,16 @@ void ABloodDecal::Tick(float DeltaTime)
 		return;
 	}
 
-	if (!this->ScaleCurve || !this->OpacityCurve)
+	if (!this->OpacityCurve)
 	{
 		return;
 	}
 	
-	float ScaleValue = this->ScaleCurve->GetFloatValue(LifeTime);
+	float ColorMultiplier = this->ColorMultiplierCurve->GetFloatValue(LifeTime);
 	float OpacityValue = this->OpacityCurve->GetFloatValue(LifeTime);
 
-	this->DecalMaterial->SetScalarParameterValue(TEXT("Scale"), ScaleValue);
-	this->DecalMaterial->SetScalarParameterValue(TEXT("InOpacity"), OpacityValue);
+	this->DecalMaterial->SetScalarParameterValue(TEXT("Multiplier"), ColorMultiplier);
+	this->DecalMaterial->SetScalarParameterValue(TEXT("Opacity"), OpacityValue);
 
 	if (OpacityValue <= 0.0f)
 	{
