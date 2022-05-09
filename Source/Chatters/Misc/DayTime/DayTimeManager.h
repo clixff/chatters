@@ -79,4 +79,7 @@ public:
 
 	UPROPERTY()
 		TMap<FString, UHierarchicalInstancedStaticMeshComponent*> StreetLightHISMCs;
+
+	UPROPERTY(EditAnywhere)
+		AActor* MoonActor = nullptr;
 };

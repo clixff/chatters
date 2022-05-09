@@ -38,6 +38,12 @@ void ADayTimeManager::Tick(float DeltaTime)
 
 void ADayTimeManager::SetSunRotationAtDay(int32 RoundIndex)
 {
+	if (MoonActor)
+	{
+		MoonActor->Destroy();
+		MoonActor = nullptr;
+	}
+
 	for (auto* Actor : NightStreetLights)
 	{
 		Actor->Destroy();
