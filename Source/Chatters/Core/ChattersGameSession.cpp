@@ -9,6 +9,7 @@
 #include "../Sockets/SocketClient.h"
 #include "Kismet/GameplayStatics.h"
 #include "Managers/MapManager.h"
+#include "NavigationSystem.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
@@ -121,7 +122,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 	if (this->AvailableBotSpawnPoints.Num() < this->MaxPlayers)
 	{
-		this->MaxPlayers = this->AvailableBotSpawnPoints.Num();
+		//this->MaxPlayers = this->AvailableBotSpawnPoints.Num();
 	}
 
 	auto* EquipmentList = this->EquipmentListsForLevels.Find(LevelName);
@@ -799,19 +800,85 @@ void UChattersGameSession::OnTeamsBattleEnd()
 FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint)
 {
 	FTransform SpawnPointTransform;
+	SpawnPointTransform.SetLocation(FVector(0.0f, 0.0f, 70.0f));
+
+	ABotSpawnPoint* SpawnPoint = nullptr;
 	
-	int32 RandNumber = FMath::RandRange(0, this->AvailableBotSpawnPoints.Num() - 1);
-	auto* SpawnPoint = this->AvailableBotSpawnPoints[RandNumber];
+
+	if (AvailableBotSpawnPoints.Num())
+	{
+		int32 RandNumber = FMath::RandRange(0, AvailableBotSpawnPoints.Num() - 1);
+		SpawnPoint = AvailableBotSpawnPoints[RandNumber];
+
+		if (bRemoveSpawnPoint)
+		{
+			AvailableBotSpawnPoints.RemoveAt(RandNumber, 1, true);
+		}
+	}
+	else
+	{
+		auto FindSpawnPointAround = [this](FVector& OutVector)
+		{
+			bool bSpawnPointValid = false;
+
+			int32 RandNumber = FMath::RandRange(0, BotSpawnPoints.Num() - 1);
+			FVector StartLocation = BotSpawnPoints[RandNumber]->GetActorLocation();
+
+			FVector FoundLocation;
+
+			bool bFound = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), StartLocation, FoundLocation, 1000.0f);
+
+			if (bFound)
+			{
+				UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+
+				if (NavSys)
+				{
+					FPathFindingQuery Query;
+					Query.StartLocation = StartLocation;
+					Query.EndLocation = FoundLocation;
+					FNavAgentProperties Agent = FNavAgentProperties::DefaultProperties;
+					Query.NavData = NavSys->GetNavDataForProps(Agent, StartLocation);
+					FPathFindingResult PathFindingResult = NavSys->FindPathSync(Query, EPathFindingMode::Type::Regular);
+
+					if (PathFindingResult.IsSuccessful())
+					{
+						bSpawnPointValid = true;
+						OutVector = FoundLocation;
+					}
+				}
+			}
+
+			return bSpawnPointValid;
+		};
+
+		bool bFoundValidSpawnPoint = false;
+
+		for (int32 i = 0; i < 5; i++)
+		{
+			FVector OutVector;
+			bool bFoundSpawnPoint = FindSpawnPointAround(OutVector);
+
+			if (bFoundSpawnPoint)
+			{
+				SpawnPointTransform.SetLocation(OutVector + FVector(0.0f, 0.0f, 70.0f));
+				SpawnPointTransform.SetRotation(FQuat(FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f)));
+				bFoundValidSpawnPoint = true;
+				break;
+			}
+		}
+
+		if (!bFoundValidSpawnPoint)
+		{
+			int32 RandNumber = FMath::RandRange(0, BotSpawnPoints.Num() - 1);
+			SpawnPoint = BotSpawnPoints[RandNumber];
+		}
+	}
 
 	if (SpawnPoint)
 	{
 		SpawnPointTransform.SetLocation(SpawnPoint->GetActorLocation());
 		SpawnPointTransform.SetRotation(FQuat(SpawnPoint->GetRotation()));
-
-		if (bRemoveSpawnPoint)
-		{
-			this->AvailableBotSpawnPoints.RemoveAt(RandNumber, 1, true);
-		}
 	}
 
 	return SpawnPointTransform;
