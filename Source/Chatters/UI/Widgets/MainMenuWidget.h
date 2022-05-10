@@ -9,6 +9,7 @@
 #include "../../Misc/Misc.h"
 #include "Components/EditableTextBox.h"
 #include "../../Misc/DayTime/DayTimeManager.h"
+#include "MainMenu/Import/ImportNamesWidget.h"
 #include "MainMenuWidget.generated.h"
 
 
@@ -137,5 +138,13 @@ private:
 
 	UPROPERTY()
 		TArray<UWidget*> ButtonWidgets;
-	
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Import")
+		UImportNamesWidget* ImportNamesWidget = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Import")
+		TSubclassOf<UImportNamesWidget> ImportNamesWidgetClass;
+		
+	UFUNCTION()
+		void ShowImportNamesWidget();
 };

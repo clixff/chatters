@@ -98,13 +98,19 @@ enum class ESessionType : uint8
 	/**
 	 * Fill battleground with generated bots
 	 */
-	Generated	UMETA(DisplayName = "Generated"),
+	Generated		UMETA(DisplayName = "Generated"),
 
 	/**
 	 * Spawn twitch viewers
 	 */
-	 Twitch	UMETA(DisplayName = "Twitch")
+	Twitch			UMETA(DisplayName = "Twitch"),
+
+	 /**
+	  * Fill battleground with imported names
+	  */
+	Import			UMETA(DisplayName = "Custom")
 };
+
 
 class FStringHelper
 {
@@ -169,4 +175,17 @@ public:
 
 	UPROPERTY()
 		int32 ID = 0;
+};
+
+
+USTRUCT(BlueprintType)
+struct FImportNameElement
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString Nickname;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		int32 Amount = 1;
 };

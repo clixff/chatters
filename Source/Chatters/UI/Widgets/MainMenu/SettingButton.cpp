@@ -7,6 +7,15 @@
 
 void USettingButton::OnClick()
 {
+	if (this->SettingKey == TEXT("Bots") && this->SettingValue == "Import")
+	{
+		auto* MenuWidget = GetMainMenuWidget();
+		if (MenuWidget)
+		{
+			MenuWidget->ShowImportNamesWidget();
+		}
+	}
+
 	if (this->bActive)
 	{
 		return;
@@ -29,9 +38,13 @@ void USettingButton::OnClick()
 			{
 				SavedSettings->DefaultSessionType = ESessionType::Generated;
 			}
-			else
+			else if (this->SettingValue == "Viewers")
 			{
 				SavedSettings->DefaultSessionType = ESessionType::Twitch;
+			}
+			else if (this->SettingValue == "Import")
+			{
+				SavedSettings->DefaultSessionType = ESessionType::Import;
 			}
 		}
 		else if (this->SettingKey == TEXT("GameMode"))
@@ -98,12 +111,15 @@ UMainMenuWidget* USettingButton::GetMainMenuWidget()
 
 FString USettingButton::SessionTypeToString(ESessionType SessionType)
 {
-	if (SessionType == ESessionType::Twitch)
+	switch (SessionType)
 	{
+		break;
+	case ESessionType::Twitch:
 		return TEXT("Viewers");
-	}
-	else
-	{
+	case ESessionType::Import:
+		return TEXT("Import");
+	case ESessionType::Generated:
+	default:
 		return TEXT("Generated");
 	}
 }

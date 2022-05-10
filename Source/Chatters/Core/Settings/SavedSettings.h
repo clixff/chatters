@@ -44,6 +44,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Settings")
 		int32 MouseSensitivity = 22;
+
+	UPROPERTY(VisibleAnywhere, Category = "Session")
+		TArray<FImportNameElement> ImportedNames;
 public:
 	static const FString SlotName;
 

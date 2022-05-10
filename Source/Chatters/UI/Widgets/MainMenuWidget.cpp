@@ -221,6 +221,20 @@ void UMainMenuWidget::AddButtonWidgetToArray(int32 ButtonIndex)
 	}
 }
 
+void UMainMenuWidget::ShowImportNamesWidget()
+{
+	if (!ImportNamesWidgetClass)
+	{
+		ImportNamesWidgetClass = UImportNamesWidget::StaticClass();
+	}
+
+	ImportNamesWidget = UCustomWidgetBase::CreateUserWidget<UImportNamesWidget>(ImportNamesWidgetClass);
+	if (ImportNamesWidget)
+	{
+		ImportNamesWidget->Show();
+	}
+}
+
 void UMainMenuWidget::OnNumberInputChanged(UEditableTextBox* InputWidget)
 {
 	if (!InputWidget)

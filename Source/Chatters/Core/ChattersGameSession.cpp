@@ -160,44 +160,91 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 		this->BotSubclass = ABot::StaticClass();
 	}
 
-	if (this->SessionType == ESessionType::Generated)
+
+	if (SessionType != ESessionType::Twitch)
 	{
-		this->SessionWidget->SetPlayCommandVisibility(false);
-		if (this->SessionMode == ESessionMode::TestAiming)
+		SessionWidget->SetPlayCommandVisibility(false);
+	}
+
+	auto CreateBotOnLevel = [this, &World](FString Name, int32 ID)
+	{
+		ABot* Bot = ABot::CreateBot(World, Name, ID, this->BotSubclass, this);
+		if (Bot)
 		{
-			this->MaxPlayers = 1;
+			if (Bot->Team == EBotTeam::Blue)
+			{
+				this->BlueAlive++;
+				this->BlueAliveMax = this->BlueAlive;
+
+			}
+			else if (Bot->Team == EBotTeam::Red)
+			{
+				this->RedAlive++;
+				this->RedAliveMax = this->RedAlive;
+			}
+
+			Bot->UpdateNameColor();
+
+			this->Bots.Add(Bot);
+			this->AliveBots.Add(Bot);
+			this->BotsMap.Add(Bot->DisplayName.ToLower(), Bot);
 		}
 
+		return Bot;
+	};
+
+	switch (SessionType)
+	{
+	case ESessionType::Generated:
+	{
 		for (int32 i = 0; i < this->MaxPlayers; i++)
 		{
-			auto Name = FString::Printf(TEXT("Bot_%d"), i+1);
-			ABot* Bot = ABot::CreateBot(World, Name, i, this->BotSubclass, this);
-			if (Bot)
-			{
-				if (Bot->Team == EBotTeam::Blue)
-				{
-					this->BlueAlive++;
-					this->BlueAliveMax = this->BlueAlive;
-
-				}
-				else if (Bot->Team == EBotTeam::Red)
-				{
-					this->RedAlive++;
-					this->RedAliveMax = this->RedAlive;
-				}
-
-				Bot->UpdateNameColor();
-
-				this->Bots.Add(Bot);
-				this->AliveBots.Add(Bot);
-				this->BotsMap.Add(Bot->DisplayName.ToLower(), Bot);
-			}
+			auto Name = FString::Printf(TEXT("Bot_%d"), i + 1);
+			CreateBotOnLevel(Name, i);
 		}
 	}
-	else
+		break;
+	case ESessionType::Twitch:
 	{
 		this->bCanViewersJoin = true;
 		this->SessionWidget->SetStreamerJoinTipVisible(true);
+	}
+		break;
+	case ESessionType::Import:
+	{
+		auto* SavedSettings = USavedSettings::Get();
+
+		if (!SavedSettings)
+		{
+			break;
+		}
+
+		int32 IDs = 0;
+
+		for (auto& ImportedName : SavedSettings->ImportedNames)
+		{
+			if (ImportedName.Nickname.IsEmpty())
+			{
+				continue;
+			}
+
+			int32 MaxImportedBots = ImportedName.Amount;
+
+			if (MaxImportedBots < 1)
+			{
+				MaxImportedBots = 1;
+			}
+
+			for (int32 i = 0; i < MaxImportedBots; i++)
+			{
+				CreateBotOnLevel(ImportedName.Nickname, IDs);
+				IDs++;
+			}
+		}
+
+		this->MaxPlayers = this->AliveBots.Num();
+	}
+		break;
 	}
 
 	this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive, this->BlueAliveMax, this->RedAliveMax);
