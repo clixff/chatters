@@ -133,6 +133,8 @@ void UImportNamesWidget::Show()
 			Widget->SetAmount(Amount);
 		}
 	}
+
+	PlayFadeInAnimation();
 }
 
 void UImportNamesWidget::RemoveRow(UImportNameRowWidget* Row)
@@ -167,7 +169,7 @@ void UImportNamesWidget::OnBrowseFileClicked()
 		FString DialogTitle = TEXT("Browse file");
 		FString DefaultPath = FPlatformProcess::UserDir();
 		DefaultPath = TEXT("");
-		const FString FileTypes = TEXT("csv");
+		const FString FileTypes = TEXT("Text Files|*.txt;*.csv");
 		DesktopPlatform->OpenFileDialog(ParentWindow, DialogTitle, DefaultPath, FString(""), FileTypes, Flag, FileNames);
 		
 		if (FileNames.Num() == 1)
@@ -196,8 +198,8 @@ void UImportNamesWidget::ReadFileAndParse(FString Path)
 	{
 		TEXT("\r\n"),
 		TEXT("\r"),
-		TEXT("\n"),
-		TEXT(",")
+		TEXT("\n")
+		//TEXT(",")
 	};
 
 	int32 NumSeparators = UE_ARRAY_COUNT(Separators);
@@ -221,16 +223,7 @@ void UImportNamesWidget::ReadFileAndParse(FString Path)
 		NicknamesAmountMap.Add(Nickname, OldAmount+1);
 	}
 
-	for (auto* Row : Rows)
-	{
-		Row->RemoveFromParent();
-		if (Row->IsValidLowLevel())
-		{
-			Row->ConditionalBeginDestroy();
-		}
-	}
-
-	Rows.Empty();
+	RemoveAllRows();
 
 	for (auto& MapPair : NicknamesAmountMap)
 	{
@@ -242,4 +235,23 @@ void UImportNamesWidget::ReadFileAndParse(FString Path)
 			Row->SetAmount(MapPair.Value);
 		}
 	}
+}
+
+void UImportNamesWidget::RemoveAllRows()
+{
+	for (auto* Row : Rows)
+	{
+		Row->RemoveFromParent();
+		if (Row->IsValidLowLevel())
+		{
+			Row->ConditionalBeginDestroy();
+		}
+	}
+
+	Rows.Empty();
+}
+
+void UImportNamesWidget::OnRemoveAllRowsClicked()
+{
+	RemoveAllRows();
 }

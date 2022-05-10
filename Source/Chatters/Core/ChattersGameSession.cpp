@@ -873,7 +873,7 @@ FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint)
 
 			FVector FoundLocation;
 
-			bool bFound = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), StartLocation, FoundLocation, 1000.0f);
+			bool bFound = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), StartLocation, FoundLocation, 5000.0f);
 
 			if (bFound)
 			{
@@ -1142,7 +1142,7 @@ void UChattersGameSession::OnBotKill(ABot* Bot)
 	{
 		for (auto& LeaderboardElement : this->DeathmatchLeaderboard)
 		{
-			if (LeaderboardElement.Nickname == Bot->DisplayName)
+			if (LeaderboardElement.ID == Bot->ID)
 			{
 				LeaderboardElement.Kills++;
 				break;
@@ -1230,11 +1230,13 @@ void UChattersGameSession::FindDeathmatchWinner()
 
 		if (FirstPlace.Kills != SecondPlace.Kills)
 		{
-			ABot** Winner = this->BotsMap.Find(FirstPlace.Nickname.ToLower());
-
-			if (Winner && *Winner)
+			if (FirstPlace.ID < Bots.Num())
 			{
-				OnGameEnded(*Winner);
+				ABot* Winner = Bots[FirstPlace.ID];
+				if (Winner)
+				{
+					OnGameEnded(Winner);
+				}
 			}
 		}
 	}
@@ -1249,11 +1251,16 @@ void UChattersGameSession::SelectDeathmatchLeader(int32 Index)
 
 	if (Index < this->DeathmatchLeaderboard.Num())
 	{
-		auto& Leader =this->DeathmatchLeaderboard[Index];
+		auto& Leader = this->DeathmatchLeaderboard[Index];
 
-		ABot** Bot = this->BotsMap.Find(Leader.Nickname.ToLower());
+		if (Leader.ID >= Bots.Num())
+		{
+			return;
+		}
 
-		if (Bot && *Bot)
+		ABot* Bot = Bots[Leader.ID];
+
+		if (Bot)
 		{
 			auto* World = GetWorld();
 
@@ -1265,7 +1272,7 @@ void UChattersGameSession::SelectDeathmatchLeader(int32 Index)
 					auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
 					if (PlayerPawn)
 					{
-						PlayerPawn->AttachToBot(*Bot);
+						PlayerPawn->AttachToBot(Bot);
 					}
 				}
 			}

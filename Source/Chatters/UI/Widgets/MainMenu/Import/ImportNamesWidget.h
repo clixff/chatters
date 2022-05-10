@@ -55,4 +55,12 @@ public:
 		void OnBrowseFileClicked();
 
 	void ReadFileAndParse(FString Path);
+
+	void RemoveAllRows();
+
+	UFUNCTION(BlueprintCallable)
+		void OnRemoveAllRowsClicked();
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void PlayFadeInAnimation();
 };

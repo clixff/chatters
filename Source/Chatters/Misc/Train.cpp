@@ -41,6 +41,8 @@ void ATrain::BeginPlay()
 	{
 		GameSession->TrainRef = this;
 	}
+
+	this->SKMesh->SetHiddenInGame(true, true);
 }
 
 // Called every frame
@@ -87,8 +89,7 @@ void ATrain::Activate()
 		this->Sound->Play();
 	}
 
-	this->SetActorHiddenInGame(false);
-
+	this->SKMesh->SetHiddenInGame(false, true);
 	this->SKMesh->bPauseAnims = false;
 }
 
