@@ -6,7 +6,24 @@
 #include "GameFramework/Actor.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "HISMManager.generated.h"
+
+
+USTRUCT(BlueprintType)
+struct FMeshWindowNightMaterialData
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+		UStaticMesh* Mesh;
+
+	UPROPERTY(EditAnywhere)
+		UMaterialInterface* NightMaterial;
+
+	UPROPERTY(EditAnywhere)
+		int32 MaterialIndex = 0;
+};
 
 UCLASS()
 class CHATTERS_API AHISMManager : public AActor
@@ -35,6 +52,9 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		TArray<UStaticMesh*> StaticMeshes;
+
+	UPROPERTY(EditAnywhere)
+		TArray<FMeshWindowNightMaterialData> NightModeWindowMashes;
 public:
 	static FString GeyKeyForStaticMeshComponent(UStaticMeshComponent* Component);
 

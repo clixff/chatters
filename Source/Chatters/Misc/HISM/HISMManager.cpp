@@ -42,6 +42,9 @@ void AHISMManager::Tick(float DeltaTime)
 
 void AHISMManager::Activate()
 {
+	auto* GameSession = UChattersGameSession::Get();
+	bool bNightMode = GameSession->TimeOfDay == ETimeOfDay::Night;
+
 	TArray<AActor*> Actors;
 
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AStaticMeshActor::StaticClass(), Actors);
@@ -62,6 +65,26 @@ void AHISMManager::Activate()
 		if (!StaticMesh || !StaticMeshes.Contains(StaticMesh))
 		{
 			continue;
+		}
+
+		if (bNightMode)
+		{
+			for (auto WindowMesh : NightModeWindowMashes)
+			{
+				if (StaticMesh != WindowMesh.Mesh)
+				{
+					continue;
+				}
+
+				if (FMath::RandRange(0, 2) == 0)
+				{
+					continue;
+				}
+
+				StaticMeshComponent->SetMaterial(WindowMesh.MaterialIndex, WindowMesh.NightMaterial);
+				
+				break;
+			}
 		}
 
 		TArray<UMaterialInterface*> Materials = StaticMeshComponent->GetMaterials();
