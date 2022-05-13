@@ -14,6 +14,8 @@ public class Chatters : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
+		PublicDependencyModuleNames.Add("EasyFileDialog");
+
 		PublicDefinitions.Add("_WINSOCKAPI_");
 		PublicDefinitions.Add("ASIO_STANDALONE");
 		PublicDefinitions.Add("_WEBSOCKETPP_CPP11_INTERNAL_");

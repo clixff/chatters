@@ -4,9 +4,7 @@
 #include "ImportNamesWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "../../../../Core/ChattersGameInstance.h"
-#include "IDesktopPlatform.h"
-#include "DesktopPlatform/Public/IDesktopPlatform.h"
-#include "DesktopPlatform/Public/DesktopPlatformModule.h"
+#include "EFDCore.h"
 #include "../../../../Core/Settings/SavedSettings.h"
 
 int32 UImportNamesWidget::RowsAmount = 0;
@@ -160,22 +158,17 @@ void UImportNamesWidget::RemoveRow(UImportNameRowWidget* Row)
 
 void UImportNamesWidget::OnBrowseFileClicked()
 {
-	void* ParentWindow = FSlateApplication::Get().GetActiveTopLevelWindow()->GetNativeWindow()->GetOSWindowHandle();
-	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
-	if (DesktopPlatform)
+	uint32 Flag = 0;
+	TArray<FString> FileNames;
+	FString DialogTitle = TEXT("Browse file");
+	FString DefaultPath = TEXT("");
+	const FString FileTypes = TEXT("Text Files|*.txt;*.csv");
+
+	EFDCore::OpenFileDialogCore(DialogTitle, DefaultPath, FString(""), FileTypes, 0, FileNames);
+
+	if (FileNames.Num() == 1)
 	{
-		uint32 Flag = 0;
-		TArray<FString> FileNames;
-		FString DialogTitle = TEXT("Browse file");
-		FString DefaultPath = FPlatformProcess::UserDir();
-		DefaultPath = TEXT("");
-		const FString FileTypes = TEXT("Text Files|*.txt;*.csv");
-		DesktopPlatform->OpenFileDialog(ParentWindow, DialogTitle, DefaultPath, FString(""), FileTypes, Flag, FileNames);
-		
-		if (FileNames.Num() == 1)
-		{
-			ReadFileAndParse(FileNames[0]);
-		}
+		ReadFileAndParse(FileNames[0]);
 	}
 }
 
