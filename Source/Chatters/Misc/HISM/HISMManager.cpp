@@ -81,7 +81,14 @@ void AHISMManager::Activate()
 					continue;
 				}
 
-				StaticMeshComponent->SetMaterial(WindowMesh.MaterialIndex, WindowMesh.NightMaterial);
+				if (!WindowMesh.NightRandomMaterials.Num())
+				{
+					break;
+				}
+
+				auto* NightMaterial = WindowMesh.NightRandomMaterials[FMath::RandRange(0, WindowMesh.NightRandomMaterials.Num()-1)];
+
+				StaticMeshComponent->SetMaterial(WindowMesh.MaterialIndex, NightMaterial);
 				
 				break;
 			}

@@ -8,6 +8,7 @@
 #include "../Character/Equipment/Weapon/Instances/FirearmWeaponInstance.h"
 #include "NiagaraFunctionLibrary.h"
 #include "../Misc/BulletHolesManager.h"
+#include "DrawDebugHelpers.h"
 #include "Kismet/KismetMathLibrary.h"
 
 uint32 AFirearmProjectile::TotalNumberOfProjectiles = 0;
@@ -231,6 +232,8 @@ void AFirearmProjectile::OnEnd()
 								UGameplayStatics::PlaySoundAtLocation(GetWorld(), FirearmRef->DamageSound, RealEndLocation, FMath::RandRange(0.7f, 0.85f));
 							}
 						}
+
+						BotToDamage->TryAddWallBloodDecal(StartLocation, RealEndLocation);
 					}
 				}
 			}

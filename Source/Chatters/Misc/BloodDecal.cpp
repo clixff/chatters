@@ -65,9 +65,12 @@ void ABloodDecal::Tick(float DeltaTime)
 	{
 		return;
 	}
+
+	auto* OpacityCurveRef = bFloorDecal ? OpacityCurve : WallOpacityCurve;
+	auto* ColorMultiplierRef = bFloorDecal ? ColorMultiplierCurve : WallColorMultiplierCurve;
 	
-	float ColorMultiplier = this->ColorMultiplierCurve->GetFloatValue(LifeTime);
-	float OpacityValue = this->OpacityCurve->GetFloatValue(LifeTime);
+	float ColorMultiplier = ColorMultiplierRef->GetFloatValue(LifeTime);
+	float OpacityValue = OpacityCurveRef->GetFloatValue(LifeTime);
 
 	this->DecalMaterial->SetScalarParameterValue(TEXT("Multiplier"), ColorMultiplier);
 	this->DecalMaterial->SetScalarParameterValue(TEXT("Opacity"), OpacityValue);
@@ -87,7 +90,14 @@ void ABloodDecal::DestroyDecal()
 
 		if (Bot)
 		{
-			Bot->RemoveBloodDecal();
+			if (bFloorDecal)
+			{
+				Bot->RemoveBloodDecal();
+			}
+			else
+			{
+				Bot->RemoveWallBloodDecal(this);
+			}
 		}
 	}
 }

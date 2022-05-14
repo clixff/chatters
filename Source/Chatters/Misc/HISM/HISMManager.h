@@ -19,7 +19,7 @@ public:
 		UStaticMesh* Mesh;
 
 	UPROPERTY(EditAnywhere)
-		UMaterialInterface* NightMaterial;
+		TArray<UMaterialInterface*> NightRandomMaterials;
 
 	UPROPERTY(EditAnywhere)
 		int32 MaterialIndex = 0;

@@ -1442,6 +1442,8 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 		}
 	}
 
+	BotHit->TryAddWallBloodDecal(HitResult.TraceStart, HitResult.bBlockingHit ? HitResult.ImpactPoint : BotHit->GetActorLocation());
+
 }
 
 bool ABot::TraceToTargetResult(bool bIgnoreBots)
@@ -2825,6 +2827,13 @@ void ABot::SetMeleeCollisionEnabled(bool bEnabled)
 void ABot::Clear()
 {
 	this->RemoveBloodDecal();
+
+	for (auto* BloodDecal : WallBloodDecals)
+	{
+		BloodDecal->Destroy();
+	}
+
+	WallBloodDecals.Empty();
 }
 
 void ABot::RemoveBloodDecal()
@@ -3151,5 +3160,101 @@ void ABot::WinnerTick(float DeltaTime)
 				bShouldApplyGunAnimation = true;
 			}
 		}
+	}
+}
+
+void ABot::AddWallBloodDecal(FHitResult HitResult)
+{
+	if (!this->FloorBloodDecalSubclass)
+	{
+		return;
+	}
+
+	FTransform DecalSpawnTransform;
+	DecalSpawnTransform.SetLocation(HitResult.ImpactPoint);
+
+	FRotator DecalRotation = HitResult.ImpactNormal.Rotation();
+
+	DecalRotation += FRotator(90.0f, 0.0f, 0.0f);
+
+	DecalSpawnTransform.SetRotation(FQuat(DecalRotation));
+
+	ABloodDecal* BloodDecal = GetWorld()->SpawnActor<ABloodDecal>(this->FloorBloodDecalSubclass, DecalSpawnTransform);
+	BloodDecal->BotOwner = this;
+	BloodDecal->bFloorDecal = false;
+	float BloodScale = FMath::RandRange(BloodDecal->MinWallDecalScale, BloodDecal->MaxWallDecalScale);
+	BloodDecal->SetActorScale3D(FVector(BloodScale));
+
+	WallBloodDecals.Add(BloodDecal);
+}
+
+void ABot::RemoveWallBloodDecal(ABloodDecal* Decal)
+{
+	for (int32 i = 0; i < WallBloodDecals.Num(); i++)
+	{
+		if (WallBloodDecals[i] == Decal)
+		{
+			WallBloodDecals[i]->Destroy();
+			WallBloodDecals.RemoveAt(i, 1);
+			return;
+		}
+	}
+}
+
+void ABot::TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint)
+{
+	if (WallBloodDecals.Num() >= MaxWallBloodDecals)
+	{
+		return;
+	}
+
+	StartPoint.Z = EndPoint.Z;
+
+	APlayerPawn* PlayerPawn = APlayerPawn::Get();
+
+	float DistanceFromCamera = PlayerPawn ? PlayerPawn->GetDistanceFromCamera(EndPoint) : 0.0f;
+
+	if (DistanceFromCamera > 10000.0f)
+	{
+		return;
+	}
+
+	FVector ShotDirection = UKismetMathLibrary::FindLookAtRotation(StartPoint, EndPoint).Vector();
+
+	float Dist = FVector::Dist(StartPoint, EndPoint);
+
+	FVector ShotDirectionToWall = ShotDirection * (Dist + 300.0f);
+
+	FCollisionObjectQueryParams CollisionParams;
+	CollisionParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+
+
+	FVector BloodLocation;
+
+	int32 RandNumber = FMath::RandRange(0, 1);
+
+	if (RandNumber == 0)
+	{
+		BloodLocation = StartPoint + ShotDirectionToWall;
+	}
+	else if (RandNumber == 1)
+	{
+		FVector RandVector = FVector(0.2f, 0.0f, -0.8f);
+		RandVector.Normalize();
+
+		RandVector = FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).RotateVector(RandVector);
+
+		BloodLocation = EndPoint + (RandVector * 300.0f);
+	}
+
+	FHitResult HitResult;
+	GetWorld()->LineTraceSingleByObjectType(HitResult, EndPoint, BloodLocation, CollisionParams);
+
+	//FVector ResultPoint = HitResult.bBlockingHit ? HitResult.ImpactPoint : BloodLocation;
+	//DrawDebugLine(GetWorld(), EndPoint, ResultPoint, FColor(255, 0, 0), false, 5.0f, 0, 1.0f);
+
+	if (HitResult.bBlockingHit)
+	{
+		AddWallBloodDecal(HitResult);
 	}
 }

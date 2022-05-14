@@ -56,4 +56,18 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		TArray<UTexture2D*> OpacityMasksList;
+
+	bool bFloorDecal = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		float MinWallDecalScale = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		float MaxWallDecalScale = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UCurveFloat* WallOpacityCurve = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		UCurveFloat* WallColorMultiplierCurve = nullptr;
 };

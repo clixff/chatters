@@ -492,6 +492,17 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UCurveFloat* HitBoneRotationCurve = nullptr;
+
+	UPROPERTY()
+		TArray<ABloodDecal*> WallBloodDecals;
+
+	int32 MaxWallBloodDecals = 3;
+
+	void AddWallBloodDecal(FHitResult HitResult);
+
+	void RemoveWallBloodDecal(ABloodDecal* Decal);
+
+	void TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint);
 private:
 	FName DeathBoneName = NAME_None;
 };
