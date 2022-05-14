@@ -486,6 +486,12 @@ public:
 	bool bWinner = false;
 
 	void WinnerTick(float DeltaTime);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FManualTimer HitBoneRotationTimer = FManualTimer(2.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UCurveFloat* HitBoneRotationCurve = nullptr;
 private:
 	FName DeathBoneName = NAME_None;
 };

@@ -109,6 +109,15 @@ void ABot::Tick(float DeltaTime)
 		{
 			SCOPE_CYCLE_COUNTER(STAT_StatsBotAliveTick);
 
+			if (HitBoneRotationTimer.Current != 0)
+			{
+				HitBoneRotationTimer.Add(-DeltaTime);
+				if (HitBoneRotationTimer.Current <= 0.0f)
+				{
+					HitBoneRotationTimer.Current = 0.0f;
+				}
+			}
+
 			/** Enable collision for revived players after 3 seconds */
 			if (this->bReviveCollisionTimerActive)
 			{
@@ -1949,6 +1958,11 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 				}
 			}
 		}
+
+		if (HitBoneRotationTimer.Current == 0)
+		{
+			HitBoneRotationTimer.Current = HitBoneRotationTimer.Max;
+		}
 	}
 
 	//UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);
@@ -2260,7 +2274,19 @@ UWeaponItem* ABot::GetWeaponRef()
 
 float ABot::GetGunPitchRotation()
 {
-	return this->GetGunRotation().Pitch;
+	float GunRotation = this->GetGunRotation().Pitch;
+
+	if (CombatAction == ECombatAction::Moving || CombatAction == ECombatAction::IDLE)
+	{
+		GunRotation = 0.0f;
+	}
+
+	if (HitBoneRotationCurve && HitBoneRotationTimer.Current != 0.0f)
+	{
+		GunRotation += HitBoneRotationCurve->GetFloatValue(HitBoneRotationTimer.Max - HitBoneRotationTimer.Current);
+	}
+
+	return GunRotation;
 }
 
 bool ABot::ShouldPlayWeaponHitAnimation()
