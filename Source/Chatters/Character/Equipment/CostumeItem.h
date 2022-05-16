@@ -21,4 +21,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		UNiagaraSystem* BloodParticle = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		bool bCanSpawnBlood = true;
 };

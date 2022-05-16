@@ -1493,6 +1493,12 @@ bool ABot::TraceToTargetResult(bool bIgnoreBots)
 
 void ABot::CreateFloorBloodDecal()
 {
+	if (!bCanSpawnBlood)
+	{
+		return;
+	}
+
+
 	this->bCheckedBloodDecalCreation = true;
 
 	if (!this->FloorBloodDecalSubclass)
@@ -1501,7 +1507,7 @@ void ABot::CreateFloorBloodDecal()
 	}
 
 	UWorld* WorldObject = this->GetWorld();
-	FName BoneName = DeathBoneName == NAME_None ? TEXT("spine_3") : DeathBoneName;
+	FName BoneName = DeathBoneName == NAME_None ? TEXT("spine_3") : DeathBoneName; 
 	FVector PivotLocation = this->GetMesh()->GetSocketLocation(BoneName) + FVector(0.0f, 0.0f, 10.0f);
 	FVector DecalLocation = PivotLocation + FVector(0.0f, 0.0f, -60.0f);
 
@@ -1775,6 +1781,7 @@ void ABot::SetEquipment()
 
 				this->GetMesh()->EmptyOverrideMaterials();
 
+				bCanSpawnBlood = RandomEquipment.Costume->bCanSpawnBlood;
 
 				TArray<UMaterialInterface*> Materials = RandomEquipment.Costume->GetRandomMaterials();
 
@@ -3203,6 +3210,11 @@ void ABot::RemoveWallBloodDecal(ABloodDecal* Decal)
 
 void ABot::TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint)
 {
+	if (!bCanSpawnBlood)
+	{
+		return;
+	}
+
 	if (WallBloodDecals.Num() >= MaxWallBloodDecals)
 	{
 		return;

@@ -505,4 +505,6 @@ public:
 	void TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint);
 private:
 	FName DeathBoneName = NAME_None;
+
+	bool bCanSpawnBlood = true;
 };
