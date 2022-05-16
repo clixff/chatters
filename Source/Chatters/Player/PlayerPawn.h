@@ -51,7 +51,7 @@ public:
 
 	UChattersGameSession* GameSession = nullptr;
 
-	void AttachToBot(ABot* Bot);
+	void AttachToBot(ABot* Bot, bool bNoFirstPerson = false);
 
 	void DetachFromBot();
 
@@ -78,6 +78,17 @@ public:
 	FVector GetCameraLocation();
 
 	void RespawnAttachedBot();
+
+	bool bFirstPersonCamera = false;
+
+	void SetThirdPersonCamera();
+
+	void SetFirstPersonCamera();
+
+	void ResetAttachedBotHeadVisibility();
+
+	UPROPERTY(EditDefaultsOnly)
+		float FirstPersonFOV = 90.0f;
 private:
 	void UpdateBotNicknameWidgets();
 
@@ -94,4 +105,6 @@ private:
 	static APlayerPawn* Singleton;
 
 	FVector CachedCameraLocation = FVector(0.0f);
+
+	float ThirdPersonFOV = 90.0f;
 };

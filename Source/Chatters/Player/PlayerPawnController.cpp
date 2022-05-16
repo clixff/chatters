@@ -71,6 +71,9 @@ void APlayerPawnController::SetupInputComponent()
 	this->InputComponent->BindAction("GameJoin", IE_Pressed, this, &APlayerPawnController::OnGameJoinPressed);
 	this->InputComponent->BindAction("Respawn", IE_Pressed, this, &APlayerPawnController::OnRespawnBotPressed);
 
+	this->InputComponent->BindAction("CameraChange", IE_Pressed, this, &APlayerPawnController::OnCameraButtonPressed);
+
+
 	for (int32 i = 0; i < 5; i++)
 	{
 		FString KeyID = FString::Printf(TEXT("Key_%d"), i+1);
@@ -251,7 +254,7 @@ void APlayerPawnController::Zoom(float Value)
 
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 
-	if (PlayerPawnActor && PlayerPawnActor->bAttachedToBot)
+	if (PlayerPawnActor && PlayerPawnActor->bAttachedToBot && !PlayerPawnActor->bFirstPersonCamera)
 	{
 		this->ZoomValue = Value;
 		this->ZoomSeconds = this->SecondsForZoom;
@@ -262,7 +265,7 @@ void APlayerPawnController::ZoomTick(float DeltaTime)
 {
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 
-	if (PlayerPawnActor && PlayerPawnActor->bAttachedToBot)
+	if (PlayerPawnActor && PlayerPawnActor->bAttachedToBot && !PlayerPawnActor->bFirstPersonCamera)
 	{
 		auto* CameraBoom = PlayerPawnActor->CameraBoom;
 
@@ -315,6 +318,11 @@ void APlayerPawnController::RotateAttachedCamera(ERotationType Type, float Value
 	if (PlayerPawnActor)
 	{
 		auto* CameraBoom = PlayerPawnActor->CameraBoom;
+		if (PlayerPawnActor->bFirstPersonCamera)
+		{
+			return;
+		}
+
 		if (CameraBoom)
 		{
 			FRotator CameraBoomRotation = CameraBoom->GetRelativeRotation();
@@ -527,6 +535,19 @@ void APlayerPawnController::SelectLeaderboardBot(int32 Index)
 		{
 			GameSession->SelectDeathmatchLeader(Index);
 		}
+	}
+}
+
+void APlayerPawnController::OnCameraButtonPressed()
+{
+	auto* PlayerPawnRef = GetPlayerPawn();
+	if (PlayerPawnRef->bFirstPersonCamera)
+	{
+		PlayerPawnRef->SetThirdPersonCamera();
+	}
+	else
+	{
+		PlayerPawnRef->SetFirstPersonCamera();
 	}
 }
 

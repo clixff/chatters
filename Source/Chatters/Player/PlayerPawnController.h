@@ -110,4 +110,7 @@ private:
 	
 	void SelectLeaderboardBot(int32 Index);
 	DECLARE_DELEGATE_OneParam(FSelectLeaderboardBotDelegate, int32)
+
+	void OnCameraButtonPressed();
+
 };

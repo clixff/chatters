@@ -104,6 +104,15 @@ public:
 		FRotator RightEye = FRotator(0.0f);
 };
 
+USTRUCT(BlueprintType)
+struct FBotDamagedBonesData
+{
+	GENERATED_BODY()
+public:
+	bool bLeftLegDamaged = false;
+	bool bRightLegDamaged = false;
+};
+
 class UChattersGameSession;
 
 UCLASS()
@@ -503,8 +512,30 @@ public:
 	void RemoveWallBloodDecal(ABloodDecal* Decal);
 
 	void TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FManualTimer DropEquipmentAfterDeathTimer = FManualTimer(0.2f);
+
+	UPROPERTY(EditAnywhere)
+		FTransform FirstPersonOffset;
+
+	bool IsHatAttached();
+
+
 private:
 	FName DeathBoneName = NAME_None;
 
 	bool bCanSpawnBlood = true;
+	
+
+	UPROPERTY()
+		FBotDamagedBonesData DamagedBonesData;
+
+	float GetMaxSpeedForBot(float RequiredSpeed);
+
+	void UpdateBonesDamageData(FName BoneName);
+
+	void ClearDamagedBonesData();
+
+	void SetUseControllerRotationYaw(bool bUse);
 };

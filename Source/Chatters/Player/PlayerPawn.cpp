@@ -52,14 +52,26 @@ void APlayerPawn::Tick(float DeltaTime)
 		this->UpdateBotNicknameWidgets();
 	}
 
-	if (this->bAttachedToBot)
+	if (this->bAttachedToBot && !bFirstPersonCamera)
 	{
 		this->SetActorRotation(FRotator(0.0f));
+	}
+	else if (bAttachedToBot && bFirstPersonCamera)
+	{
+		FRotator Rotation = BotToAttach->FirstPersonOffset.GetRotation().Rotator();
+
+		Rotation = BotToAttach->GetMesh()->GetSocketTransform(TEXT("_head"), ERelativeTransformSpace::RTS_World).GetRotation().Rotator();
+
+		Rotation *= 1.0f;
+
+		Rotation += BotToAttach->FirstPersonOffset.GetRotation().Rotator();
+		SetActorRotation(Rotation);
+		SetActorRelativeLocation(BotToAttach->FirstPersonOffset.GetLocation());
 	}
 
 }
 
-void APlayerPawn::AttachToBot(ABot* Bot)
+void APlayerPawn::AttachToBot(ABot* Bot, bool bNoFirstPerson)
 {
 	if (Bot)
 	{
@@ -68,13 +80,18 @@ void APlayerPawn::AttachToBot(ABot* Bot)
 			this->BotToAttach->bPlayerAttached = false;
 		}
 
+		if (BotToAttach && bFirstPersonCamera)
+		{
+			ResetAttachedBotHeadVisibility();
+		}
+
 		this->BotToAttach = Bot;
 		this->BotToAttach->bPlayerAttached = true;
 
 		FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, true);
 		this->AttachToActor(this->BotToAttach, TransformRules);
 
-		if (!this->bAttachedToBot)
+		if (!this->bAttachedToBot || (bNoFirstPerson && bFirstPersonCamera))
 		{
 			if (this->Controller)
 			{
@@ -89,7 +106,6 @@ void APlayerPawn::AttachToBot(ABot* Bot)
 
 				this->CameraBoom->SetRelativeRotation(FRotator(-30.0f, BotRotation.Yaw, 0.0f));
 			}
-			
 		}
 		else
 		{
@@ -98,6 +114,11 @@ void APlayerPawn::AttachToBot(ABot* Bot)
 				FRotator CameraBoomRotation = this->CameraBoom->GetRelativeRotation();
 				CameraBoomRotation.Roll = 0.0f;
 				this->CameraBoom->SetRelativeRotation(CameraBoomRotation);
+			}
+
+			if (!bNoFirstPerson && bFirstPersonCamera)
+			{
+				SetFirstPersonCamera();
 			}
 		}
 
@@ -119,6 +140,11 @@ void APlayerPawn::DetachFromBot()
 
 		if (this->BotToAttach)
 		{
+			if (bFirstPersonCamera)
+			{
+				ResetAttachedBotHeadVisibility();
+			}
+
 			FVector CameraLocation = this->BotToAttach->GetActorLocation();
 			FRotator CameraRotation = this->BotToAttach->GetActorRotation();
 
@@ -151,6 +177,9 @@ void APlayerPawn::DetachFromBot()
 			}
 		}
 		this->SetSpectatorMenuVisibiliy(false);
+		
+		bFirstPersonCamera = false;
+		Camera->FieldOfView = ThirdPersonFOV;
 	}
 }
 
@@ -367,5 +396,82 @@ void APlayerPawn::RespawnAttachedBot()
 	if (this->bAttachedToBot && this->BotToAttach)
 	{
 		this->BotToAttach->RespawnAtRandomPlace();
+	}
+}
+
+void APlayerPawn::SetThirdPersonCamera()
+{
+	if (BotToAttach == nullptr)
+	{
+		return;
+	}
+
+	AttachToBot(BotToAttach, true);
+	CameraBoom->TargetArmLength = this->LastZoomValue;
+	if (Controller)
+	{
+		Controller->SetControlRotation(FRotator::ZeroRotator);
+	}
+
+	bFirstPersonCamera = false;
+
+	ResetAttachedBotHeadVisibility();
+
+	Camera->FieldOfView = ThirdPersonFOV;
+}
+
+void APlayerPawn::SetFirstPersonCamera()
+{
+	if (BotToAttach == nullptr)
+	{
+		return;
+	}
+
+	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
+	AttachToComponent(BotToAttach->HeadMesh, TransformRules, TEXT("head_"));
+	//Controller->SetControlRotation(FRotator::ZeroRotator);
+
+	Controller->SetControlRotation(BotToAttach->FirstPersonOffset.GetRotation().Rotator());
+	SetActorRelativeLocation(BotToAttach->FirstPersonOffset.GetLocation());
+
+	CameraBoom->TargetArmLength = 0.0f;
+	CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+
+	if (!bFirstPersonCamera)
+	{
+		ThirdPersonFOV = Camera->FieldOfView;
+	}
+
+	Camera->FieldOfView = FirstPersonFOV;
+
+	bFirstPersonCamera = true;
+
+	BotToAttach->HeadMesh->SetVisibility(false);
+	BotToAttach->BeardMesh->bCastHiddenShadow = true;
+
+	if (BotToAttach->HatMesh && BotToAttach->IsHatAttached())
+	{
+		BotToAttach->HatMesh->SetVisibility(false);
+		BotToAttach->BeardMesh->bCastHiddenShadow = true;
+	}
+
+	if (BotToAttach->BeardMesh)
+	{
+		BotToAttach->BeardMesh->SetVisibility(false);
+		BotToAttach->BeardMesh->bCastHiddenShadow = true;
+	}
+
+}
+
+void APlayerPawn::ResetAttachedBotHeadVisibility()
+{
+	if (BotToAttach)
+	{
+		BotToAttach->HeadMesh->SetVisibility(true);
+		BotToAttach->HeadMesh->bCastHiddenShadow = false;
+		BotToAttach->HatMesh->SetVisibility(true);
+		BotToAttach->HatMesh->bCastHiddenShadow = false;
+		BotToAttach->BeardMesh->SetVisibility(true);
+		BotToAttach->BeardMesh->bCastHiddenShadow = false;
 	}
 }

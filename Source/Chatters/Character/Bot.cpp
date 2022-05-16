@@ -255,11 +255,6 @@ void ABot::Tick(float DeltaTime)
 				}
 			}
 
-			if (this->bHatAttached && this->bCanHatBeDetached && this->SecondsAfterDeath <= 25.0f)
-			{
-				this->TryDetachHat();
-			}
-
 			if (this->SecondsAfterDeath >= 2.0f && !this->bCheckedBloodDecalCreation)
 			{
 				this->CreateFloorBloodDecal();
@@ -298,6 +293,24 @@ void ABot::Tick(float DeltaTime)
 				{
 					this->WeaponMesh->SetSimulatePhysics(false);
 					this->WeaponMesh->PutAllRigidBodiesToSleep();
+				}
+			}
+
+			if (!DropEquipmentAfterDeathTimer.IsEnded())
+			{
+				DropEquipmentAfterDeathTimer.Add(DeltaTime);
+
+				if (DropEquipmentAfterDeathTimer.IsEnded())
+				{
+					if (bHatAttached && bCanHatBeDetached)
+					{
+						TryDetachHat();
+					}
+
+					if (WeaponMesh)
+					{
+						DeatachWeapon();
+					}
 				}
 			}
 
@@ -623,6 +636,7 @@ void ABot::CombatTick(float DeltaTime)
 
 				if (bActivateCombatTick)
 				{
+					CharacterMovementComponent->bOrientRotationToMovement = false;
 					if (WeaponType == EWeaponType::Firearm)
 					{
 						this->FirearmCombatTick(DeltaTime, TargetDist);
@@ -636,26 +650,18 @@ void ABot::CombatTick(float DeltaTime)
 				{
 					if (CharacterMovementComponent)
 					{
-						CharacterMovementComponent->MaxWalkSpeed = 600.0f;
+						CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(600.0f);
 
 						if (this->bShouldApplyGunAnimation)
 						{
-							CharacterMovementComponent->MaxWalkSpeed = this->WeaponInstance->WeaponRef->MaxWalkSpeed;
+							CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(WeaponInstance->WeaponRef->MaxWalkSpeed);
 						}
 					}
 
-					//this->bUseControllerRotationYaw = true;
-
 					if (this->CombatAction == ECombatAction::Moving)
 					{
-						if (this->SmoothRotation.bActive)
-						{
-							this->SmoothRotatingTick(DeltaTime);
-						}
-						else
-						{
-							this->bUseControllerRotationYaw = true;
-						}
+						this->bUseControllerRotationYaw = false;
+						CharacterMovementComponent->bOrientRotationToMovement = true;
 
 						this->UpdateMovingTargetTimeout -= DeltaTime;
 
@@ -672,6 +678,7 @@ void ABot::CombatTick(float DeltaTime)
 							FVector AimLoc = Target.Actor->GetActorLocation();
 							this->AimAt(AimLoc);
 							this->bUseControllerRotationYaw = false;
+							CharacterMovementComponent->bOrientRotationToMovement = false;
 							this->SmoothRotatingTick(DeltaTime);
 							this->MoveToTarget();
 						}
@@ -959,10 +966,11 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		{
 			if (CharacterMovementComponent)
 			{
-				CharacterMovementComponent->MaxWalkSpeed = FirearmRef->MaxWalkSpeed;
+				CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(FirearmRef->MaxWalkSpeed);
 			}
 			this->bMovingToRandomCombatLocation = true;
-			this->bUseControllerRotationYaw = false;
+			//this->bUseControllerRotationYaw = false;
+			CharacterMovementComponent->bOrientRotationToMovement = false;
 			this->CombatRandomLocation = NewRandomLocation;
 			this->DefenderSecondsWithoutMoving.Reset();
 
@@ -1058,13 +1066,14 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 			this->bMovingToRandomCombatLocation = true;
 			this->TimeSinceStartedMovingInCombat = 0.0f;
 			this->bUseControllerRotationYaw = false;
+			GetCharacterMovementComponent()->bOrientRotationToMovement = false;
 		}
 
 		auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
 
 		if (CharacterMovementComponent)
 		{
-			CharacterMovementComponent->MaxWalkSpeed = MeleeInstance->WeaponRef->MaxWalkSpeed;
+			CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(MeleeInstance->WeaponRef->MaxWalkSpeed);
 		}
 	}
 
@@ -1453,8 +1462,6 @@ bool ABot::TraceToTargetResult(bool bIgnoreBots)
 		return false;
 	}
 
-
-	//FVector StartLocation = this->GetMesh()->GetSocketLocation(TEXT("spine_5"));
 	FVector StartLocation = this->GetActorLocation() + FVector(0.0f, 0.0f, 40.0f);
 	
 	FVector EndLocation = this->Target.Actor->GetActorLocation();
@@ -1484,10 +1491,6 @@ bool ABot::TraceToTargetResult(bool bIgnoreBots)
 		return true;
 	}
 
-	//FVector DebugEndLocation = HitResult.bBlockingHit ? HitResult.ImpactPoint : HitResult.TraceEnd;
-
-	//DrawDebugLine(GetWorld(), StartLocation, DebugEndLocation, FColor::Red, false, 0.5f);
-	
 	return false;
 }
 
@@ -1526,8 +1529,8 @@ void ABot::CreateFloorBloodDecal()
 	FTransform DecalSpawnTransform;
 	DecalSpawnTransform.SetLocation(HitResult.ImpactPoint);
 	
-	FRotator DecalRotation = FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f);
-	//DecalRotation += HitResult.ImpactNormal.Rotation();
+	FRotator DecalRotation = HitResult.ImpactNormal.Rotation();
+	DecalRotation.Roll += FMath::RandRange(0.0f, 360.0f);
 
 	DecalSpawnTransform.SetRotation(FQuat(DecalRotation));
 
@@ -1960,6 +1963,11 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 					}
 				}
 
+				if (ByBot->HealthPoints < Target.Bot->HealthPoints)
+				{
+					bSetDamagerAsNewTarget = true;
+				}
+
 				if (bSetDamagerAsNewTarget)
 				{
 					/** Set the damager as new target */
@@ -1972,6 +1980,8 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		{
 			HitBoneRotationTimer.Current = HitBoneRotationTimer.Max;
 		}
+
+		UpdateBonesDamageData(BoneHit);
 	}
 
 	//UE_LOG(LogTemp, Display, TEXT("[ABot] Applying %d damage to bot. Old hp: %d. New HP: %d"), Damage, OldHP, this->HealthPoints);
@@ -2156,7 +2166,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	if (this->WeaponInstance)
 	{
-		this->DeatachWeapon();
+		//this->DeatachWeapon();
 	}
 
 	this->CombatAction = ECombatAction::IDLE;
@@ -2192,15 +2202,25 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		}
 	}
 
-	if (Killer && Killer != this && this->bPlayerAttached)
+	if (bPlayerAttached)
 	{
-		APlayerPawn* PlayerPawn = APlayerPawn::Get();
-
+		auto* PlayerPawn = APlayerPawn::Get();
 		if (PlayerPawn)
 		{
-			PlayerPawn->AttachToBot(Killer);
+			if (Killer && Killer != this)
+			{
+				PlayerPawn->AttachToBot(Killer);
+			}
+			else
+			{
+				if (PlayerPawn->bFirstPersonCamera)
+				{
+					PlayerPawn->SetThirdPersonCamera();
+				}
+			}
 		}
 	}
+
 
 	if (GameSessionObject)
 	{
@@ -2380,6 +2400,7 @@ void ABot::ResetOnNewRound()
 	}
 
 	AttachHat();
+	ClearDamagedBonesData();
 }
 
 void ABot::OnGameSessionStarted(ESessionMode SessionMode)
@@ -3055,6 +3076,10 @@ void ABot::ReviveBotDeatchmatch()
 		this->ReviveCollisionTimer.Reset();
 
 		RemoveAllAttachedProjectileMeshes();
+
+		DropEquipmentAfterDeathTimer.Reset();
+
+		ClearDamagedBonesData();
 	}
 }
 
@@ -3182,7 +3207,7 @@ void ABot::AddWallBloodDecal(FHitResult HitResult)
 
 	FRotator DecalRotation = HitResult.ImpactNormal.Rotation();
 
-	DecalRotation += FRotator(90.0f, 0.0f, 0.0f);
+	DecalRotation += FRotator(0.0f, 0.0f, FMath::RandRange(0.0f, 360.0f));
 
 	DecalSpawnTransform.SetRotation(FQuat(DecalRotation));
 
@@ -3268,5 +3293,79 @@ void ABot::TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint)
 	if (HitResult.bBlockingHit)
 	{
 		AddWallBloodDecal(HitResult);
+	}
+}
+
+bool ABot::IsHatAttached()
+{
+	return bHatAttached;
+}
+
+float ABot::GetMaxSpeedForBot(float RequiredSpeed)
+{
+	/** No legs damaged */
+	if (!DamagedBonesData.bLeftLegDamaged && !DamagedBonesData.bRightLegDamaged)
+	{
+		return RequiredSpeed;
+	}
+
+	float MaxSpeed = 600.0f;
+
+	/** Only one leg damaged */
+	if (DamagedBonesData.bLeftLegDamaged || DamagedBonesData.bRightLegDamaged)
+	{
+		MaxSpeed = 450.0f;
+	}
+	
+	/** All legs damaged */
+	if (DamagedBonesData.bLeftLegDamaged && DamagedBonesData.bRightLegDamaged)
+	{
+		MaxSpeed = 350.0f;
+	}
+
+	return FMath::Min(RequiredSpeed, MaxSpeed);
+}
+
+void ABot::UpdateBonesDamageData(FName BoneName)
+{
+	FString BoneHit = BoneName.ToString();
+	bool bUpdateMaxWalkSpeed = false;
+	if (BoneHit.StartsWith(TEXT("L_leg_")) && BoneHit != TEXT("L_leg_1") && !DamagedBonesData.bLeftLegDamaged)
+	{
+		DamagedBonesData.bLeftLegDamaged = true;
+		bUpdateMaxWalkSpeed = true;
+	}
+	else if (BoneHit.StartsWith(TEXT("R_leg_")) && BoneHit != TEXT("R_leg_1") && DamagedBonesData.bRightLegDamaged)
+	{
+		DamagedBonesData.bRightLegDamaged = true;
+		bUpdateMaxWalkSpeed = true;
+	}
+
+	if (bUpdateMaxWalkSpeed)
+	{
+		auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
+
+		if (CharacterMovementComponent)
+		{
+			CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(CharacterMovementComponent->MaxWalkSpeed);
+		}
+	}
+}
+
+void ABot::ClearDamagedBonesData()
+{
+	DamagedBonesData.bLeftLegDamaged = false;
+	DamagedBonesData.bRightLegDamaged = false;
+}
+
+void ABot::SetUseControllerRotationYaw(bool bUse)
+{
+	if (bUse)
+	{
+
+	}
+	else
+	{
+
 	}
 }
