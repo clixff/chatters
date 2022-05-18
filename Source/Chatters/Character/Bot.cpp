@@ -1614,7 +1614,6 @@ ABot* ABot::CreateBot(UWorld* World, FString NameToSet, int32 IDToSet, TSubclass
 
 void ABot::OnFootstep()
 {
-
 	if (!this->bAlive)
 	{
 		return;
@@ -1793,7 +1792,9 @@ void ABot::SetEquipment()
 					this->GetMesh()->SetMaterial(i, Materials[i]);
 				}
 
-				this->HeadMesh->SetHiddenInGame(RandomEquipment.Costume->bHideHeadMesh);
+				bIsHeadHidden = RandomEquipment.Costume->bHideHeadMesh;
+
+				this->HeadMesh->SetHiddenInGame(bIsHeadHidden);
 
 				this->BloodNiagaraParticle = RandomEquipment.Costume->BloodParticle ? RandomEquipment.Costume->BloodParticle : this->GetDefaultBloodParticle();
 			}

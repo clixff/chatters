@@ -3,6 +3,8 @@
 
 #include "Animal.h"
 #include "AnimalController.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
+
 
 // Sets default values
 AAnimal::AAnimal()
@@ -30,6 +32,34 @@ void AAnimal::BeginPlay()
 void AAnimal::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AAnimal::OnFootstep()
+{
+	UWorld* World = this->GetWorld();
+
+	if (!World)
+	{
+		return;
+	}
+
+	FHitResult HitResult;
+	FVector StartLocation = this->GetActorLocation();
+	FVector EndLocation = StartLocation - FVector(0.0f, 0.0f, 150.0f);
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.bReturnPhysicalMaterial = true;
+	CollisionParams.bTraceComplex = false;
+
+	World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_Visibility, CollisionParams);
+
+	if (HitResult.bBlockingHit)
+	{
+		UPhysicalMaterial* PhysMaterial = HitResult.PhysMaterial.Get();
+		if (PhysMaterial)
+		{
+			this->PlayFootstepSound(HitResult.Location, PhysMaterial->SurfaceType);
+		}
+	}
 }
 
 

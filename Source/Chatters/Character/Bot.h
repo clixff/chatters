@@ -521,7 +521,7 @@ public:
 
 	bool IsHatAttached();
 
-
+	bool bIsHeadHidden = false;
 private:
 	FName DeathBoneName = NAME_None;
 

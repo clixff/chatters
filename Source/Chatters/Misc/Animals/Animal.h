@@ -22,4 +22,10 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable)
+		void OnFootstep();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void PlayFootstepSound(const FVector& Location, EPhysicalSurface Surface);
 };

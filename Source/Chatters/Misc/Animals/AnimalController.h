@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "../Misc.h"
 #include "AnimalController.generated.h"
 
 /**
@@ -22,6 +23,14 @@ public:
 
 	FVector TargetLocation;
 
+	UPROPERTY(EditAnywhere)
+		FFloatRange TimeToWaiBetweenMoves = FFloatRange(1.0f, 2.5f);
+
+	UPROPERTY()
+		FManualTimer TimerWait = FManualTimer(1.0f);
+
 protected:
 	virtual void Tick(float DeltaTime) override;
+
+	bool bWaiting = false;
 };

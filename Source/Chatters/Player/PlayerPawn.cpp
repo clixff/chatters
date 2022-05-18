@@ -62,9 +62,10 @@ void APlayerPawn::Tick(float DeltaTime)
 
 		Rotation = BotToAttach->GetMesh()->GetSocketTransform(TEXT("_head"), ERelativeTransformSpace::RTS_World).GetRotation().Rotator();
 
-		Rotation *= 1.0f;
-
 		Rotation += BotToAttach->FirstPersonOffset.GetRotation().Rotator();
+
+		Rotation.Pitch += BotToAttach->GetGunPitchRotation();
+
 		SetActorRotation(Rotation);
 		SetActorRelativeLocation(BotToAttach->FirstPersonOffset.GetLocation());
 	}
@@ -446,18 +447,22 @@ void APlayerPawn::SetFirstPersonCamera()
 
 	bFirstPersonCamera = true;
 
-	BotToAttach->HeadMesh->SetVisibility(false);
-	BotToAttach->BeardMesh->bCastHiddenShadow = true;
+	BotToAttach->HeadMesh->SetHiddenInGame(true);
+
+	if (!BotToAttach->bIsHeadHidden)
+	{
+		BotToAttach->HeadMesh->bCastHiddenShadow = true;
+	}
 
 	if (BotToAttach->HatMesh && BotToAttach->IsHatAttached())
 	{
-		BotToAttach->HatMesh->SetVisibility(false);
-		BotToAttach->BeardMesh->bCastHiddenShadow = true;
+		BotToAttach->HatMesh->SetHiddenInGame(true);
+		BotToAttach->HatMesh->bCastHiddenShadow = true;
 	}
 
 	if (BotToAttach->BeardMesh)
 	{
-		BotToAttach->BeardMesh->SetVisibility(false);
+		BotToAttach->BeardMesh->SetHiddenInGame(true);
 		BotToAttach->BeardMesh->bCastHiddenShadow = true;
 	}
 
@@ -467,11 +472,14 @@ void APlayerPawn::ResetAttachedBotHeadVisibility()
 {
 	if (BotToAttach)
 	{
-		BotToAttach->HeadMesh->SetVisibility(true);
+		if (!BotToAttach->bIsHeadHidden)
+		{
+			BotToAttach->HeadMesh->SetHiddenInGame(false);
+		}
 		BotToAttach->HeadMesh->bCastHiddenShadow = false;
-		BotToAttach->HatMesh->SetVisibility(true);
+		BotToAttach->HatMesh->SetHiddenInGame(false);
 		BotToAttach->HatMesh->bCastHiddenShadow = false;
-		BotToAttach->BeardMesh->SetVisibility(true);
+		BotToAttach->BeardMesh->SetHiddenInGame(false);
 		BotToAttach->BeardMesh->bCastHiddenShadow = false;
 	}
 }

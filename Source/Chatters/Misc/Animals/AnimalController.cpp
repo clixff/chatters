@@ -42,6 +42,8 @@ void AAnimalController::MoveToRandomLocation()
 			{
 				bMovingToRandomLocation = true;
 				TargetLocation = OutLocation;
+				TimerWait.Reset();
+				bWaiting = false;
 				return;
 			}
 		}
@@ -58,6 +60,21 @@ void AAnimalController::Tick(float DeltaTime)
 
 		if (DistToTarget <= 200.0f)
 		{
+			TimerWait.Max = FMath::RandRange(TimeToWaiBetweenMoves.GetLowerBoundValue(), TimeToWaiBetweenMoves.GetUpperBoundValue());
+			TimerWait.Current = 0.0f;
+			bWaiting = true;
+			StopMovement();
+			bMovingToRandomLocation = false;
+		}
+	}
+
+	if (bWaiting)
+	{
+		TimerWait.Add(DeltaTime);
+
+		if (TimerWait.IsEnded())
+		{
+			bWaiting = false;
 			MoveToRandomLocation();
 		}
 	}
