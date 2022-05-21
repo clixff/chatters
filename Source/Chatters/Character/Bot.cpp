@@ -574,8 +574,15 @@ void ABot::CombatTick(float DeltaTime)
 		{
 			if (this->Target.TargetType == ETargetType::Bot && this->Target.Bot && !this->Target.Bot->bAlive)
 			{
-				this->bMovingToRandomCombatLocation = false;
-				this->FindNewEnemyTarget();
+				bMovingToRandomCombatLocation = false;
+
+				FindNewTargetTimer.Add(DeltaTime);
+
+				if (FindNewTargetTimer.IsEnded())
+				{
+					FindNewTargetTimer.Reset();
+					FindNewEnemyTarget();
+				}
 			}
 			else
 			{
@@ -818,6 +825,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 								this->Target.Actor = Barrel;
 								this->Target.TargetType = ETargetType::ExplodingBarrel;
 								TargetBarrel = Barrel;
+								CombatStyle = ECombatStyle::Attack;
 								break;
 							}
 						}
@@ -867,7 +875,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	bool bCanActuallyShoot = bCanShoot && (HitActor == this->Target.Actor || HitActor == this->Target.Bot) && this->AimingTime.IsEnded();
 
-	/** If aiming at barrel */
+	/** If aiming at a barrel */
 	if (TargetBarrel && HitActor == this->Target.Actor)
 	{
 		float Dist = FVector::Dist(TargetBarrel->GetActorLocation(), this->GetActorLocation());
@@ -957,12 +965,64 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 		{
 			MaxDistance = 150.0f;
 		}
+
+		bool bRandomPlaceIsValid = false;
+		float MinDistanceForRandomLocation = 0.0f;
+		static const int32 MaxTriesToFindRandomLocation = 15;
+
+		if (Target.TargetType == ETargetType::ExplodingBarrel && TargetBarrel)
+		{
+			MinDistanceForRandomLocation = TargetBarrel->Radius;
+		}
+
+		TArray<FVector> RandomLocations;
 		FVector NewRandomLocation;
-		bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), this->Target.Actor->GetActorLocation(), NewRandomLocation, MaxDistance);
+
+		for (int32 i = 0; i < MaxTriesToFindRandomLocation; i++)
+		{
+			FVector TempRandomLocation;
+			bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), Target.Actor->GetActorLocation(), TempRandomLocation, MaxDistance);
+
+			if (bFoundRandomLocation)
+			{
+				float Dist = FVector::Dist(GetActorLocation(), TempRandomLocation);
+				if (!TargetBarrel || Dist >= MinDistanceForRandomLocation)
+				{
+					NewRandomLocation = TempRandomLocation;
+					bRandomPlaceIsValid = true;
+					break;
+				}
+			}
+		}
+
+
+		if (!bRandomPlaceIsValid)
+		{
+			FVector MaxDistLocation;
+			float MaxDist = 0.0f;
+			FVector Location = GetActorLocation();
+			for (auto Vector : RandomLocations)
+			{
+				float Dist = FVector::Dist(Vector, Location);
+
+				if (Dist > MaxDist)
+				{
+					MaxDistLocation = Vector;
+					MaxDist = Dist;
+				}
+			}
+
+			NewRandomLocation = MaxDistLocation;
+
+			if (RandomLocations.Num())
+			{
+				bRandomPlaceIsValid = true;
+			}
+		}
 
 		this->TimeSinceStartedMovingInCombat = 0.0f;
 
-		if (bFoundRandomLocation)
+		if (bRandomPlaceIsValid)
 		{
 			if (CharacterMovementComponent)
 			{

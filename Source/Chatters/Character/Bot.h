@@ -321,10 +321,10 @@ private:
 
 	FVector GunAnimationRotationPoint = FVector(0.0f, 0.0f, 10.094025);
 
-	FManualTimer SecondsAimingWithoutHitting = FManualTimer(5.0f);
+	FManualTimer SecondsAimingWithoutHitting = FManualTimer(2.5f);
 
 	UPROPERTY(VisibleAnywhere)
-		FManualTimer DefenderSecondsWithoutMoving = FManualTimer(10.0f);
+		FManualTimer DefenderSecondsWithoutMoving = FManualTimer(6.0f);
 	/** Allow defender to move after 20s */
 	float DefenderMaxSecondsWithoutMoving = 10.0f;
 
@@ -538,4 +538,6 @@ private:
 	void ClearDamagedBonesData();
 
 	void SetUseControllerRotationYaw(bool bUse);
+
+	FManualTimer FindNewTargetTimer = FManualTimer(0.1f);
 };
