@@ -60,6 +60,8 @@ public:
 		FLinearColor VictimNameColor;
 
 	void SetIcon(FKillFeedIcon& Icon);
+
+	void SetIsHeadshot(bool bHeadshot);
 public:
 	UPROPERTY(EditDefaultsOnly, Category="Icons")
 		FKillFeedIcon ExplosionIcon;

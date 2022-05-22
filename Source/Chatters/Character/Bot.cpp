@@ -942,7 +942,14 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	float DistToRandomLocation = FVector::Dist(this->CombatRandomLocation, this->GetActorLocation());
 
-	if (this->bMovingToRandomCombatLocation && (DistToRandomLocation < 150.0f || this->TimeSinceStartedMovingInCombat >= 2.0f))
+	float MaxTimeToFindNewPlace = 2.0f;
+
+	if (TargetBarrel)
+	{
+		MaxTimeToFindNewPlace = 5.0f;
+	}
+
+	if (this->bMovingToRandomCombatLocation && (DistToRandomLocation < 150.0f || TimeSinceStartedMovingInCombat >= MaxTimeToFindNewPlace))
 	{
 		this->bMovingToRandomCombatLocation = false;
 		
@@ -1948,7 +1955,14 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		return;
 	}
 
-	if (BoneHit == TEXT("head_"))
+	bool bHeadshot = false;
+
+	if (BoneHit == TEXT("head_") || BoneHit == TEXT("eye_R") || BoneHit == TEXT("eye_L"))
+	{
+		bHeadshot = true;
+	}
+
+	if (bHeadshot)
 	{
 		bCritical = true;
 	}
@@ -1996,7 +2010,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	if (this->HealthPoints <= 0)
 	{
 		this->HealthPoints = 0;
-		this->OnDead(ByBot, WeaponType, ImpulseVector, ImpulseLocation, BoneHit);
+		this->OnDead(ByBot, WeaponType, ImpulseVector, ImpulseLocation, BoneHit, bHeadshot);
 	}
 	else
 	{
@@ -2156,7 +2170,7 @@ bool ABot::IsEnemy(ABot* BotToCheck)
 	}
 }
 
-void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit)
+void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, FVector ImpulseLocation, FName BoneHit, bool bHeadshot)
 {
 	this->bAlive = false;
 	this->HealthPoints = 0;
@@ -2331,7 +2345,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 				break;
 			}
 
-			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon);
+			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon, bHeadshot && WeaponType == EWeaponType::Firearm);
 		}
 
 		GameSessionObject->OnBotDied(this->ID);
@@ -2728,7 +2742,7 @@ FVector ABot::GetFirearmOutBulletWorldPosition(FRotator GunRotation, bool bShoul
 	return OutLocation;
 }
 
-FVector ABot::GetFirearmBulletTargetWorldPosition(FVector OutBulletWorldPosition, float BulletDistance, FRotator GunRotation, bool bShouldRecalculateGunLocation, bool bBulletOffset)
+FVector ABot::GetFirearmBulletTargetWorldPosition(FVector OutBulletWorldPosition, float BulletDistance, FRotator GunRotation, bool bShouldRecalculateGunLocation, bool bBulletOffset, float RecoilFactor)
 {
 	if (bShouldRecalculateGunLocation)
 	{
@@ -2737,8 +2751,10 @@ FVector ABot::GetFirearmBulletTargetWorldPosition(FVector OutBulletWorldPosition
 
 	if (bBulletOffset)
 	{
-		GunRotation.Pitch += FMath::RandRange(-5.0f, 5.0f);
-		GunRotation.Yaw += FMath::RandRange(-5.0f, 5.0f);
+		const float MaxBulletOffset = 5.0f * RecoilFactor;
+
+		GunRotation.Pitch += FMath::RandRange(-MaxBulletOffset, MaxBulletOffset);
+		GunRotation.Yaw += FMath::RandRange(-MaxBulletOffset, MaxBulletOffset);
 	}
 
 	FVector GunRotationVector = GunRotation.Vector();
@@ -2769,7 +2785,7 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 	{
 		FRotator GunRotation = this->GetGunRotation();
 		FVector StartLocation = this->GetFirearmOutBulletWorldPosition(GunRotation, false);
-		FVector EndLocation = this->GetFirearmBulletTargetWorldPosition(StartLocation, FirearmRef->MaxDistance, GunRotation, false, bBulletOffset);
+		FVector EndLocation = this->GetFirearmBulletTargetWorldPosition(StartLocation, FirearmRef->MaxDistance, GunRotation, false, bBulletOffset, FirearmRef->RecoilFactor);
 
 		UWorld* World = this->GetWorld();
 

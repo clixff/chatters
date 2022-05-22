@@ -237,16 +237,13 @@ void APlayerPawn::UpdateBotNicknameWidgets()
 
 			BotNameWidget->UpdateSize(NewWidgetSize);
 
-
 			float const MinOpacityDistance = BotNameWidget->MaxOpacityDistance.GetLowerBoundValue();
 			float const MaxOpacityDistance = BotNameWidget->MaxOpacityDistance.GetUpperBoundValue();
 
 			float const ClampedOpacityDistnace = FMath::Clamp(DistanceFromBot, MinOpacityDistance, MaxOpacityDistance);
 			float const OpacityValue = 1.0f - UKismetMathLibrary::NormalizeToRange(ClampedOpacityDistnace, MinOpacityDistance, MaxOpacityDistance);
-			
 
 			BotNameWidget->UpdateOpacity(OpacityValue);
-
 		}
 
 	}

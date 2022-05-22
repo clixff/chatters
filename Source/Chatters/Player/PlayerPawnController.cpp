@@ -254,8 +254,27 @@ void APlayerPawnController::Zoom(float Value)
 
 	auto* PlayerPawnActor = this->GetPlayerPawn();
 
-	if (PlayerPawnActor && PlayerPawnActor->bAttachedToBot && !PlayerPawnActor->bFirstPersonCamera)
+	if (PlayerPawnActor && PlayerPawnActor->bAttachedToBot)
 	{
+		if (PlayerPawnActor->bFirstPersonCamera)
+		{
+			if (Value > 0.0f)
+			{
+				PlayerPawnActor->LastZoomValue = PlayerPawnActor->MinAttachedZoom;
+				PlayerPawnActor->SetThirdPersonCamera();
+			}
+
+			return;
+		}
+		else
+		{
+			if (Value < 0.0f && PlayerPawnActor->LastZoomValue <= PlayerPawnActor->MinAttachedZoom)
+			{
+				PlayerPawnActor->SetFirstPersonCamera();
+				return;
+			}
+		}
+
 		this->ZoomValue = Value;
 		this->ZoomSeconds = this->SecondsForZoom;
 	}

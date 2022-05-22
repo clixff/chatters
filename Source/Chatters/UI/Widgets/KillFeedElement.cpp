@@ -65,3 +65,20 @@ void UKillFeedElement::SetIcon(FKillFeedIcon& Icon)
 	}
 }
 
+void UKillFeedElement::SetIsHeadshot(bool bHeadshot)
+{
+	if (!bHeadshot)
+	{
+		UWidget* HeadshotWrapper = GetWidgetFromName(TEXT("Headshot_Wrapper"));
+
+		if (HeadshotWrapper)
+		{
+			HeadshotWrapper->RemoveFromParent();
+			if (HeadshotWrapper->IsValidLowLevel())
+			{
+				HeadshotWrapper->ConditionalBeginDestroy();
+			}
+		}
+	}
+}
+

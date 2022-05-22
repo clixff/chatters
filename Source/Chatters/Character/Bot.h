@@ -311,7 +311,7 @@ private:
 
 	FVector GetFirearmOutBulletWorldPosition(FRotator GunRotation = FRotator(0.0f), bool bShouldRecalculateGunLocation = true);
 
-	FVector GetFirearmBulletTargetWorldPosition(FVector OutBulletWorldPosition, float BulletDistance, FRotator GunRotation = FRotator(0.0f), bool bShouldRecalculateGunLocation = true, bool bBulletOffset = true);
+	FVector GetFirearmBulletTargetWorldPosition(FVector OutBulletWorldPosition, float BulletDistance, FRotator GunRotation = FRotator(0.0f), bool bShouldRecalculateGunLocation = true, bool bBulletOffset = true, float RecoilFactor = 1.0f);
 
 	FRotator GetGunRotation();
 
@@ -387,7 +387,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		UBoxComponent* MeleeCollision = nullptr;
 
-	void OnDead(ABot* Killer = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None);
+	void OnDead(ABot* Killer = nullptr, EWeaponType WeaponType = EWeaponType::None, FVector ImpulseVector = FVector(0.0f), FVector ImpulseLocation = FVector(0.0f), FName BoneHit = NAME_None, bool bHeadshot = false);
 
 	UFUNCTION(BlueprintCallable)
 		float GetSpeed();

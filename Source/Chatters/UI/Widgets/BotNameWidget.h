@@ -114,4 +114,5 @@ private:
 
 	int32 DamageNumbers = 0;
 
+	bool bWidgetHidden = false;
 };

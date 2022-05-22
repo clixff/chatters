@@ -99,4 +99,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Bowstring")
 		float BowstringAttachTime = 1.5f;
+
+	/** 0 = No recoil, 1 = max recoil */
+	UPROPERTY(EditDefaultsOnly)
+		float RecoilFactor = 1.0f;
 };

@@ -129,7 +129,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Notifications | KillFeed")
 		TSubclassOf<UKillFeedElement> KillFeedSubclass;
 
-	void OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon);
+	void OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon, bool bHeadshot = false);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Notifications | KillFeed")
 		int32 MaxKillFeedElements = 7;

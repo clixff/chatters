@@ -267,7 +267,7 @@ UVerticalBoxSlot* USessionWidget::AddNotificationToContainer(USessionNotificatio
 	return VerticalBoxSlot;
 }
 
-void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon)
+void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor KillerColor, FLinearColor VictimColor, FKillFeedIcon& Icon, bool bHeadshot)
 {
 	if (!this->KillFeedSubclass)
 	{
@@ -294,6 +294,7 @@ void USessionWidget::OnKill(FString KillerName, FString VictimName, FLinearColor
 	KillFeedElement->Init(KillerName, VictimName);
 	KillFeedElement->SetNicknameColors(KillerColor, VictimColor);
 	KillFeedElement->SetIcon(Icon);
+	KillFeedElement->SetIsHeadshot(bHeadshot);
 
 	this->AddNotificationToContainer(KillFeedElement);
 	SessionNotifications.Add(KillFeedElement);

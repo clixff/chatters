@@ -121,6 +121,8 @@ void UBotNameWidget::UpdateOpacity(float Opacity)
 	{
 		WrapperWidget->SetRenderOpacity(Opacity);
 	}
+
+	bWidgetHidden = Opacity == 0.0f;
 }
 
 void UBotNameWidget::Tick(float DeltaTime)
@@ -276,6 +278,11 @@ void UBotNameWidget::UpdateKillsNumber(int32 Kills)
 
 void UBotNameWidget::ShowDamageNumber(int32 DamageNumber, bool bCritical)
 {
+	if (bWidgetHidden)
+	{
+		return;
+	}
+
 	FString DamageNumberWidgetName = FString::Printf(TEXT("Damage_Number_%d"), this->DamageNumbers);
 	UTextBlock* TextBlock = this->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), FName(*DamageNumberWidgetName));
 	this->DamageNumbers++;
