@@ -118,20 +118,20 @@ void ABot::Tick(float DeltaTime)
 				}
 			}
 
-			/** Enable collision for revived players after 3 seconds */
-			if (this->bReviveCollisionTimerActive)
-			{
-				ReviveCollisionTimer.Add(DeltaTime);
+			///** Enable collision for revived players after 3 seconds */
+			//if (this->bReviveCollisionTimerActive)
+			//{
+			//	ReviveCollisionTimer.Add(DeltaTime);
 
-				if (ReviveCollisionTimer.IsEnded())
-				{
-					this->bReviveCollisionTimerActive = false;
-					ReviveCollisionTimer.Reset();
+			//	if (ReviveCollisionTimer.IsEnded())
+			//	{
+			//		this->bReviveCollisionTimerActive = false;
+			//		ReviveCollisionTimer.Reset();
 
-					this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-					this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-				}
-			}
+			//		this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			//		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			//	}
+			//}
 
 			if (this->WeaponInstance)
 			{
@@ -3070,7 +3070,6 @@ void ABot::ReviveBotDeatchmatch()
 		this->GetMesh()->SetCollisionProfileName(FName(TEXT("CharacterMesh")), true);
 		//this->GetMesh()->PutAllRigidBodiesToSleep();
 		this->GetMesh()->WakeAllRigidBodies();
-		this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 		this->HeadMesh->SetSimulatePhysics(false);
 		this->HatMesh->SetSimulatePhysics(false);
@@ -3079,7 +3078,7 @@ void ABot::ReviveBotDeatchmatch()
 		this->MeleeHitbox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		this->MeleeHitbox->SetGenerateOverlapEvents(true);
 
-		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+		//this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 
 		if (this->NameWidgetComponent)
 		{
@@ -3135,7 +3134,7 @@ void ABot::ReviveBotDeatchmatch()
 		this->SetEquipment();
 		this->UpdateEquipmentTeamColors();
 
-		FTransform SpawnPoint = GameSession->GetAvailableSpawnPoint(false);
+		FTransform SpawnPoint = GameSession->GetAvailableSpawnPoint(false, true);
 
 		this->SetActorLocation(SpawnPoint.GetLocation());
 		this->SetActorRotation(SpawnPoint.GetRotation().Rotator());
@@ -3149,8 +3148,11 @@ void ABot::ReviveBotDeatchmatch()
 
 		this->OnGameSessionStarted(GameSession->SessionMode);
 
-		this->bReviveCollisionTimerActive = true;
-		this->ReviveCollisionTimer.Reset();
+		//this->bReviveCollisionTimerActive = true;
+		//this->ReviveCollisionTimer.Reset();
+
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 		RemoveAllAttachedProjectileMeshes();
 

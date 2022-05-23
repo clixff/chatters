@@ -141,7 +141,7 @@ public:
 	
 	void OnTeamsBattleEnd();
 
-	FTransform GetAvailableSpawnPoint(bool bRemoveSpawnPoint = true);
+	FTransform GetAvailableSpawnPoint(bool bRemoveSpawnPoint = true, bool bAlwaysAround = false);
 
 	UPauseMenuWidget* GetPauseMenuWidget();
 

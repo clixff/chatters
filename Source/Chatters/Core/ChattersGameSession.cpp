@@ -844,7 +844,7 @@ void UChattersGameSession::OnTeamsBattleEnd()
 	}
 }
 
-FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint)
+FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint, bool bAlwaysAround)
 {
 	FTransform SpawnPointTransform;
 	SpawnPointTransform.SetLocation(FVector(0.0f, 0.0f, 70.0f));
@@ -852,7 +852,7 @@ FTransform UChattersGameSession::GetAvailableSpawnPoint(bool bRemoveSpawnPoint)
 	ABotSpawnPoint* SpawnPoint = nullptr;
 	
 
-	if (AvailableBotSpawnPoints.Num())
+	if (AvailableBotSpawnPoints.Num() && !bAlwaysAround)
 	{
 		int32 RandNumber = FMath::RandRange(0, AvailableBotSpawnPoints.Num() - 1);
 		SpawnPoint = AvailableBotSpawnPoints[RandNumber];
