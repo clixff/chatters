@@ -578,7 +578,7 @@ USessionWidget* UChattersGameSession::GetSessionWidget()
 ABot* UChattersGameSession::OnViewerJoin(FString Name)
 {
 	this->Mutex.Lock();
-	if (!this->bCanViewersJoin || this->SessionType == ESessionType::Generated)
+	if (!this->bCanViewersJoin || this->SessionType != ESessionType::Twitch)
 	{
 		this->Mutex.Unlock();
 
@@ -1076,7 +1076,28 @@ void UChattersGameSession::Tick(float DeltaTime)
 		this->UpdateHeadAnimationModes();
 	}
 
-	if (bUpdateRoundTimer && !UChattersGameInstance::Get()->GetIsGamePaused())
+	bool bGamePaused = UChattersGameInstance::Get()->GetIsGamePaused();
+
+	if (GameModeType == ESessionGameMode::Default && Bots.Num() > 100 && !bGamePaused)
+	{
+		for (int32 i = 0; i < Bots.Num(); i++)
+		{
+			auto* Bot = Bots[i];
+
+			if (Bot && !Bot->bAlive)
+			{
+				Bot->DestroyAfterDeathTimer.Add(DeltaTime);
+
+				if (Bot->DestroyAfterDeathTimer.IsEnded())
+				{
+					Bot->Destroy();
+					Bots[i] = nullptr;
+				}
+			}
+		}
+	}
+
+	if (bUpdateRoundTimer && !bGamePaused)
 	{
 		if (this->GameModeType == ESessionGameMode::Deathmatch)
 		{

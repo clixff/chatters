@@ -522,6 +522,8 @@ public:
 	bool IsHatAttached();
 
 	bool bIsHeadHidden = false;
+
+	FManualTimer DestroyAfterDeathTimer = FManualTimer(30.0f);
 private:
 	FName DeathBoneName = NAME_None;
 
