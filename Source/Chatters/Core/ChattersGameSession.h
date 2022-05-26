@@ -189,7 +189,7 @@ public:
 
 	FManualTimer UpdateHeadAnimationModesTimer = FManualTimer(1.0f);
 
-	void UpdateHeadAnimationModes();
+	void UpdateBotsByDistance(bool bUpdateHeadAnimationType = true, bool bCustomCameraLocation = false, FVector CameraLocation = FVector::ZeroVector);
 
 	float RoundTime = 0.0f;
 
@@ -239,6 +239,10 @@ public:
 	void DeactivateProps();
 
 	void AddExplosionAtLocation(FVector Location, UParticleSystem* ExplosionParticle, FVector ParticleScale, USoundBase* Sound, float Radius, float ImpulseForce, EWeaponType WeaponType = EWeaponType::Explosion);
+
+	void SetSlomoEnabled(bool bEnabled);
+
+	float GameSpeedScale = 1.0f;
 private:
 	UPROPERTY()
 		APostProcessVolume* PostProcessVolume = nullptr;

@@ -12,6 +12,25 @@
 #include "../Character/Bot.h"
 #include "PlayerPawn.generated.h"
 
+USTRUCT(BlueprintType)
+struct FCinematicCameraData
+{
+	GENERATED_BODY()
+public:
+	bool bActivated = false;
+
+	FVector StartPoint;
+	FVector EndPoint;
+
+	FManualTimer Timer = FManualTimer(7.5f);
+
+	UPROPERTY()
+	AActor* Target = nullptr;
+
+	UPROPERTY()
+	AActor* ProjectileActor = nullptr;
+};
+
 
 UCLASS()
 class CHATTERS_API APlayerPawn : public APawn
@@ -89,6 +108,17 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		float FirstPersonFOV = 90.0f;
+
+	void ActivateCinematicCamera(AActor* ActorToAttach = nullptr, bool bBlockCameraControls = true);
+
+	inline bool IsCinematicCameraEnabled();
+
+	void DeactivateCinematicCamera(bool bAttachToPlayer = false);
+
+	FManualTimer BlockControlsOnCinematicCameraTimer = FManualTimer(0.3f);
+
+	UPROPERTY()
+		FCinematicCameraData CinematicCameraData;
 private:
 	void UpdateBotNicknameWidgets();
 
@@ -107,4 +137,6 @@ private:
 	FVector CachedCameraLocation = FVector(0.0f);
 
 	float ThirdPersonFOV = 90.0f;
+
+	void CinematicCameraTick(float DeltaTime);
 };

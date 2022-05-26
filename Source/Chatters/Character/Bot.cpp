@@ -93,7 +93,7 @@ void ABot::BeginPlay()
 	this->MaxHealthPoints = 100;
 	this->HealthPoints = this->MaxHealthPoints;
 
-	this->UpdateHeadAnimationType(nullptr, true);
+	this->UpdateHeadAnimationType(-1.0f, true);
 }
 
 // Called every frame
@@ -1287,6 +1287,47 @@ void ABot::Shoot(bool bBulletOffset)
 
 				Stat.Accuracy = (float(Stat.Hits) / float(Stat.Shots)) * 100.0f;
 			}
+
+			if (bCinematicCameraAttached && !FirearmProjectile->bSimplified)
+			{
+				if (!PlayerPawn->CinematicCameraData.ProjectileActor && FirearmProjectile->Distance >= 50.0f && FMath::RandRange(0, 2) == 0)
+				{
+					PlayerPawn->CinematicCameraData.ProjectileActor = FirearmProjectile;
+
+					GameSessionRef->SetSlomoEnabled(true);
+				}
+			}
+
+			if (BulletHitResult.ExplodingBarrel)
+			{
+				if (PlayerPawn->IsCinematicCameraEnabled())
+				{
+					bool bAttachCameraToExplodingBarrel = true;
+
+					if (PlayerPawn->CinematicCameraData.ProjectileActor)
+					{
+						auto* OldProjectile = Cast<AFirearmProjectile>(PlayerPawn->CinematicCameraData.ProjectileActor);
+						/** If the camera is already attached to another exploding barrel */
+						if (OldProjectile && OldProjectile->BulletHitResult.ExplodingBarrel)
+						{
+							bAttachCameraToExplodingBarrel = false;
+						}
+					}
+
+					if (bAttachCameraToExplodingBarrel)
+					{
+						FirearmProjectile->bSimplified = false;
+						PlayerPawn->ActivateCinematicCamera(this);
+						PlayerPawn->CinematicCameraData.ProjectileActor = FirearmProjectile;
+						GameSessionRef->SetSlomoEnabled(true);
+					}
+				}
+			}
+
+			if (FirearmProjectile->bSimplified)
+			{
+				FirearmProjectile->SetActorHiddenInGame(true);
+			}
 		}
 	}
 }
@@ -1957,7 +1998,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 
 	bool bHeadshot = false;
 
-	if (BoneHit == TEXT("head_") || BoneHit == TEXT("eye_R") || BoneHit == TEXT("eye_L"))
+	if (BoneHit == TEXT("head_") || BoneHit == TEXT("eye_R") || BoneHit == TEXT("eye_L") || BoneHit == TEXT("spine_6"))
 	{
 		bHeadshot = true;
 	}
@@ -2177,7 +2218,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	this->SetActorLocation(this->GetActorLocation());
 
-	this->UpdateHeadAnimationType(nullptr, true);
+	this->UpdateHeadAnimationType(-1.0f, true);
 
 	RemoveProjectileMeshesTimeout.Reset();
 
@@ -3009,7 +3050,7 @@ FEyesRotation ABot::GetEyesRotation()
 	return EyesRotation;
 }
 
-void ABot::UpdateHeadAnimationType(APlayerPawn* PlayerRef, bool bForce)
+void ABot::UpdateHeadAnimationType(float CameraDistance, bool bForce)
 {
 	bool bNewHeadAnimationDetailedMode = false;
 
@@ -3021,18 +3062,16 @@ void ABot::UpdateHeadAnimationType(APlayerPawn* PlayerRef, bool bForce)
 	{
 		if (this->CombatAction == ECombatAction::IDLE)
 		{
-			if (!PlayerRef)
+			if (CameraDistance == -1.0f)
 			{
-				PlayerRef = APlayerPawn::Get();
+				auto* PlayerRef = APlayerPawn::Get();
+				if (PlayerRef)
+				{
+					CameraDistance = PlayerRef->GetDistanceFromCamera(GetActorLocation());
+				}
 			}
 
-			if (PlayerRef)
-			{
-				/** Distance from camera */
-				float Distance = PlayerRef->GetDistanceFromCamera(this->GetActorLocation());
-
-				bNewHeadAnimationDetailedMode = Distance <= 3000.0f;
-			}
+			bNewHeadAnimationDetailedMode = CameraDistance <= 3000.0f;
 		}
 	}
 
@@ -3378,6 +3417,29 @@ void ABot::TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint)
 bool ABot::IsHatAttached()
 {
 	return bHatAttached;
+}
+
+void ABot::SetCharacterDetailsVisible(bool bVisible)
+{
+	HeadMesh->SetVisibility(bVisible, true);
+	WeaponMesh->SetVisibility(bVisible, true);
+
+	bDetailsVisibility = bVisible;
+}
+
+void ABot::UpdateDetailsVisibilityByDistance(float CameraDistance)
+{
+	bool bNewDetailsVisibility = CameraDistance < 10000.0f;
+
+	if (bNewDetailsVisibility != bDetailsVisibility)
+	{
+		SetCharacterDetailsVisible(bNewDetailsVisibility);
+	}
+}
+
+FBotTarget ABot::GetTargetData()
+{
+	return Target;
 }
 
 float ABot::GetMaxSpeedForBot(float RequiredSpeed)

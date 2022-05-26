@@ -73,6 +73,9 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAction("CameraChange", IE_Pressed, this, &APlayerPawnController::OnCameraButtonPressed);
 
+	this->InputComponent->BindAction("CinematicCamera", IE_Pressed, this, &APlayerPawnController::ToggleCinematicCamera);
+
+
 
 	for (int32 i = 0; i < 5; i++)
 	{
@@ -115,6 +118,11 @@ void APlayerPawnController::TurnX(float Value)
 
 	if (PlayerPawnActor && Value != 0.0f)
 	{
+		if (PlayerPawnActor->IsCinematicCameraEnabled())
+		{
+			return;
+		}
+
 		if (!PlayerPawnActor->bAttachedToBot)
 		{
 			this->AddYawInput(Value);
@@ -137,6 +145,11 @@ void APlayerPawnController::TurnY(float Value)
 
 	if (PlayerPawnActor && Value != 0.0f)
 	{
+		if (PlayerPawnActor->IsCinematicCameraEnabled())
+		{
+			return;
+		}
+
 		if (!PlayerPawnActor->bAttachedToBot)
 		{
 			this->AddPitchInput(Value);
@@ -160,6 +173,15 @@ void APlayerPawnController::MovePawn(EAxis::Type Axis, float Value)
 		if (PlayerPawnActor->bAttachedToBot)
 		{
 			PlayerPawnActor->DetachFromBot();
+		}
+
+		if (PlayerPawnActor->IsCinematicCameraEnabled())
+		{
+			if (!PlayerPawnActor->BlockControlsOnCinematicCameraTimer.IsEnded())
+			{
+				return;
+			}
+			PlayerPawnActor->DeactivateCinematicCamera();
 		}
 
 		FVector DirectionVector;
@@ -397,7 +419,6 @@ void APlayerPawnController::AttachPlayerToAliveBot(EAttachCameraToBotType Type)
 		return;
 	}
 
-
 	auto* PlayerActor = this->GetPlayerPawn();
 
 	if (PlayerActor)
@@ -407,6 +428,11 @@ void APlayerPawnController::AttachPlayerToAliveBot(EAttachCameraToBotType Type)
 		if (PlayerActor->bAttachedToBot && PlayerActor->BotToAttach)
 		{
 			AttachedToBotID = PlayerActor->BotToAttach->ID;
+		}
+
+		if (PlayerActor->IsCinematicCameraEnabled())
+		{
+			PlayerActor->DeactivateCinematicCamera();
 		}
 
 		auto* GameSession = GameInstance->GetGameSession();
@@ -422,20 +448,14 @@ void APlayerPawnController::OnSlowmoStart()
 {
 	auto* GameSession = UChattersGameSession::Get();
 
-	if (GameSession && !GameSession->bGameEndedSlomoActivated)
-	{
-		this->ConsoleCommand(TEXT("slomo 0.1"));
-	}
+	GameSession->SetSlomoEnabled(true);
 }
 
 void APlayerPawnController::OnSlowmoEnd()
 {
 	auto* GameSession = UChattersGameSession::Get();
 
-	if (GameSession && !GameSession->bGameEndedSlomoActivated)
-	{
-		this->ConsoleCommand(TEXT("slomo 1.0"));
-	}
+	GameSession->SetSlomoEnabled(false);
 }
 
 void APlayerPawnController::OnEscPressed()
@@ -510,13 +530,20 @@ void APlayerPawnController::OnGameJoinPressed()
 	}
 
 
-	ABot* Bot =  GameSession->OnViewerJoin(AuthData.DisplayName);
+	ABot* Bot = GameSession->OnViewerJoin(AuthData.DisplayName);
 
 	auto* PlayerPawnRef = this->GetPlayerPawn();
 
-	if (Bot && PlayerPawnRef)
+	if (Bot && PlayerPawnRef && GameSession->Bots.Num() > 1)
 	{
-		PlayerPawnRef->AttachToBot(Bot);
+		if (PlayerPawnRef->IsCinematicCameraEnabled())
+		{
+			PlayerPawnRef->ActivateCinematicCamera(Bot, true);
+		}
+		else
+		{
+			PlayerPawnRef->AttachToBot(Bot);
+		}
 	}
 	
 	auto* SessionWidget = GameSession->GetSessionWidget();
@@ -546,6 +573,11 @@ void APlayerPawnController::OnRespawnBotPressed()
 
 void APlayerPawnController::SelectLeaderboardBot(int32 Index)
 {
+	if (!bCanControl)
+	{
+		return;
+	}
+
 	auto* GameSession = UChattersGameSession::Get();
 
 	if (GameSession)
@@ -559,6 +591,11 @@ void APlayerPawnController::SelectLeaderboardBot(int32 Index)
 
 void APlayerPawnController::OnCameraButtonPressed()
 {
+	if (!bCanControl)
+	{
+		return;
+	}
+
 	auto* PlayerPawnRef = GetPlayerPawn();
 	if (PlayerPawnRef->bFirstPersonCamera)
 	{
@@ -566,7 +603,34 @@ void APlayerPawnController::OnCameraButtonPressed()
 	}
 	else
 	{
+		if (PlayerPawnRef->IsCinematicCameraEnabled())
+		{
+			PlayerPawnRef->DeactivateCinematicCamera(true);
+		}
 		PlayerPawnRef->SetFirstPersonCamera();
+	}
+}
+
+void APlayerPawnController::ToggleCinematicCamera()
+{
+	if (!bCanControl)
+	{
+		return;
+	}
+
+	auto* PlayerPawnRef = GetPlayerPawn();
+
+	if (PlayerPawnRef)
+	{
+		if (PlayerPawnRef->IsCinematicCameraEnabled())
+		{
+			PlayerPawnRef->DeactivateCinematicCamera(true);
+		}
+		else
+		{
+			AActor* TargetActor = PlayerPawnRef->BotToAttach;
+			PlayerPawnRef->ActivateCinematicCamera(TargetActor);
+		}
 	}
 }
 

@@ -458,7 +458,7 @@ public:
 	bool bUseDetailedHeadAnimation = false;
 
 	/** Based on distance from camera and other states changes bUseDetailedHeadAnimation value */
-	void UpdateHeadAnimationType(APlayerPawn* PlayerRef = nullptr, bool bForce = false);
+	void UpdateHeadAnimationType(float CameraDistance = -1.0f, bool bForce = false);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		TSubclassOf<UAnimInstance> HeadAnimationBlueprint = nullptr;
@@ -524,11 +524,23 @@ public:
 	bool bIsHeadHidden = false;
 
 	FManualTimer DestroyAfterDeathTimer = FManualTimer(30.0f);
+
+	bool bDetailsVisibility = true;
+
+	/**
+	* Set visibility of hat, head, beard, and weapon
+	*/
+	void SetCharacterDetailsVisible(bool bVisible);
+
+	void UpdateDetailsVisibilityByDistance(float CameraDistance);
+
+	FBotTarget GetTargetData();
+
+	bool bCinematicCameraAttached = false;
 private:
 	FName DeathBoneName = NAME_None;
 
 	bool bCanSpawnBlood = true;
-	
 
 	UPROPERTY()
 		FBotDamagedBonesData DamagedBonesData;

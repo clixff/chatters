@@ -36,6 +36,11 @@ UEquipmentList* UEquipmentList::GetEquipmentSet(EBotTeam Team, TSet<FString> All
 			}
 		}
 
+		if (!TeamEquipmentArrayCopy.Num())
+		{
+			return TeamEquipmentArray[0];
+		}
+
 		auto* TeamEquipmentSet = TeamEquipmentArrayCopy[FMath::RandRange(0, TeamEquipmentArrayCopy.Num() - 1)];
 		if (TeamEquipmentSet)
 		{

@@ -309,12 +309,6 @@ void AFirearmProjectile::DestroyActor()
 		return;
 	}
 
-
-	//if (this->Trace && this->Trace->IsValidLowLevel())
-	//{
-	//	this->Trace->DestroyComponent();
-	//}
-
 	if (this->Trace)
 	{
 		auto* TraceSystemInstance = this->Trace->GetSystemInstance();
@@ -330,6 +324,25 @@ void AFirearmProjectile::DestroyActor()
 
 	this->bDestroyed = true;
 	this->bPendingDestroying = false;
+
+	if (BotCauser && BotCauser->bCinematicCameraAttached)
+	{
+		auto* PlayerPawn = APlayerPawn::Get();
+
+		if (PlayerPawn)
+		{
+			if (PlayerPawn->CinematicCameraData.ProjectileActor == this)
+			{
+				PlayerPawn->CinematicCameraData.ProjectileActor = nullptr;
+
+				auto* GameSession = UChattersGameSession::Get();
+				if (GameSession)
+				{
+					GameSession->SetSlomoEnabled(false);
+				}
+			}
+		}
+	}
 
 	this->Destroy();
 }

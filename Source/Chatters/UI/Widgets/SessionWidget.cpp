@@ -57,7 +57,7 @@ void USessionWidget::UpdateAliveBotsText(int32 NumberOfAlive, int32 MaxPlayers)
 
 void USessionWidget::SetStartGameSessionTipVisibility(bool bVisible)
 {
-	FName TipWidgetName = FName(TEXT("StartGameSessionTip_Wrapper"));
+	FName TipWidgetName = FName(TEXT("TipsWrapper"));
 	auto* TipWidget = this->GetWidgetFromName(TipWidgetName);
 
 	if (TipWidget)

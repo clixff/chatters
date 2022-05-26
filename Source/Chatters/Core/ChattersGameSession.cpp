@@ -259,14 +259,16 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 			if (this->Bots.Num() > 0)
 			{
-				int32 RandomBotID = FMath::RandRange(0, this->Bots.Num() - 1);
+				PlayerPawn->ActivateCinematicCamera();
+
+				/*int32 RandomBotID = FMath::RandRange(0, this->Bots.Num() - 1);
 
 				auto* Bot = this->Bots[RandomBotID];
 
 				if (Bot)
 				{
 					PlayerPawn->AttachToBot(Bot);
-				}
+				}*/
 			}
 		}
 
@@ -284,7 +286,6 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	}
 
 	UChattersGameInstance::SetUIControlMode(false);
-
 
 	this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->MaxPlayers);
 	
@@ -406,7 +407,6 @@ void UChattersGameSession::Start()
 			this->SessionWidget->SetStreamerJoinTipVisible(false);
 			this->SessionWidget->ClearAllNotifications();
 		}
-
 
 		bUpdateRoundTimer = true;
 
@@ -638,10 +638,11 @@ ABot* UChattersGameSession::OnViewerJoin(FString Name)
 			if (PlayerController)
 			{
 				auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
-				if (PlayerPawn)
-				{
-					PlayerPawn->AttachToBot(Bot);
-				}
+				PlayerPawn->ActivateCinematicCamera();
+				//if (PlayerPawn)
+				//{
+				//	PlayerPawn->AttachToBot(Bot);
+				//}
 			}
 		}
 		
@@ -740,6 +741,10 @@ void UChattersGameSession::OnTeamsBattleEnd()
 		TeamsList[1] = EBotTeam::Blue;
 	}
 
+	auto* PlayerPawn = APlayerPawn::Get();
+
+	PlayerPawn->DeactivateCinematicCamera();
+
 	for (int32 i = 0; i < this->Bots.Num(); i++)
 	{
 		auto* Bot = this->Bots[i];
@@ -793,20 +798,15 @@ void UChattersGameSession::OnTeamsBattleEnd()
 
 	this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive, this->BlueAliveMax, this->RedAliveMax);
 
-
 	auto* World = GetWorld();
 
-	if (World && this->AliveBots.Num())
+	if (AliveBots.Num())
 	{
-		auto* PlayerController = World->GetFirstPlayerController();
-		if (PlayerController)
-		{
-			auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
-			if (PlayerPawn)
-			{
-				PlayerPawn->AttachToBot(this->AliveBots[0]);
-			}
-		}
+		PlayerPawn->ActivateCinematicCamera();
+		//if (PlayerPawn)
+		//{
+		//	PlayerPawn->AttachToBot(this->AliveBots[0]);
+		//}
 	}
 
 	for (int32 i = 0; i < this->AvailableExplodingBarrels.Num(); i++)
@@ -1051,6 +1051,7 @@ void UChattersGameSession::Tick(float DeltaTime)
 			if (PlayerController)
 			{
 				PlayerController->ConsoleCommand(TEXT("slomo 1.0"));
+				GameSpeedScale = 1.0f;
 				PlayerController->bCanControl = false;
 			}
 
@@ -1073,7 +1074,7 @@ void UChattersGameSession::Tick(float DeltaTime)
 	{
 		UpdateHeadAnimationModesTimer.Reset();
 
-		this->UpdateHeadAnimationModes();
+		UpdateBotsByDistance(true);
 	}
 
 	bool bGamePaused = UChattersGameInstance::Get()->GetIsGamePaused();
@@ -1101,7 +1102,7 @@ void UChattersGameSession::Tick(float DeltaTime)
 	{
 		if (this->GameModeType == ESessionGameMode::Deathmatch)
 		{
-			RoundTime -= DeltaTime;
+			RoundTime -= (DeltaTime * GameSpeedScale);
 			if (RoundTime < 0.0f)
 			{
 				RoundTime = 0.0f;
@@ -1115,7 +1116,7 @@ void UChattersGameSession::Tick(float DeltaTime)
 		}
 		else
 		{
-			RoundTime += DeltaTime;
+			RoundTime += (DeltaTime * GameSpeedScale);
 		}
 
 		if (this->SessionWidget)
@@ -1145,14 +1146,29 @@ bool UChattersGameSession::IsTickableWhenPaused() const
 	return false;
 }
 
-void UChattersGameSession::UpdateHeadAnimationModes()
+void UChattersGameSession::UpdateBotsByDistance(bool bUpdateHeadAnimationType, bool bCustomCameraLocation, FVector CameraLocation)
 {
 	auto* PlayerRef = APlayerPawn::Get();
-	for (auto* Bot : AliveBots)
+
+	for (auto* Bot : Bots)
 	{
 		if (Bot)
 		{
-			Bot->UpdateHeadAnimationType(PlayerRef, false);
+			FVector BotLocation = Bot->GetActorLocation();
+			if (!bCustomCameraLocation)
+			{
+				CameraLocation = PlayerRef->GetCameraLocation();
+			}
+
+			float DistanceFromCamera = FVector::Dist(CameraLocation, BotLocation);
+
+
+			if (Bot->GetIsAlive() && bUpdateHeadAnimationType)
+			{
+				Bot->UpdateHeadAnimationType(DistanceFromCamera, false);
+			}
+
+			Bot->UpdateDetailsVisibilityByDistance(DistanceFromCamera);
 		}
 	}
 }
@@ -1209,6 +1225,7 @@ void UChattersGameSession::OnGameEnded(ABot* Winner)
 		PlayerController->ConsoleCommand(TEXT("slomo 0.06"));
 		this->bGameEndedSlomoActivated = true;
 		GameEndedSlomoTimeout.Reset();
+		GameSpeedScale = 0.06f;
 	}
 
 	if (this->GameModeType == ESessionGameMode::Deathmatch)
@@ -1293,7 +1310,14 @@ void UChattersGameSession::SelectDeathmatchLeader(int32 Index)
 					auto* PlayerPawn = Cast<APlayerPawn>(PlayerController->GetPawn());
 					if (PlayerPawn)
 					{
-						PlayerPawn->AttachToBot(Bot);
+						if (PlayerPawn->IsCinematicCameraEnabled())
+						{
+							PlayerPawn->ActivateCinematicCamera(Bot);
+						}
+						else
+						{
+							PlayerPawn->AttachToBot(Bot);
+						}
 					}
 				}
 			}
@@ -1358,6 +1382,30 @@ void UChattersGameSession::AddExplosionAtLocation(FVector Location, UParticleSys
 			FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(Location, BotLocation).Vector() * (ImpulseForce);
 
 			Bot->ApplyDamage(100.0f, Bot, WeaponType, ImpulseVector, BotLocation);
+		}
+	}
+}
+
+void UChattersGameSession::SetSlomoEnabled(bool bEnabled)
+{
+	if (bGameEndedSlomoActivated)
+	{
+		return;
+	}
+
+	auto* PlayerController = GetWorld()->GetFirstPlayerController();
+
+	if (PlayerController)
+	{
+		if (bEnabled)
+		{
+			PlayerController->ConsoleCommand(TEXT("slomo 0.1"));
+			GameSpeedScale = 0.1;
+		}
+		else
+		{
+			PlayerController->ConsoleCommand(TEXT("slomo 1.0"));
+			GameSpeedScale = 1.0f;
 		}
 	}
 }

@@ -30,6 +30,8 @@ APlayerPawn::APlayerPawn()
 	this->MovementComponent->UpdatedComponent = this->SphereCollision;
 
 	this->AIControllerClass = APlayerPawnController::StaticClass();
+
+	BlockControlsOnCinematicCameraTimer.Current = BlockControlsOnCinematicCameraTimer.Max;
 }
 
 // Called when the game starts or when spawned
@@ -68,6 +70,11 @@ void APlayerPawn::Tick(float DeltaTime)
 
 		SetActorRotation(Rotation);
 		SetActorRelativeLocation(BotToAttach->FirstPersonOffset.GetLocation());
+	}
+
+	if (CinematicCameraData.bActivated)
+	{
+		CinematicCameraTick(DeltaTime);
 	}
 
 }
@@ -130,6 +137,14 @@ void APlayerPawn::AttachToBot(ABot* Bot, bool bNoFirstPerson)
 
 		this->bAttachedToBot = true;
 		this->SetSpectatorMenuVisibiliy(true);
+
+
+		auto* GameSessionRef = GetGameSession();
+
+		if (GameSessionRef)
+		{
+			GameSessionRef->UpdateBotsByDistance(false, true, Bot->GetActorLocation());
+		}
 	}
 }
 
@@ -370,6 +385,242 @@ FRotator APlayerPawn::FindNewAcceptableCameraRotation(FRotator StartRotation)
 	}
 
 	return RotationToSet;
+}
+
+void APlayerPawn::CinematicCameraTick(float DeltaTime)
+{
+	float TimeFactor = (CinematicCameraData.Timer.Current / CinematicCameraData.Timer.Max);
+	TimeFactor = FMath::Clamp(TimeFactor, 0.0f, 1.0f);
+
+	FVector StartLocation = CinematicCameraData.StartPoint;
+	FVector EndLocation = CinematicCameraData.EndPoint;
+
+	if (!CinematicCameraData.Target)
+	{
+		ActivateCinematicCamera();
+		return;
+	}
+
+	FVector BotLocation = CinematicCameraData.Target->GetActorLocation();
+
+	StartLocation += BotLocation;
+	EndLocation += BotLocation;
+
+	FVector CurrentLocation = FMath::Lerp(StartLocation, EndLocation, TimeFactor);
+
+	SetActorLocation(CurrentLocation);
+
+	FVector LocationForLookAt = BotLocation;
+	auto* Bot = Cast<ABot>(CinematicCameraData.Target);
+
+	if (Bot)
+	{
+		if (CinematicCameraData.ProjectileActor)
+		{
+			LocationForLookAt = CinematicCameraData.ProjectileActor->GetActorLocation();
+		}
+		else
+		{
+			auto TargetData = Bot->GetTargetData();
+			if (TargetData.Actor)
+			{
+				FVector TargetLocation = TargetData.Actor->GetActorLocation();
+				float Dist = FVector::Dist(TargetLocation, BotLocation);
+
+				if (Dist <= 3000.0f)
+				{
+					LocationForLookAt = TargetData.Actor->GetActorLocation();
+				}
+			}
+		}
+	}
+
+	FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentLocation, LocationForLookAt);
+	Rotation.Roll = 0.0f;
+
+	GetController()->SetControlRotation(Rotation);
+
+	if (!BlockControlsOnCinematicCameraTimer.IsEnded())
+	{
+		BlockControlsOnCinematicCameraTimer.Add(DeltaTime);
+	}
+	
+
+	CinematicCameraData.Timer.Add(DeltaTime);
+	if (CinematicCameraData.Timer.IsEnded())
+	{
+		AActor* ActorToAttachCamera = nullptr;
+		if (Bot && Bot->CombatAction == ECombatAction::Shooting && FMath::RandRange(0, 1) != 0)
+		{
+			ActorToAttachCamera = Bot;
+		}
+		ActivateCinematicCamera(ActorToAttachCamera, false);
+		return;
+	}
+}
+
+void APlayerPawn::ActivateCinematicCamera(AActor* ActorToAttach, bool bBlockCameraControls)
+{
+	auto* GameSessionRef = GetGameSession();
+
+	if (!GameSessionRef)
+	{
+		return;
+	}
+
+	auto* OldTarget = CinematicCameraData.Target;
+
+	if (OldTarget)
+	{
+		auto* OldBotTarget = Cast<ABot>(OldTarget);
+
+		if (OldBotTarget)
+		{
+			OldBotTarget->bCinematicCameraAttached = false;
+		}
+	}
+
+	if (CinematicCameraData.ProjectileActor)
+	{
+		GameSessionRef->SetSlomoEnabled(false);
+	}
+
+	if (!ActorToAttach)
+	{
+		auto& AliveBots = GameSessionRef->AliveBots;
+
+		if (!AliveBots.Num())
+		{
+			return;
+		}
+
+		auto* Bot = AliveBots[FMath::RandRange(0, AliveBots.Num() - 1)];
+		ActorToAttach = Bot;
+	}
+
+
+	if (!ActorToAttach)
+	{
+		return;
+	}
+
+	auto* Bot = Cast<ABot>(ActorToAttach);
+
+	if (Bot)
+	{
+		Bot->bCinematicCameraAttached = true;
+	}
+
+	FVector Location = ActorToAttach->GetActorLocation();
+	FRotator Rotation = ActorToAttach->GetActorRotation();
+	Rotation.Pitch = Rotation.Roll = 0.0f;
+
+	FVector StartLocation;
+	StartLocation.X = FMath::RandRange(200.0f, 800.0f);
+	StartLocation.Y = FMath::RandRange(250.0f, 500.0f);
+	StartLocation.Z = FMath::RandRange(-20.0f, 150.0f);
+
+	FVector EndLocation;
+	EndLocation.X = FMath::RandRange(200.0f, 800.0f);
+	EndLocation.Y = FMath::RandRange(-250.0f, -500.0f);
+	EndLocation.Z = FMath::RandRange(-20.0f, 150.0f);
+
+	if (FMath::RandRange(0, 1))
+	{
+		StartLocation.Y *= -1.0f;
+		EndLocation.Y *= -1.0f;
+	}
+
+	if (GameSessionRef->bStarted)
+	{
+		if (FMath::RandRange(0, 1))
+		{
+			StartLocation.X *= -1.0f;
+			StartLocation.Y *= -1.0f;
+		}
+		else
+		{
+			EndLocation.X *= -1.0f;
+			EndLocation.Y *= -1.0f;
+		}
+
+		CinematicCameraData.Timer.Max = FMath::RandRange(5.0f, 7.5f);
+	}
+	else
+	{
+		CinematicCameraData.Timer.Max = 4.25f;
+		StartLocation.Y /= 3.0f;
+		EndLocation.Y /= 3.0f;
+	}
+
+	StartLocation = Rotation.RotateVector(StartLocation);
+	EndLocation = Rotation.RotateVector(EndLocation);
+
+	CinematicCameraData.bActivated = true;
+	CinematicCameraData.StartPoint = StartLocation;
+	CinematicCameraData.EndPoint = EndLocation;
+	CinematicCameraData.Target = ActorToAttach;
+	CinematicCameraData.ProjectileActor = nullptr;
+
+	CinematicCameraData.Timer.Reset();
+
+	SetThirdPersonCamera();
+	DetachFromBot();
+
+	GameSessionRef->UpdateBotsByDistance(false, true, Location);
+
+	if (bBlockCameraControls)
+	{
+		BlockControlsOnCinematicCameraTimer.Current = 0.0f;
+	}
+}
+
+inline bool APlayerPawn::IsCinematicCameraEnabled()
+{
+	return CinematicCameraData.bActivated;
+}
+
+void APlayerPawn::DeactivateCinematicCamera(bool bAttachToPlayer)
+{
+	if (CinematicCameraData.Target)
+	{
+		auto* Bot = Cast<ABot>(CinematicCameraData.Target);
+
+		if (Bot)
+		{
+			Bot->bCinematicCameraAttached = false;
+		}
+	}
+
+	if (CinematicCameraData.ProjectileActor)
+	{
+		auto* GameSessionRef = GetGameSession();
+		if (GameSessionRef)
+		{
+			GameSessionRef->SetSlomoEnabled(false);
+		}
+	}
+	
+	auto* OldTarget = CinematicCameraData.Target;
+	CinematicCameraData.Target = nullptr;
+	CinematicCameraData.ProjectileActor = nullptr;
+	if (!CinematicCameraData.bActivated)
+	{
+		return;
+	}
+
+	CinematicCameraData.bActivated = false;
+	BlockControlsOnCinematicCameraTimer.Current = BlockControlsOnCinematicCameraTimer.Max;
+
+	if (bAttachToPlayer && OldTarget)
+	{
+		auto* Bot = Cast<ABot>(OldTarget);
+		
+		if (Bot && Bot->GetIsAlive())
+		{
+			AttachToBot(Bot);
+		}
+	}
 }
 
 APlayerPawn* APlayerPawn::Get()
