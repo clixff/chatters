@@ -111,7 +111,10 @@ public:
 
 	void ActivateCinematicCamera(AActor* ActorToAttach = nullptr, bool bBlockCameraControls = true);
 
-	inline bool IsCinematicCameraEnabled();
+	inline bool IsCinematicCameraEnabled()
+	{
+		return CinematicCameraData.bActivated;
+	};
 
 	void DeactivateCinematicCamera(bool bAttachToPlayer = false);
 

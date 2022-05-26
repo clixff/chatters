@@ -575,11 +575,6 @@ void APlayerPawn::ActivateCinematicCamera(AActor* ActorToAttach, bool bBlockCame
 	}
 }
 
-inline bool APlayerPawn::IsCinematicCameraEnabled()
-{
-	return CinematicCameraData.bActivated;
-}
-
 void APlayerPawn::DeactivateCinematicCamera(bool bAttachToPlayer)
 {
 	if (CinematicCameraData.Target)

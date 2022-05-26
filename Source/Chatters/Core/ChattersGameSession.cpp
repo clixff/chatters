@@ -1053,6 +1053,12 @@ void UChattersGameSession::Tick(float DeltaTime)
 				PlayerController->ConsoleCommand(TEXT("slomo 1.0"));
 				GameSpeedScale = 1.0f;
 				PlayerController->bCanControl = false;
+				auto* PlayerPawn = APlayerPawn::Get();
+
+				if (PlayerPawn && !PlayerPawn->IsCinematicCameraEnabled())
+				{
+					PlayerPawn->ActivateCinematicCamera();
+				}
 			}
 
 			PostProcess->Settings.BloomIntensity = 8.0f;

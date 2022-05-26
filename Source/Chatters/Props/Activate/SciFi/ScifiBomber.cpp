@@ -19,6 +19,10 @@ AScifiBomber::AScifiBomber()
 	ProjectileOutPosition->SetupAttachment(StaticMesh);
 
 	bActivateEveryRound = true;
+
+	EngineSound = CreateDefaultSubobject<UAudioComponent>(TEXT("EngienSound"));
+	EngineSound->SetupAttachment(StaticMesh);
+
 }
 
 void AScifiBomber::Activate()
@@ -36,6 +40,7 @@ void AScifiBomber::Activate()
 		ProjectileActor->Destroy();
 		ProjectileActor = nullptr;
 	}
+
 
 }
 
@@ -210,6 +215,11 @@ void AScifiBomber::StartFlying()
 
 	FlyTimer.Max = FVector2D::Distance(StartLocation, EndLocation) / FlySpeed;
 	FlyTimer.Reset();
+
+	if (EngineSound)
+	{
+		EngineSound->SetVolumeMultiplier(1.0f);
+	}
 }
 
 void AScifiBomber::StopFlying()
@@ -221,6 +231,8 @@ void AScifiBomber::StopFlying()
 	TimeoutTimer.Reset();
 
 	bAttacked = false;
+
+	EngineSound->SetVolumeMultiplier(0.0f);
 }
 
 void AScifiBomber::BeginPlay()
@@ -228,4 +240,5 @@ void AScifiBomber::BeginPlay()
 	Super::BeginPlay();
 
 	StaticMesh->SetVisibility(false, true);
+	EngineSound->SetVolumeMultiplier(0.0f);
 }

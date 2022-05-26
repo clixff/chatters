@@ -9,6 +9,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Components/AudioComponent.h"
 #include "ScifiBomber.generated.h"
 
 /**
@@ -80,6 +81,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Explosion")
 		USoundBase* ExplosionSound = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UAudioComponent* EngineSound = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Explosion")
 		float ExplosionRadius = 500.0f;

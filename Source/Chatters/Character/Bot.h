@@ -527,6 +527,8 @@ public:
 
 	bool bDetailsVisibility = true;
 
+	bool bBotVisible = true;
+
 	/**
 	* Set visibility of hat, head, beard, and weapon
 	*/
@@ -554,4 +556,8 @@ private:
 	void SetUseControllerRotationYaw(bool bUse);
 
 	FManualTimer FindNewTargetTimer = FManualTimer(0.1f);
+
+	FManualTimer RagdollAfterDeathTimer = FManualTimer(0.1f);
+
+	bool bInstantFallAfterDeath = false;
 };

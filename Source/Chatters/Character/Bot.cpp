@@ -296,7 +296,7 @@ void ABot::Tick(float DeltaTime)
 				}
 			}
 
-			if (!DropEquipmentAfterDeathTimer.IsEnded())
+			if (!DropEquipmentAfterDeathTimer.IsEnded() && (bInstantFallAfterDeath || RagdollAfterDeathTimer.IsEnded()))
 			{
 				DropEquipmentAfterDeathTimer.Add(DeltaTime);
 
@@ -331,6 +331,20 @@ void ABot::Tick(float DeltaTime)
 				if (RemoveProjectileMeshesTimeout.IsEnded())
 				{
 					RemoveAllAttachedProjectileMeshes();
+				}
+			}
+
+			if (!RagdollAfterDeathTimer.IsEnded())
+			{
+				RagdollAfterDeathTimer.Add(DeltaTime);
+
+				if (RagdollAfterDeathTimer.IsEnded())
+				{
+					GetMesh()->SetSimulatePhysics(true);
+					GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
+					GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+					GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 				}
 			}
 		}
@@ -1973,12 +1987,10 @@ void ABot::MoveToRandomLocation()
 
 	if (AIController)
 	{
-		float XPos = FMath::RandRange(-7400, 7400);
-		float YPos = FMath::RandRange(-7400, 7400);
+		FVector OutLocation;
+		bool bFound = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), GetActorLocation(), OutLocation, 5000.0f);
 
-		this->RandomLocationTarget = FVector(XPos, YPos, 97);
-
-		AIController->MoveToNewLocation(this->RandomLocationTarget);
+		AIController->MoveToNewLocation(OutLocation);
 		bMovingToRandomLocation = true;
 	}
 }
@@ -2025,6 +2037,11 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 	}
 
 	auto OldHP = this->HealthPoints;
+
+	if (OldHP <= 0)
+	{
+		return;
+	}
 
 	this->HealthPoints -= Damage;
 
@@ -2231,11 +2248,28 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		AIController->StopMovement();
 	}
 
-	if (this->GetMesh())
+	bInstantFallAfterDeath = true;
+
+	if (bInstantFallAfterDeath)
 	{
 		this->GetMesh()->SetSimulatePhysics(true);
 		this->GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
 		this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+		RagdollAfterDeathTimer.Current = RagdollAfterDeathTimer.Max;
+	}
+	else
+	{
+		RagdollAfterDeathTimer.Max = 0.5f;
+		RagdollAfterDeathTimer.Reset();
+		MoveToRandomLocation();
+		GetCharacterMovementComponent()->bOrientRotationToMovement = true;
+		GetCharacterMovementComponent()->MaxWalkSpeed = 200.0f;
+	}
+
+	if (this->GetMesh())
+	{
+		//
 		this->GetMesh()->SetGenerateOverlapEvents(false);
 	}
 
@@ -2250,43 +2284,29 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		this->MeleeHitbox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	if (this->GetCapsuleComponent())
-	{
-		this->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-	}
 
-	switch (WeaponType)
+	if (bInstantFallAfterDeath)
 	{
-	case EWeaponType::Firearm:
-	case EWeaponType::Explosion:
-	case EWeaponType::Melee:
-	case EWeaponType::Train:
-	case EWeaponType::Walker:
-	case EWeaponType::Bomber:
-		this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
-		break;
+		switch (WeaponType)
+		{
+		case EWeaponType::Firearm:
+		case EWeaponType::Explosion:
+		case EWeaponType::Melee:
+		case EWeaponType::Train:
+		case EWeaponType::Walker:
+		case EWeaponType::Bomber:
+			this->GetMesh()->AddImpulseAtLocation(ImpulseVector, ImpulseLocation, BoneHit);
+			break;
+		}
 	}
-
-	this->bMovingToRandomLocation = false;
 
 	if (this->NameWidgetComponent)
 	{
 		this->NameWidgetComponent->SetVisibility(false);
 	}
 
-
-	if (this->HatMesh)
-	{
-		//this->bHatAttached = true;
-	}
-
-	if (this->WeaponInstance)
-	{
-		//this->DeatachWeapon();
-	}
-
-	this->CombatAction = ECombatAction::IDLE;
-	this->bShouldApplyGunAnimation = false;
+	CombatAction = ECombatAction::IDLE;
+	bShouldApplyGunAnimation = false;
 
 	auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
 
@@ -3429,6 +3449,14 @@ void ABot::SetCharacterDetailsVisible(bool bVisible)
 
 void ABot::UpdateDetailsVisibilityByDistance(float CameraDistance)
 {
+	bool bNewBotVisibility = CameraDistance < 20000.0f;
+
+	if (bNewBotVisibility != bBotVisible)
+	{
+		GetMesh()->SetVisibility(bNewBotVisibility);
+		bBotVisible = bNewBotVisibility;
+	}
+
 	bool bNewDetailsVisibility = CameraDistance < 10000.0f;
 
 	if (bNewDetailsVisibility != bDetailsVisibility)
