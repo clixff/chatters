@@ -14,7 +14,7 @@ export class Server
     {
         if (this.Instance)
         {
-            this.Instance.listen(41503, 'localhost', (err, address) =>
+            this.Instance.listen(41503, '127.0.0.1', (err, address) =>
             {
                 if (err)
                 {

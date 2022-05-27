@@ -1,7 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import http from 'http';
 import { compareGameVersions, getTwitchAppClientID, getTwitchAuthData } from './misc';
-import fetch, { Response } from 'node-fetch';
 import { chatClient } from '.';
 
 export default class SocketsServer
@@ -194,7 +193,7 @@ export default class SocketsServer
         {
             const VersionFileURL = `https://raw.githubusercontent.com/clixff/chatters/master/VERSION.md`;
 
-            const fetchResponse: Response = await fetch(VersionFileURL, { method: 'GET' });
+            const fetchResponse = await fetch(VersionFileURL, { method: 'GET' });
 
             if (fetchResponse.ok)
             {

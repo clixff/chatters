@@ -629,6 +629,32 @@ void APlayerPawnController::ToggleCinematicCamera()
 		else
 		{
 			AActor* TargetActor = PlayerPawnRef->BotToAttach;
+
+			if (!TargetActor)
+			{
+				FVector CameraLocation = PlayerPawnRef->GetActorLocation();
+				float MinDistance = -1.0f;
+				
+				auto* GameSession = UChattersGameSession::Get();
+
+				if (GameSession)
+				{
+					for (auto* Bot : GameSession->AliveBots)
+					{
+						if (Bot)
+						{
+							float Dist = FVector::Dist(CameraLocation, Bot->GetActorLocation());
+
+							if (MinDistance == -1.0f || Dist < MinDistance)
+							{
+								MinDistance = Dist;
+								TargetActor = Bot;
+							}
+						}
+					}
+				}
+			}
+
 			PlayerPawnRef->ActivateCinematicCamera(TargetActor);
 		}
 	}

@@ -8,23 +8,21 @@
     "build": "tsc",
     "start": "SET NODE_ENV=development && node --experimental-modules --es-module-specifier-resolution=node dist/index.js",
     "dev": "npm run build && npm run start",
-    "pkg": "pkg -t node14-win-x64 package.json --output ../../Binaries/Win64/ChattersTwitchApp.exe"
+    "pkg": "pkg -t latest-win-x64 package.json --output ../../Binaries/Win64/ChattersTwitchApp.exe"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^15.12.2",
-    "@types/node-fetch": "^2.5.10",
-    "@types/tmi.js": "^1.7.1",
-    "@typescript-eslint/eslint-plugin": "^4.26.1",
-    "@typescript-eslint/parser": "^4.26.1",
-    "eslint": "^7.28.0",
-    "fastify": "^3.17.0",
-    "node-fetch": "^2.6.1",
-    "pkg": "^5.2.1",
-    "socket.io": "^4.1.2",
-    "tmi.js": "^1.8.3",
-    "typescript": "^4.3.2"
+    "@types/node": "^17.0.35",
+    "@types/tmi.js": "^1.8.1",
+    "@typescript-eslint/eslint-plugin": "^5.26.0",
+    "@typescript-eslint/parser": "^5.26.0",
+    "eslint": "^8.16.0",
+    "fastify": "^3.29.0",
+    "pkg": "^5.7.0",
+    "socket.io": "^4.5.1",
+    "tmi.js": "^1.8.5",
+    "typescript": "^4.7.2"
   },
   "bin": "dist/index.js"
 }
