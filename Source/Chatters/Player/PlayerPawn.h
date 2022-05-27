@@ -29,6 +29,8 @@ public:
 
 	UPROPERTY()
 	AActor* ProjectileActor = nullptr;
+
+	FManualTimer ProjectileTimeout = FManualTimer(7.0f);
 };
 
 

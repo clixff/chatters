@@ -1306,9 +1306,12 @@ void ABot::Shoot(bool bBulletOffset)
 			{
 				if (!PlayerPawn->CinematicCameraData.ProjectileActor && FirearmProjectile->Distance >= 50.0f && FMath::RandRange(0, 2) == 0)
 				{
-					PlayerPawn->CinematicCameraData.ProjectileActor = FirearmProjectile;
+					if (PlayerPawn->CinematicCameraData.ProjectileTimeout.Current == 0.0f)
+					{
+						PlayerPawn->CinematicCameraData.ProjectileActor = FirearmProjectile;
 
-					GameSessionRef->SetSlomoEnabled(true);
+						GameSessionRef->SetSlomoEnabled(true);
+					}
 				}
 			}
 

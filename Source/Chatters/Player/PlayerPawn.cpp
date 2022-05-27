@@ -445,6 +445,16 @@ void APlayerPawn::CinematicCameraTick(float DeltaTime)
 		BlockControlsOnCinematicCameraTimer.Add(DeltaTime);
 	}
 	
+	if (CinematicCameraData.ProjectileActor || CinematicCameraData.ProjectileTimeout.Current != 0.0f)
+	{
+		CinematicCameraData.ProjectileTimeout.Add(DeltaTime);
+	}
+
+
+	if (CinematicCameraData.ProjectileTimeout.IsEnded())
+	{
+		CinematicCameraData.ProjectileTimeout.Reset();
+	}
 
 	CinematicCameraData.Timer.Add(DeltaTime);
 	if (CinematicCameraData.Timer.IsEnded())
@@ -564,6 +574,8 @@ void APlayerPawn::ActivateCinematicCamera(AActor* ActorToAttach, bool bBlockCame
 
 	CinematicCameraData.Timer.Reset();
 
+	CinematicCameraData.ProjectileTimeout.Reset();
+
 	SetThirdPersonCamera();
 	DetachFromBot();
 
@@ -599,6 +611,9 @@ void APlayerPawn::DeactivateCinematicCamera(bool bAttachToPlayer)
 	auto* OldTarget = CinematicCameraData.Target;
 	CinematicCameraData.Target = nullptr;
 	CinematicCameraData.ProjectileActor = nullptr;
+
+	CinematicCameraData.ProjectileTimeout.Reset();
+
 	if (!CinematicCameraData.bActivated)
 	{
 		return;
