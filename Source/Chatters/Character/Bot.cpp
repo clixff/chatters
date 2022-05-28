@@ -2409,7 +2409,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 				break;
 			}
 
-			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon, bHeadshot && WeaponType == EWeaponType::Firearm);
+			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon, bHeadshot && WeaponType == EWeaponType::Firearm, Killer == this);
 		}
 
 		GameSessionObject->OnBotDied(this->ID);
@@ -3471,6 +3471,11 @@ void ABot::UpdateDetailsVisibilityByDistance(float CameraDistance)
 FBotTarget ABot::GetTargetData()
 {
 	return Target;
+}
+
+bool ABot::IsFalling()
+{
+	return GetMovementComponent()->IsFalling();
 }
 
 float ABot::GetMaxSpeedForBot(float RequiredSpeed)

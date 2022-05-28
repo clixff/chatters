@@ -539,6 +539,8 @@ public:
 	FBotTarget GetTargetData();
 
 	bool bCinematicCameraAttached = false;
+
+	bool IsFalling();
 private:
 	FName DeathBoneName = NAME_None;
 

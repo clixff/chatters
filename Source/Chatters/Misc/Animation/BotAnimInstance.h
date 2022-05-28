@@ -59,6 +59,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UAnimSequence* HitAnimation = nullptr;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bFalling = false;
+
 private:
 	UPROPERTY()
 		ABot* BotRef = nullptr;

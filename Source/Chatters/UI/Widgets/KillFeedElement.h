@@ -62,6 +62,8 @@ public:
 	void SetIcon(FKillFeedIcon& Icon);
 
 	void SetIsHeadshot(bool bHeadshot);
+
+	void HideKillerName();
 public:
 	UPROPERTY(EditDefaultsOnly, Category="Icons")
 		FKillFeedIcon ExplosionIcon;

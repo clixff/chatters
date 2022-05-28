@@ -49,6 +49,8 @@ void UBotAnimInstance::AnimTick(float DeltaTime)
 	{
 		HitAnimation = WeaponInstance->HitAnimationSequence;
 	}
+
+	bFalling = Bot->IsFalling();
 }
 
 ABot* UBotAnimInstance::GetBotRef()

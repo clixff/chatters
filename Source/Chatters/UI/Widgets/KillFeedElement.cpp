@@ -4,6 +4,8 @@
 #include "KillFeedElement.h"
 #include "Components/Image.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/TextBlock.h"
+#include "Components/HorizontalBoxSlot.h"
 
 
 int32 UKillFeedElement::NumberOfElements = 0;
@@ -79,6 +81,26 @@ void UKillFeedElement::SetIsHeadshot(bool bHeadshot)
 				HeadshotWrapper->ConditionalBeginDestroy();
 			}
 		}
+	}
+}
+
+void UKillFeedElement::HideKillerName()
+{
+	auto* Widget = Cast<UTextBlock>(GetWidgetFromName(TEXT("KillerWiddget")));
+
+	if (!Widget)
+	{
+		return;
+	}
+
+	Widget->SetRenderOpacity(0.0f);
+	Widget->SetText(FText::FromString(TEXT("")));
+	
+	auto* SlotRef = Cast<UHorizontalBoxSlot>(Widget->Slot);
+
+	if (SlotRef)
+	{
+		SlotRef->SetPadding(0.0f);
 	}
 }
 
