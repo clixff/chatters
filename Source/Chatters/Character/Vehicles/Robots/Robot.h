@@ -5,7 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../../Equipment/Weapon/FirearmWeaponItem.h"
+#include "NiagaraSystem.h"
+#include "Animation/AnimSequence.h"
+#include "DestructibleComponent.h"
+#include "../../../Misc/Misc.h"
 #include "Robot.generated.h"
+
+class ABot;
 
 UCLASS()
 class CHATTERS_API ARobot : public ACharacter
@@ -28,10 +34,48 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void MoveToNewLocation(FVector NewLocation);
+	
+	void StopMovement();
+
+	void OnDead();
 
 	UPROPERTY(EditAnywhere)
 		UFirearmWeaponItem* WeaponClass = nullptr;
 
 	UPROPERTY(EditAnywhere)
 		FTransform CharacterTransform;
+
+	UPROPERTY()
+		ABot* BotOwner = nullptr;
+
+	UPROPERTY(EditAnywhere)
+		FVector NicknameOffset = FVector(0.0f, 0.0f, 210.0f);
+
+	UPROPERTY(EditAnywhere)
+		UAnimSequence* BotAnimation = nullptr;
+public:
+
+	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
+		UParticleSystem* ParticleSystem = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
+		FVector ParticleScale = FVector(1.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
+		USoundBase* ExplodingSound = nullptr;
+
+public:
+	UPROPERTY(EditDefaultsOnly)
+		UNiagaraSystem* DamageNiagaraParticle = nullptr;
+public:
+	UPROPERTY(VisibleAnywhere)
+		UDestructibleComponent* DestructibleComponent = nullptr;
+public:
+	UPROPERTY(EditAnywhere)
+		FManualTimer DestructibleTimer = FManualTimer(25.0f);
+
+	bool bDestroyed = false;
+
+	UPROPERTY(EditAnywhere)
+		float ExplosionForce = 5000.0f;
 };

@@ -10,6 +10,8 @@
 #include "Sound/SoundBase.h"
 #include "FirearmProjectile.generated.h"
 
+class ARobot;
+
 enum class ETraceLengthAction : uint8
 {
 	Reduce,
@@ -126,10 +128,14 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		USoundBase* WallDamageSound = nullptr;
+
+	UPROPERTY()
+		ARobot* RobotTarget = nullptr;
 private:
 	bool bPendingDestroying = false;
 
 	FVector RealEndLocation;
 
 	bool bShotAtWall = false;
+
 };

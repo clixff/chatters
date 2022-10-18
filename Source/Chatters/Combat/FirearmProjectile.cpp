@@ -9,6 +9,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "../Misc/BulletHolesManager.h"
 #include "DrawDebugHelpers.h"
+#include "../Character/Vehicles/Robots/Robot.h"
 #include "Kismet/KismetMathLibrary.h"
 
 uint32 AFirearmProjectile::TotalNumberOfProjectiles = 0;
@@ -133,7 +134,23 @@ void AFirearmProjectile::Init(FVector InitStartLocation, FVector InitEndLocation
 		this->RelativeImpactLocation = EndLocation - BoneLocationInWorld;
 	}
 
-	if (HitResult.HitResult.bBlockingHit && !HitResult.BotToDamage && !HitResult.ExplodingBarrel)
+	auto* DamageActor = HitResult.HitResult.GetActor();
+
+	if (DamageActor)
+	{
+		auto* Robot = Cast<ARobot>(DamageActor);
+
+		if (Robot)
+		{
+			RobotTarget = Robot;
+
+			FVector BoneLocationInWorld = Robot->GetMesh()->GetSocketLocation(HitResult.HitResult.BoneName);
+
+			this->RelativeImpactLocation = EndLocation - BoneLocationInWorld;
+		}
+	}
+
+	if (HitResult.HitResult.bBlockingHit && !HitResult.BotToDamage && !HitResult.ExplodingBarrel && !RobotTarget)
 	{
 		bShotAtWall = true;
 	}
@@ -155,11 +172,31 @@ void AFirearmProjectile::OnEnd()
 		return;
 	}
 
+	if (RobotTarget)
+	{
+		auto* Bot = RobotTarget->BotOwner;
+
+		if (!Bot || !Bot->bAlive)
+		{
+			return;
+		}
+	}
+
 	if (BulletHitResult.HitResult.bBlockingHit)
 	{
-		if (BulletHitResult.BotToDamage)
+		if (BulletHitResult.BotToDamage || RobotTarget)
 		{
-			ABot* BotToDamage = BulletHitResult.BotToDamage;
+
+			ABot* BotToDamage = nullptr;
+			
+			if (RobotTarget)
+			{
+				BotToDamage = RobotTarget->BotOwner;
+			}
+			else
+			{
+				BotToDamage = BulletHitResult.BotToDamage;
+			}
 
 			if (BotToDamage->ID != this->BotCauser->ID)
 			{
@@ -225,15 +262,18 @@ void AFirearmProjectile::OnEnd()
 
 						if (DistanceFromCamera < 5000.0f)
 						{
-							BotToDamage->SpawnBloodParticle(RealEndLocation, this->GetActorLocation());
+							BotToDamage->SpawnBloodParticle(RealEndLocation, BotCauser->GetActorLocation());
 
 							if (FirearmRef && FirearmRef->DamageSound)
 							{
 								UGameplayStatics::PlaySoundAtLocation(GetWorld(), FirearmRef->DamageSound, RealEndLocation, FMath::RandRange(0.7f, 0.85f));
 							}
 						}
-
-						BotToDamage->TryAddWallBloodDecal(StartLocation, RealEndLocation);
+						
+						if (!BotToDamage->IsInRobot())
+						{
+							BotToDamage->TryAddWallBloodDecal(StartLocation, RealEndLocation);
+						}
 					}
 				}
 			}
@@ -269,9 +309,18 @@ void AFirearmProjectile::SetTraceLocation()
 {
 	RealEndLocation = this->EndLocation;
 
-	if (!bSimplified && BulletHitResult.BotToDamage)
+	if (!bSimplified)
 	{
-		FVector BoneLocation = BulletHitResult.BotToDamage->GetMesh()->GetSocketLocation(BulletHitResult.HitResult.BoneName);
+		FVector BoneLocation;
+		if (BulletHitResult.BotToDamage)
+		{
+			BoneLocation = BulletHitResult.BotToDamage->GetMesh()->GetSocketLocation(BulletHitResult.HitResult.BoneName);
+		}
+		else if (RobotTarget)
+		{
+			BoneLocation = RobotTarget->GetMesh()->GetSocketLocation(BulletHitResult.HitResult.BoneName);
+		}
+
 		RealEndLocation = BoneLocation + RelativeImpactLocation;
 	}
 

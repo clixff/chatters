@@ -118,6 +118,12 @@ void ABot::Tick(float DeltaTime)
 				}
 			}
 
+			if (IsInRobot())
+			{
+				SetActorRelativeRotation(RobotInstance->CharacterTransform.GetRotation().Rotator());
+				SetActorRelativeLocation(RobotInstance->CharacterTransform.GetLocation());
+			}
+
 			///** Enable collision for revived players after 3 seconds */
 			//if (this->bReviveCollisionTimerActive)
 			//{
@@ -340,11 +346,14 @@ void ABot::Tick(float DeltaTime)
 
 				if (RagdollAfterDeathTimer.IsEnded())
 				{
-					GetMesh()->SetSimulatePhysics(true);
-					GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
-					GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					if (IsInRobot())
+					{
+						GetMesh()->SetSimulatePhysics(true);
+						GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
+						GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-					GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+						GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+					}
 				}
 			}
 		}
@@ -465,7 +474,11 @@ void ABot::SetNewEnemyTarget(ABot* TargetBot)
 	this->Target.TargetType = ETargetType::Bot;
 	this->Target.Actor = TargetBot;
 	this->Target.Bot = TargetBot;
-
+	
+	if (TargetBot->IsInRobot())
+	{
+		Target.Actor = TargetBot->GetRobotInstance();
+	}
 
 	this->CombatAction = ECombatAction::IDLE;
 	SetWeaponProjectileMeshVisibility(false);
@@ -882,7 +895,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	if (bCanShoot)
 	{
-		FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false, false);
+		FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false, true);
 
 		HitActor = BulletHitResult.HitResult.GetActor();
 	}
@@ -1230,7 +1243,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition(GunRotation, false);
 
-			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, false);
+			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, true);
 
 			FTransform ProjectileTransform;
 			ProjectileTransform.SetLocation(OutBulletLocation);
@@ -1671,10 +1684,21 @@ void ABot::SpawnBloodParticle(FVector ImpactPoint, FVector CauserLocation)
 
 	float DistanceFromCamera = PlayerPawn->GetDistanceFromCamera(ImpactPoint);
 
-	if (DistanceFromCamera <= 7000.0f && this->BloodNiagaraParticle)
+	UNiagaraSystem* NiagaraParticle = nullptr;
+
+	if (RobotInstance)
+	{
+		NiagaraParticle = RobotInstance->DamageNiagaraParticle;
+	}
+	else
+	{
+		NiagaraParticle = BloodNiagaraParticle;
+	}
+
+	if (DistanceFromCamera <= 7000.0f && NiagaraParticle)
 	{
 		FRotator ParticleRotation = UKismetMathLibrary::FindLookAtRotation(ImpactPoint, CauserLocation);
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), this->BloodNiagaraParticle, ImpactPoint, ParticleRotation);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraParticle, ImpactPoint, ParticleRotation);
 	}
 }
 
@@ -2248,20 +2272,30 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	auto* AIController = this->GetAIController();
 
+	auto* RobotInstanceRef = GetRobotInstance();
+
 	if (AIController)
 	{
 		AIController->StopMovement();
+
+		if (RobotInstanceRef)
+		{
+			RobotInstanceRef->StopMovement();
+		}
 	}
 
 	bInstantFallAfterDeath = true;
 
 	if (bInstantFallAfterDeath)
 	{
-		this->GetMesh()->SetSimulatePhysics(true);
-		this->GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
-		this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-		RagdollAfterDeathTimer.Current = RagdollAfterDeathTimer.Max;
+		if (RobotInstanceRef == nullptr)
+		{
+			this->GetMesh()->SetSimulatePhysics(true);
+			this->GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
+			this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+			RagdollAfterDeathTimer.Current = RagdollAfterDeathTimer.Max;
+		}
 	}
 	else
 	{
@@ -2318,6 +2352,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 	if (CharacterMovementComponent)
 	{
 		CharacterMovementComponent->bUseRVOAvoidance = false;
+	}
+
+	if (RobotInstanceRef)
+	{
+		RobotInstanceRef->GetCharacterMovement()->bUseRVOAvoidance = false;
 	}
 
 	auto* GameSessionObject = this->GetGameSession();
@@ -2415,6 +2454,11 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		}
 
 		GameSessionObject->OnBotDied(this->ID);
+	}
+
+	if (RobotInstanceRef)
+	{
+		RobotInstanceRef->OnDead();
 	}
 }
 
@@ -2873,6 +2917,14 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 		FHitResult HitResult;
 		FCollisionQueryParams Params;
 		Params.AddIgnoredActor(this);
+
+		if (IsInRobot())
+		{
+			StartLocation = GetActorLocation();
+			EndLocation = GetFirearmBulletTargetWorldPosition(StartLocation, FirearmRef->MaxDistance, GunRotation, false, bBulletOffset, FirearmRef->RecoilFactor);
+			Params.AddIgnoredActor(GetRobotInstance());
+		}
+
 		World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3, Params);
 
 #if !UE_BUILD_SHIPPING
@@ -3605,6 +3657,7 @@ ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
 	}
 
 	WeaponMesh->SetVisibility(false);
+	WeaponMesh->SetHiddenInGame(true, true);
 
 	GetCharacterMovement()->bUseRVOAvoidance = false;
 
@@ -3612,6 +3665,16 @@ ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
 
 	SetActorRelativeRotation(Robot->CharacterTransform.GetRotation().Rotator());
 	SetActorRelativeLocation(Robot->CharacterTransform.GetLocation());
+
+	Robot->BotOwner = this;
+
+	if (Robot->BotAnimation)
+	{
+		GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+		GetMesh()->SetAnimation(Robot->BotAnimation);
+	}
+
+	NameWidgetComponent->SetRelativeLocation(Robot->NicknameOffset);
 
 	return Robot;
 }
