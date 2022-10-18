@@ -161,7 +161,7 @@ void ABot::Tick(float DeltaTime)
 			}
 
 			/** If not moving */
-			if (this->bReady && !this->bShouldApplyGunAnimation && this->GetActorLocation() == this->LastTickLocation)
+			if (this->bReady && !this->bShouldApplyGunAnimation && this->GetActorLocation() == this->LastTickLocation && IsInRobot() == false)
 			{
 				this->SecondsWithoutMoving.Add(DeltaTime);
 
@@ -571,7 +571,7 @@ void ABot::MoveToTarget()
 		UE_LOG(LogTemp, Display, TEXT("[ABot] Moving bot %s to exploding barrel. "), *this->DisplayName);
 	}
 
-	AIController->MoveToNewLocation(TargetLocation);
+	MoveToNewLocation(TargetLocation);
 
 	this->AimingAngle = 50.0f;
 }
@@ -657,7 +657,7 @@ void ABot::CombatTick(float DeltaTime)
 
 				if (bActivateCombatTick)
 				{
-					CharacterMovementComponent->bOrientRotationToMovement = false;
+					SetOrientRotationToMovement(false);
 					if (WeaponType == EWeaponType::Firearm)
 					{
 						this->FirearmCombatTick(DeltaTime, TargetDist);
@@ -682,7 +682,7 @@ void ABot::CombatTick(float DeltaTime)
 					if (this->CombatAction == ECombatAction::Moving)
 					{
 						this->bUseControllerRotationYaw = false;
-						CharacterMovementComponent->bOrientRotationToMovement = true;
+						SetOrientRotationToMovement(true);
 
 						this->UpdateMovingTargetTimeout -= DeltaTime;
 
@@ -699,7 +699,7 @@ void ABot::CombatTick(float DeltaTime)
 							FVector AimLoc = Target.Actor->GetActorLocation();
 							this->AimAt(AimLoc);
 							this->bUseControllerRotationYaw = false;
-							CharacterMovementComponent->bOrientRotationToMovement = false;
+							SetOrientRotationToMovement(false);
 							this->SmoothRotatingTick(DeltaTime);
 							this->MoveToTarget();
 						}
@@ -1051,14 +1051,11 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 			}
 			this->bMovingToRandomCombatLocation = true;
 			//this->bUseControllerRotationYaw = false;
-			CharacterMovementComponent->bOrientRotationToMovement = false;
+			SetOrientRotationToMovement(false);
 			this->CombatRandomLocation = NewRandomLocation;
 			this->DefenderSecondsWithoutMoving.Reset();
 
-			if (AIController)
-			{
-				AIController->MoveToNewLocation(NewRandomLocation);
-			}
+			MoveToNewLocation(NewRandomLocation);
 		}
 		else
 		{
@@ -1143,11 +1140,11 @@ void ABot::MeleeCombatTick(float DeltaTime, float TargetDist)
 		{
 			FVector EndLocation = FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).RotateVector(FVector(MaxDist, 0.0f, 0.0f));
 			EndLocation += this->Target.Actor->GetActorLocation();
-			AIController->MoveToNewLocation(EndLocation);
+			MoveToNewLocation(EndLocation);
 			this->bMovingToRandomCombatLocation = true;
 			this->TimeSinceStartedMovingInCombat = 0.0f;
 			this->bUseControllerRotationYaw = false;
-			GetCharacterMovementComponent()->bOrientRotationToMovement = false;
+			SetOrientRotationToMovement(false);
 		}
 
 		auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
@@ -1923,6 +1920,11 @@ void ABot::SetEquipment()
 
 				this->BloodNiagaraParticle = RandomEquipment.Costume->BloodParticle ? RandomEquipment.Costume->BloodParticle : this->GetDefaultBloodParticle();
 			}
+
+			if (RandomEquipment.Robot)
+			{
+				SetRobot(RandomEquipment.Robot);
+			}
 		}
 	}
 }
@@ -1993,7 +1995,7 @@ void ABot::MoveToRandomLocation()
 		FVector OutLocation;
 		bool bFound = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), GetActorLocation(), OutLocation, 5000.0f);
 
-		AIController->MoveToNewLocation(OutLocation);
+		MoveToNewLocation(OutLocation);
 		bMovingToRandomLocation = true;
 	}
 }
@@ -2266,7 +2268,7 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 		RagdollAfterDeathTimer.Max = 0.5f;
 		RagdollAfterDeathTimer.Reset();
 		MoveToRandomLocation();
-		GetCharacterMovementComponent()->bOrientRotationToMovement = true;
+		SetOrientRotationToMovement(true);
 		GetCharacterMovementComponent()->MaxWalkSpeed = 200.0f;
 	}
 
@@ -2670,7 +2672,22 @@ void ABot::SmoothRotatingTick(float DeltaTime)
 			}
 		}
 
-		this->SetActorRotation(FRotator(0.0f, this->SmoothRotation.CurrentYaw, 0.0f));
+		FRotator NewRotation = FRotator(0.0f, this->SmoothRotation.CurrentYaw, 0.0f);
+
+		if (IsInRobot())
+		{
+			auto* Robot = GetRobotInstance();
+
+			if (Robot)
+			{
+				Robot->SetActorRotation(NewRotation);
+			}
+		}
+		else
+		{
+			SetActorRotation(NewRotation);
+		}
+		
 
 		if (this->AimingAngle < this->SmoothRotation.Target.Pitch)
 		{
@@ -2774,12 +2791,7 @@ void ABot::TestAimingTick(float DeltaTime)
 
 		this->RandomPointToMoveWhileAiming = FVector(XPos, YPos, 0.0f);
 
-		auto* AIController = this->GetAIController();
-
-		if (AIController)
-		{
-			AIController->MoveToNewLocation(this->RandomPointToMoveWhileAiming);
-		}
+		MoveToNewLocation(this->RandomPointToMoveWhileAiming);
 
 	}
 
@@ -3165,7 +3177,7 @@ void ABot::ReviveBotDeatchmatch()
 
 		auto* CharacterMovementComponent = this->GetCharacterMovementComponent();
 
-		if (CharacterMovementComponent)
+		if (CharacterMovementComponent && !IsInRobot())
 		{
 			CharacterMovementComponent->bUseRVOAvoidance = true;
 		}
@@ -3544,5 +3556,100 @@ void ABot::SetUseControllerRotationYaw(bool bUse)
 	else
 	{
 
+	}
+}
+
+ARobot* ABot::GetRobotInstance()
+{
+	return RobotInstance;
+}
+
+bool ABot::IsInRobot()
+{
+	return RobotInstance != nullptr;
+}
+
+ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
+{
+	if (!RobotClass)
+	{
+		return nullptr;
+	}
+
+	if (IsInRobot())
+	{
+		return nullptr;
+	}
+
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	ARobot* Robot = GetWorld()->SpawnActor<ARobot>(RobotClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+	AttachToComponent(Robot->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	RobotInstance = Robot;
+
+	if (Robot->WeaponClass)
+	{
+		WeaponInstance = NewObject<UWeaponInstance>(this, UFirearmWeaponInstance::StaticClass());
+
+		if (WeaponInstance)
+		{
+			WeaponInstance->WeaponRef = Robot->WeaponClass;
+			WeaponInstance->BotOwner = this;
+			WeaponInstance->Init();
+		}
+	}
+
+	WeaponMesh->SetVisibility(false);
+
+	GetCharacterMovement()->bUseRVOAvoidance = false;
+
+	Robot->GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	SetActorRelativeRotation(Robot->CharacterTransform.GetRotation().Rotator());
+	SetActorRelativeLocation(Robot->CharacterTransform.GetLocation());
+
+	return Robot;
+}
+
+void ABot::MoveToNewLocation(FVector NewLocation)
+{
+	auto* Robot = GetRobotInstance();
+
+	if (Robot)
+	{
+		Robot->MoveToNewLocation(NewLocation);
+	}
+	else
+	{
+		auto* AIController = GetAIController();
+
+		if (AIController)
+		{
+			AIController->MoveToNewLocation(NewLocation);
+		}
+	}
+
+}
+
+void ABot::SetOrientRotationToMovement(bool bNewValue)
+{
+	if (IsInRobot())
+	{
+		GetCharacterMovementComponent()->bOrientRotationToMovement = false;
+		auto* Robot = GetRobotInstance();
+
+		if (Robot)
+		{
+			Robot->GetCharacterMovement()->bOrientRotationToMovement = bNewValue;
+		}
+	}
+	else
+	{
+		GetCharacterMovementComponent()->bOrientRotationToMovement = bNewValue;
 	}
 }

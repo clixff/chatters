@@ -23,6 +23,7 @@
 #include "../Misc/BloodDecal.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
+#include "Vehicles/Robots/Robot.h"
 #include "Bot.generated.h"
 
 DECLARE_STATS_GROUP(TEXT("BOTS_Game"), STATGROUP_BOTS, STATCAT_Advanced);
@@ -562,4 +563,16 @@ private:
 	FManualTimer RagdollAfterDeathTimer = FManualTimer(0.1f);
 
 	bool bInstantFallAfterDeath = false;
+public:
+	ARobot* RobotInstance = nullptr;
+
+	ARobot* GetRobotInstance();
+
+	bool IsInRobot();
+
+	ARobot* SetRobot(TSubclassOf<ARobot> RobotClass);
+public:
+	void MoveToNewLocation(FVector NewLocation);
+
+	void SetOrientRotationToMovement(bool bNewValue);
 };

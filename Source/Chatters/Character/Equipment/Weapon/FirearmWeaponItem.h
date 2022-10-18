@@ -103,4 +103,7 @@ public:
 	/** 0 = No recoil, 1 = max recoil */
 	UPROPERTY(EditDefaultsOnly)
 		float RecoilFactor = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+		bool bIsRobot = false;
 };

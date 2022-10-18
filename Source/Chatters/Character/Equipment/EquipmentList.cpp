@@ -122,6 +122,13 @@ FRandomEquipment UEquipmentList::GetRandomEquipment(EBotTeam Team)
 		Equipment.Costume = this->Costumes[RandomIndex];
 	}
 
+	int32 NumberOfRobots = Robots.Num();
+	if (NumberOfRobots)
+	{
+		RandomIndex = FMath::RandRange(0, NumberOfRobots - 1);
+		Equipment.Robot = Robots[RandomIndex];
+	}
+
 	return Equipment;
 }
 

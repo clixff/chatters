@@ -9,6 +9,7 @@
 #include "BeardStyle.h"
 #include "Weapon/WeaponItem.h"
 #include "CostumeItem.h"
+#include "../Vehicles/Robots/Robot.h"
 #include "EquipmentList.generated.h"
 
 USTRUCT(BlueprintType)
@@ -21,6 +22,7 @@ public:
 	UMaterialInterface* FaceMaterial = nullptr;
 	UWeaponItem* Weapon = nullptr;
 	UCostumeItem* Costume = nullptr;
+	TSubclassOf<ARobot> Robot = nullptr;
 };
 
 USTRUCT(BlueprintType)
@@ -59,6 +61,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		TArray<UCostumeItem*> Costumes;
+
+	UPROPERTY(EditDefaultsOnly)
+		TArray<TSubclassOf<ARobot>> Robots;
 
 	UPROPERTY(EditDefaultsOnly)
 		TArray<UEquipmentList*> EquipmentSets;
