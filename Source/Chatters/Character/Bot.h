@@ -86,12 +86,12 @@ struct FBotTarget
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere)
 		AActor* Actor = nullptr;
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere)
 		ABot* Bot = nullptr;
-	UPROPERTY()
-	ETargetType TargetType = ETargetType::None;
+	UPROPERTY(VisibleAnywhere)
+		ETargetType TargetType = ETargetType::None;
 };
 
 USTRUCT(BlueprintType)
@@ -316,7 +316,7 @@ private:
 
 	FRotator GetGunRotation();
 
-	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset, bool bDrawDebugLines = false);
+	FBulletHitResult LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset, bool bDrawDebugLines = false, bool bShot = false);
 
 	float TimeSinceStartedMovingInCombat = 0.0f;
 
@@ -357,8 +357,8 @@ private:
 	float FallingStartZLocation = 0.0f;;
 
 	int32 StuckCount = 0;
-private:
-	UPROPERTY()
+public:
+	UPROPERTY(VisibleAnywhere)
 		FBotTarget Target;
 
 	float SecondsSinceLastBarrelsCheck = 0.0f;
@@ -571,6 +571,8 @@ public:
 	bool IsInRobot();
 
 	ARobot* SetRobot(TSubclassOf<ARobot> RobotClass);
+
+	FVector RobotGunPositionCached = FVector::ZeroVector;
 public:
 	void MoveToNewLocation(FVector NewLocation);
 

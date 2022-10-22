@@ -261,7 +261,7 @@ void ABot::Tick(float DeltaTime)
 				}
 			}
 
-			if (this->SecondsAfterDeath >= 2.0f && !this->bCheckedBloodDecalCreation)
+			if (this->SecondsAfterDeath >= 2.0f && !this->bCheckedBloodDecalCreation && !IsInRobot())
 			{
 				this->CreateFloorBloodDecal();
 			}
@@ -271,10 +271,14 @@ void ABot::Tick(float DeltaTime)
 				this->bRigidBodiesSleep = true;
 				//this->GetMesh()->SetSimulatePhysics(false);
 				//this->GetMesh()->SetAllBodiesSimulatePhysics(false);
-				this->GetMesh()->PutAllRigidBodiesToSleep();
-				this->HeadMesh->PutAllRigidBodiesToSleep();
-				this->GetMesh()->bPauseAnims = true;
-				this->HeadMesh->bPauseAnims = true;
+
+				if (!IsInRobot())
+				{
+					this->GetMesh()->PutAllRigidBodiesToSleep();
+					this->HeadMesh->PutAllRigidBodiesToSleep();
+					this->GetMesh()->bPauseAnims = true;
+					this->HeadMesh->bPauseAnims = true;
+				}
 			}
 
 			if (!bHatAttached && bCanHatBeDetached)
@@ -346,7 +350,7 @@ void ABot::Tick(float DeltaTime)
 
 				if (RagdollAfterDeathTimer.IsEnded())
 				{
-					if (IsInRobot())
+					if (!IsInRobot())
 					{
 						GetMesh()->SetSimulatePhysics(true);
 						GetMesh()->SetCollisionProfileName(FName(TEXT("DeadBody")), true);
@@ -574,10 +578,20 @@ void ABot::MoveToTarget()
 	}
 
 	/** Allow to update target location every 1 second */
-	this->UpdateMovingTargetTimeout = 1.0f;
+	UpdateMovingTargetTimeout = 1.0f;
 	this->CombatAction = ECombatAction::Moving;
 	SetWeaponProjectileMeshVisibility(false);
 	FVector TargetLocation = this->Target.Actor->GetActorLocation();
+
+	if (IsInRobot())
+	{
+		auto* Robot = Cast<ARobot>(this->Target.Actor);
+
+		if (Robot)
+		{
+			TargetLocation = Robot->GetMesh()->GetComponentLocation();
+		}
+	}
 
 	if (this->Target.TargetType == ETargetType::ExplodingBarrel)
 	{
@@ -668,6 +682,16 @@ void ABot::CombatTick(float DeltaTime)
 					this->bShouldApplyGunAnimation = bActivateCombatTick;
 				}
 
+				if (IsInRobot())
+				{
+					auto* Robot = GetRobotInstance();
+					Robot->GetCharacterMovement()->MaxWalkSpeed = Robot->RunSpeed;
+					if (bActivateCombatTick)
+					{
+						Robot->GetCharacterMovement()->MaxWalkSpeed = WeaponInstance->WeaponRef->MaxWalkSpeed;
+					}
+				}
+
 				if (bActivateCombatTick)
 				{
 					SetOrientRotationToMovement(false);
@@ -684,11 +708,18 @@ void ABot::CombatTick(float DeltaTime)
 				{
 					if (CharacterMovementComponent)
 					{
-						CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(600.0f);
-
-						if (this->bShouldApplyGunAnimation)
+						if (IsInRobot())
 						{
-							CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(WeaponInstance->WeaponRef->MaxWalkSpeed);
+
+						}
+						else
+						{
+							CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(600.0f);
+
+							if (this->bShouldApplyGunAnimation)
+							{
+								CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(WeaponInstance->WeaponRef->MaxWalkSpeed);
+							}
 						}
 					}
 
@@ -1239,11 +1270,21 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FirearmInstance->OnShoot();
 
+			if (IsInRobot())
+			{
+				RobotGunPositionCached = GetRobotInstance()->GetGunPosition();
+			}
+
 			FRotator GunRotation = this->GetGunRotation();
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition(GunRotation, false);
 
 			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, true);
+
+			if (IsInRobot())
+			{
+				OutBulletLocation = RobotGunPositionCached;
+			}
 
 			FTransform ProjectileTransform;
 			ProjectileTransform.SetLocation(OutBulletLocation);
@@ -1294,7 +1335,7 @@ void ABot::Shoot(bool bBulletOffset)
 			{
 				auto& Stat = GameSessionRef->PlayerStats[this->ID];
 				Stat.Shots++;
-				if ((BulletHitResult.ExplodingBarrel || BulletHitResult.BotToDamage) && BulletHitResult.HitResult.GetActor() == Target.Actor)
+				if ((BulletHitResult.ExplodingBarrel || BulletHitResult.BotToDamage || IsInRobot()) && BulletHitResult.HitResult.GetActor() == Target.Actor)
 				{
 					Stat.Hits++;
 				}
@@ -2897,7 +2938,7 @@ FRotator ABot::GetGunRotation()
 	return GunRotation;
 }
 
-FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset, bool bDrawDebugLines)
+FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBulletOffset, bool bDrawDebugLines, bool bShot)
 {
 	FBulletHitResult BulletHitResult;
 
@@ -2920,9 +2961,18 @@ FBulletHitResult ABot::LineTraceFromGun(UFirearmWeaponItem* FirearmRef, bool bBu
 
 		if (IsInRobot())
 		{
-			StartLocation = GetActorLocation();
+			if (bShot)
+			{
+				StartLocation = RobotGunPositionCached;
+			}
+			else
+			{
+				StartLocation = GetActorLocation();
+			}
+
 			EndLocation = GetFirearmBulletTargetWorldPosition(StartLocation, FirearmRef->MaxDistance, GunRotation, false, bBulletOffset, FirearmRef->RecoilFactor);
 			Params.AddIgnoredActor(GetRobotInstance());
+
 		}
 
 		World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel3, Params);
@@ -3004,6 +3054,11 @@ void ABot::StopMovementAfterRound()
 	this->Target.Bot = nullptr;
 	this->Target.TargetType = ETargetType::None;
 	this->bReady = false;
+
+	if (RobotInstance)
+	{
+		RobotInstance->StopMovement();
+	}
 }
 
 void ABot::StopMovement()
@@ -3191,11 +3246,14 @@ void ABot::ReviveBotDeatchmatch()
 
 		this->HealthPoints = this->MaxHealthPoints;
 
-		this->GetMesh()->SetSimulatePhysics(false);
+		if (!IsInRobot())
+		{
+			this->GetMesh()->SetSimulatePhysics(false);
 
-		this->GetMesh()->SetCollisionProfileName(FName(TEXT("CharacterMesh")), true);
-		//this->GetMesh()->PutAllRigidBodiesToSleep();
-		this->GetMesh()->WakeAllRigidBodies();
+			this->GetMesh()->SetCollisionProfileName(FName(TEXT("CharacterMesh")), true);
+			//this->GetMesh()->PutAllRigidBodiesToSleep();
+			this->GetMesh()->WakeAllRigidBodies();
+		}
 
 		this->HeadMesh->SetSimulatePhysics(false);
 		this->HatMesh->SetSimulatePhysics(false);
@@ -3231,7 +3289,7 @@ void ABot::ReviveBotDeatchmatch()
 
 		if (CharacterMovementComponent && !IsInRobot())
 		{
-			CharacterMovementComponent->bUseRVOAvoidance = true;
+			//CharacterMovementComponent->bUseRVOAvoidance = true;
 		}
 
 		SecondsAfterDeath = 0.0f;
@@ -3245,30 +3303,40 @@ void ABot::ReviveBotDeatchmatch()
 		HatDetachedTimer.Reset();
 		WeaponDetachTimer.Reset();
 
-		this->WeaponMesh->WakeAllRigidBodies();
-
-		this->WeaponMesh->SetCollisionProfileName(TEXT("NoCollision"), true);
-		this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		this->WeaponMesh->AttachToComponent(this->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName(TEXT("R_arm_4")));
-
-		if (this->WeaponInstance && this->WeaponInstance->IsValidLowLevel() && !this->WeaponInstance->IsPendingKill())
-		{
-			this->WeaponInstance->ConditionalBeginDestroy();
-			this->WeaponInstance = nullptr;
-		}
-
-		this->SetEquipment();
-		this->UpdateEquipmentTeamColors();
 
 		FTransform SpawnPoint = GameSession->GetAvailableSpawnPoint(false, true);
 
-		this->SetActorLocation(SpawnPoint.GetLocation());
-		this->SetActorRotation(SpawnPoint.GetRotation().Rotator());
+		if (IsInRobot() == false)
+		{
+			SetActorLocation(SpawnPoint.GetLocation());
+			SetActorRotation(SpawnPoint.GetRotation().Rotator());
 
-		this->GetMesh()->AttachToComponent(this->GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+			this->WeaponMesh->WakeAllRigidBodies();
 
-		this->GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -92.0f));
-		this->GetMesh()->SetRelativeRotation((FRotator(0.0f, -90.0f, 0.0f)));
+			this->WeaponMesh->SetCollisionProfileName(TEXT("NoCollision"), true);
+			this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			this->WeaponMesh->AttachToComponent(this->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName(TEXT("R_arm_4")));
+
+			if (this->WeaponInstance && this->WeaponInstance->IsValidLowLevel() && !this->WeaponInstance->IsPendingKill())
+			{
+				this->WeaponInstance->ConditionalBeginDestroy();
+				this->WeaponInstance = nullptr;
+			}
+
+
+			SetEquipment();
+			UpdateEquipmentTeamColors();
+
+			this->GetMesh()->AttachToComponent(this->GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+		}
+		else
+		{
+			RobotInstance->SetActorLocation(SpawnPoint.GetLocation());
+			RobotInstance->SetActorRotation(SpawnPoint.GetRotation().Rotator());
+		}
+
+		GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -92.0f));
+		GetMesh()->SetRelativeRotation((FRotator(0.0f, -90.0f, 0.0f)));
 
 		FVector RelativeLocation = this->GetMesh()->GetRelativeLocation();
 
@@ -3285,6 +3353,14 @@ void ABot::ReviveBotDeatchmatch()
 		DropEquipmentAfterDeathTimer.Reset();
 
 		ClearDamagedBonesData();
+
+		if (IsInRobot())
+		{
+			GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			RobotInstance->OnRespawn();
+			FindNewEnemyTarget();
+		}
 	}
 }
 
@@ -3635,6 +3711,8 @@ ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
 
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HatMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;

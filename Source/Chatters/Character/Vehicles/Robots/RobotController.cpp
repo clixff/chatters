@@ -17,11 +17,11 @@ void ARobotController::MoveToNewLocation(FVector Location)
 
 	float Distance = FVector::Dist(PawnLocation, Location);
 
-	//UE_LOG(LogTemp, Display, TEXT("[ARobotController] Moving bot from %s to %s. Distance: %f m"), *(PawnLocation.ToString()), *(Location.ToString()), Distance);
+	//UE_LOG(LogTemp, Display, TEXT("[ARobotController] Moving robot from %s to %s. Distance: %f m"), *(PawnLocation.ToString()), *(Location.ToString()), Distance);
 
 	auto MoveBotToLocation = [this](FVector LocationToMove)
 	{
-		return this->MoveToLocation(LocationToMove, 10.0f, false, true, true, true);
+		return this->MoveToLocation(LocationToMove, 50.0f, false, true, true, true);
 	};
 
 	auto RequestResult = MoveBotToLocation(Location);
@@ -29,18 +29,13 @@ void ARobotController::MoveToNewLocation(FVector Location)
 	if (RequestResult == EPathFollowingRequestResult::Type::Failed)
 	{
 		FVector NewLocation;
-		bool bFoundAlternativeLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), Location, NewLocation, 250.0f);
+		bool bFoundAlternativeLocation = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(this->GetWorld(), Location, NewLocation, 1000.0f);
 
 		if (bFoundAlternativeLocation)
 		{
 			MoveBotToLocation(NewLocation);
 		}
 
-		//ABot* Bot = Cast<ABot>(PawnObject);
-
-		//if (Bot)
-		{
-			//UE_LOG(LogTemp, Error, TEXT("[ABotController] Failed to move bot %s. Target: %s. bFoundAlternative: %d"), *Bot->DisplayName, *Location.ToString(), bFoundAlternativeLocation);
-		}
+		//UE_LOG(LogTemp, Error, TEXT("[ARobotController] Failed to move robot. Target: %s. bFoundAlternative: %d"), *Location.ToString(), bFoundAlternativeLocation);
 	}
 }

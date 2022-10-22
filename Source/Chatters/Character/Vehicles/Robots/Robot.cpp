@@ -40,6 +40,9 @@ ARobot::ARobot()
 	DestructibleComponent->SetHiddenInGame(true);
 	DestructibleComponent->SetVisibility(false);
 	DestructibleComponent->SetCanEverAffectNavigation(false);
+	DestructibleComponent->SetGenerateOverlapEvents(false);
+
+	DestructibleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 // Called when the game starts or when spawned
@@ -48,6 +51,23 @@ void ARobot::BeginPlay()
 	Super::BeginPlay();
 	
 	SpawnDefaultController();
+
+	TArray<USceneComponent*> MeshChildren;
+
+	GetMesh()->GetChildrenComponents(false, MeshChildren);
+
+	GunPoints.Empty();
+
+	if (MeshChildren.Num())
+	{
+		for (auto* Child : MeshChildren)
+		{
+			if (Child->ComponentHasTag(TEXT("gun")))
+			{
+				GunPoints.Add(Child);
+			}
+		}
+	}
 }
 
 // Called every frame
@@ -130,7 +150,48 @@ void ARobot::OnDead()
 	DestructibleComponent->SetVisibility(true);
 	DestructibleComponent->SetHiddenInGame(false);
 
-	DestructibleComponent->ApplyDamage(1, BotOwner->GetActorLocation(), FVector(0.0f, 0.0f, 1.0f), ExplosionForce);
+	DestructibleComponent->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+
+	DestructibleComponent->ApplyDamage(ExplosionDamage, BotOwner->GetActorLocation(), ExplosionVector, ExplosionForce);
 	DestructibleComponent->SetCanEverAffectNavigation(false);
+}
+
+void ARobot::OnRespawn()
+{
+	DestructibleComponent->ReregisterComponent();
+
+	DestructibleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	DestructibleComponent->SetVisibility(false);
+	DestructibleComponent->SetHiddenInGame(true);
+
+	GetCharacterMovement()->bUseRVOAvoidance = true;
+
+	bDestroyed = false;
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	GetMesh()->SetVisibility(true, true);
+
+	if (BotOwner)
+	{
+		BotOwner->GetMesh()->SetVisibility(true, true);
+		BotOwner->SetActorHiddenInGame(false);
+
+		BotOwner->SetActorRelativeRotation(CharacterTransform.GetRotation().Rotator());
+		BotOwner->SetActorRelativeLocation(CharacterTransform.GetLocation());
+	}
+}
+
+FVector ARobot::GetGunPosition()
+{
+	if (GunPoints.Num())
+	{
+		int32 RandNumber = FMath::RandRange(0, GunPoints.Num() - 1);
+
+		return GunPoints[RandNumber]->GetComponentLocation();
+	}
+
+	return GetActorLocation();
 }
 

@@ -109,6 +109,7 @@ void AFirearmProjectile::Tick(float DeltaTime)
 
 void AFirearmProjectile::Init(FVector InitStartLocation, FVector InitEndLocation, FBulletHitResult HitResult, UFirearmWeaponInstance* FirearmInstanceRef, FVector BotForwardVector)
 {
+	RobotTarget = nullptr;
 	this->StartLocation = InitStartLocation;
 	this->EndLocation = InitEndLocation;
 	this->Distance = FVector::Dist(StartLocation, EndLocation);
@@ -309,7 +310,7 @@ void AFirearmProjectile::SetTraceLocation()
 {
 	RealEndLocation = this->EndLocation;
 
-	if (!bSimplified)
+	if (!bSimplified && (BulletHitResult.BotToDamage || RobotTarget))
 	{
 		FVector BoneLocation;
 		if (BulletHitResult.BotToDamage)

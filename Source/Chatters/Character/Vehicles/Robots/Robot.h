@@ -39,6 +39,8 @@ public:
 
 	void OnDead();
 
+	void OnRespawn();
+
 	UPROPERTY(EditAnywhere)
 		UFirearmWeaponItem* WeaponClass = nullptr;
 
@@ -78,4 +80,18 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		float ExplosionForce = 5000.0f;
+
+	UPROPERTY(EditAnywhere)
+		FVector ExplosionVector = FVector(0.0f, 0.0f, 1.0f);
+
+	UPROPERTY(EditAnywhere)
+		float ExplosionDamage = 1;
+
+	UPROPERTY(EditAnywhere)
+		TArray<USceneComponent*> GunPoints;
+
+	FVector GetGunPosition();
+
+	UPROPERTY(EditAnywhere)
+		float RunSpeed = 600.0f;
 };

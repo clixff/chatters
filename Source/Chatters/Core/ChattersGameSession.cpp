@@ -755,6 +755,11 @@ void UChattersGameSession::OnTeamsBattleEnd()
 
 		if (!Bot->bAlive)
 		{
+			if (Bot->RobotInstance)
+			{
+				Bot->RobotInstance->Destroy();
+				Bot->RobotInstance = nullptr;
+			}
 			Bot->Clear();
 			Bot->Destroy();
 			continue;
@@ -763,8 +768,18 @@ void UChattersGameSession::OnTeamsBattleEnd()
 		{
 			FTransform SpawnPoint = this->GetAvailableSpawnPoint();
 
-			Bot->SetActorLocation(SpawnPoint.GetLocation());
-			Bot->SetActorRotation(SpawnPoint.GetRotation());
+			if (Bot->IsInRobot())
+			{
+				auto* Robot = Bot->GetRobotInstance();
+				Robot->SetActorLocation(SpawnPoint.GetLocation());
+				Robot->SetActorRotation(SpawnPoint.GetRotation());
+			}
+			else
+			{
+				Bot->SetActorLocation(SpawnPoint.GetLocation());
+				Bot->SetActorRotation(SpawnPoint.GetRotation());
+			}
+
 
 			auto PrevBotTeam = Bot->Team;
 
