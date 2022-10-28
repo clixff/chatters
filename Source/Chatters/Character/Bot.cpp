@@ -2135,6 +2135,11 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		}
 	}
 
+	if (IsInRobot())
+	{
+		RobotInstance->LastDamageLocation = ImpulseLocation;
+	}
+
 	if (this->HealthPoints <= 0)
 	{
 		this->HealthPoints = 0;

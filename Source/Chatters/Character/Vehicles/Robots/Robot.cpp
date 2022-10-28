@@ -152,7 +152,7 @@ void ARobot::OnDead()
 
 	DestructibleComponent->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
-	DestructibleComponent->ApplyDamage(ExplosionDamage, BotOwner->GetActorLocation(), ExplosionVector, ExplosionForce);
+	DestructibleComponent->ApplyDamage(ExplosionDamage, GetActorLocation(), ExplosionVector, ExplosionForce);
 	DestructibleComponent->SetCanEverAffectNavigation(false);
 }
 

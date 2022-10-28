@@ -94,4 +94,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		float RunSpeed = 600.0f;
+
+	UPROPERTY()
+		FVector LastDamageLocation;
 };
