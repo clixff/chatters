@@ -9,9 +9,23 @@
 #include "Animation/AnimSequence.h"
 #include "DestructibleComponent.h"
 #include "../../../Misc/Misc.h"
+#include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Robot.generated.h"
 
 class ABot;
+
+USTRUCT(BlueprintType)
+struct FRobotMaterials
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+		TArray<UMaterialInterface*> Materials;
+
+	UPROPERTY(EditAnywhere)
+		UMaterialInterface* DestructedMaterial;
+};
 
 UCLASS()
 class CHATTERS_API ARobot : public ACharacter
@@ -97,4 +111,24 @@ public:
 
 	UPROPERTY()
 		FVector LastDamageLocation;
+
+	void OnNewRound(EBotTeam BotTeam);
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "Materials")
+		TArray<FRobotMaterials> RobotMaterials;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Materials")
+		TArray<FRobotMaterials> BlueTeamMaterials;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Materials")
+		TArray<FRobotMaterials> RedTeamMaterials;
+public:
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+		void PlayFootstepSound(const FVector& Location, EPhysicalSurface Surface);
+
+	UFUNCTION(BlueprintCallable)
+		void OnFootstep();
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UCurveFloat* HitBoneRotationCurve = nullptr;
 };

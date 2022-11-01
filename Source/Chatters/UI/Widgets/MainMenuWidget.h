@@ -147,4 +147,17 @@ public:
 		
 	UFUNCTION()
 		void ShowImportNamesWidget();
+
+protected:
+	bool bShouldLoadLevelNextTick = false;
+
+	FString LoadLevelName;
+
+	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime);
+public:
+	UPROPERTY(EditAnywhere, Category = "Loading")
+		TSubclassOf<UCustomWidgetBase> LoadingWidgetClass;
+
+	UPROPERTY()
+		UCustomWidgetBase* LoadingWidgetInstance = nullptr;
 };

@@ -19,17 +19,9 @@ ARobot::ARobot()
 
 	AIControllerClass = ARobotController::StaticClass();
 
-	GetCapsuleComponent()->SetHiddenInGame(false);
-	GetCapsuleComponent()->SetVisibility(true);
 	GetCapsuleComponent()->SetCanEverAffectNavigation(false);
 
 	GetMesh()->SetCanEverAffectNavigation(false);
-
-#if WITH_EDITOR
-	GetArrowComponent()->SetHiddenInGame(false);
-	GetArrowComponent()->SetVisibility(true);
-#endif
-	
 	GetCharacterMovement()->bUseRVOAvoidance = true;
 
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
@@ -193,5 +185,54 @@ FVector ARobot::GetGunPosition()
 	}
 
 	return GetActorLocation();
+}
+
+void ARobot::OnNewRound(EBotTeam BotTeam)
+{
+	TArray<FRobotMaterials>& MaterialsStructInstance = RobotMaterials;
+
+	switch (BotTeam)
+	{
+	case EBotTeam::Blue:
+		MaterialsStructInstance = BlueTeamMaterials;
+		break;
+	case EBotTeam::Red:
+		MaterialsStructInstance = RedTeamMaterials;
+		break;
+	}
+
+	if (!MaterialsStructInstance.Num())
+	{
+		return;
+	}
+
+	FRobotMaterials MaterialsStruct = MaterialsStructInstance[FMath::RandRange(0, (MaterialsStructInstance.Num() - 1))];
+
+	TArray<UMaterialInterface*>& Materials = MaterialsStruct.Materials;
+
+	if (GetMesh()->SkeletalMesh == nullptr)
+	{
+		return;
+	}
+
+	for (int32 i = 0; i < Materials.Num(); i++)
+	{
+		auto* Material = Materials[i];
+
+		if (!Material)
+		{
+			continue;
+		}
+
+		GetMesh()->SetMaterial(i, Material);
+	}
+}
+
+void ARobot::OnFootstep()
+{
+	if (BotOwner)
+	{
+		BotOwner->OnFootstep();
+	}
 }
 

@@ -106,8 +106,20 @@ void UMainMenuWidget::OnPlayClick()
 
 		auto& SelectedLevelObject = this->LevelsList[this->SelectedLevel];
 		
+		LoadLevelName = SelectedLevelObject.LevelName;
 
-		GameInstance->StartGameSession(SelectedLevelObject.LevelName);
+		bShouldLoadLevelNextTick = true;
+
+		if (LoadingWidgetClass)
+		{
+			LoadingWidgetInstance = UCustomWidgetBase::CreateUserWidget<UCustomWidgetBase>(LoadingWidgetClass);
+
+			if (LoadingWidgetInstance)
+			{
+				LoadingWidgetInstance->Show();
+			}
+		}
+
 	}
 }
 
@@ -232,6 +244,23 @@ void UMainMenuWidget::ShowImportNamesWidget()
 	if (ImportNamesWidget)
 	{
 		ImportNamesWidget->Show();
+	}
+}
+
+void UMainMenuWidget::NativeTick(const FGeometry& MyGeometry, float DeltaTime)
+{
+	Super::NativeTick(MyGeometry, DeltaTime);
+
+	if (bShouldLoadLevelNextTick)
+	{
+		bShouldLoadLevelNextTick = false;
+		auto* GameInstance = UChattersGameInstance::Get();
+
+		if (GameInstance)
+		{
+			GameInstance->StartGameSession(LoadLevelName);
+		}
+
 	}
 }
 

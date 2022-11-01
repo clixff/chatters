@@ -61,7 +61,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bFalling = false;
-
 private:
 	UPROPERTY()
 		ABot* BotRef = nullptr;

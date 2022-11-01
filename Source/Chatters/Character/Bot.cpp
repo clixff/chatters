@@ -243,6 +243,12 @@ void ABot::Tick(float DeltaTime)
 				}
 
 				this->bFallingLastTick = bFalling;
+
+				/** Kill the character if it fell out of world  */
+				if (GetActorLocation().Z < -10000.0f)
+				{
+					ApplyDamage(1000, this, EWeaponType::Fall);
+				}
 			}
 
 			this->LastTickLocation = this->GetActorLocation();
@@ -926,7 +932,7 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	if (bCanShoot)
 	{
-		FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false, true);
+		FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmInstance->GetFirearmRef(), false, false);
 
 		HitActor = BulletHitResult.HitResult.GetActor();
 	}
@@ -1279,7 +1285,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			FVector OutBulletLocation = this->GetFirearmOutBulletWorldPosition(GunRotation, false);
 
-			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, true);
+			FBulletHitResult BulletHitResult = this->LineTraceFromGun(FirearmRef, bBulletOffset, false);
 
 			if (IsInRobot())
 			{
@@ -1747,11 +1753,13 @@ void ABot::RespawnAtRandomPlace()
 {
 	FVector NewRandomLocation;
 
-	bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomLocationInNavigableRadius(GetWorld(), this->GetActorLocation(), NewRandomLocation, 1500.0f);
+	FVector OldLocation = GetBotParentActor()->GetActorLocation();
+
+	bool bFoundRandomLocation = UNavigationSystemV1::K2_GetRandomLocationInNavigableRadius(GetWorld(), OldLocation, NewRandomLocation, 1500.0f);
 
 	if (bFoundRandomLocation)
 	{
-		this->SetActorLocation(NewRandomLocation + FVector(0.0f, 0.0f, 150.0f));
+		GetBotParentActor()->SetActorLocation(NewRandomLocation + FVector(0.0f, 0.0f, 150.0f));
 	}
 	else
 	{
@@ -1815,19 +1823,33 @@ void ABot::OnFootstep()
 
 	FHitResult HitResult;
 	FVector StartLocation = this->GetActorLocation();
-	FVector EndLocation = StartLocation - FVector(0.0f, 0.0f, 150.0f);
+	FVector EndLocation = StartLocation - FVector(0.0f, 0.0f, 1500.0f);
 	FCollisionQueryParams CollisionParams;
 	CollisionParams.bReturnPhysicalMaterial = true;
 	CollisionParams.bTraceComplex = false;
+	CollisionParams.AddIgnoredActor(this);
+
+	if (RobotInstance)
+	{
+		CollisionParams.AddIgnoredActor(RobotInstance);
+	}
 
 	World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_Visibility, CollisionParams);
+
 
 	if (HitResult.bBlockingHit)
 	{
 		UPhysicalMaterial* PhysMaterial = HitResult.PhysMaterial.Get();
 		if (PhysMaterial)
 		{
-			this->PlayFootstepSound(HitResult.Location, PhysMaterial->SurfaceType);
+			if (RobotInstance)
+			{
+				RobotInstance->PlayFootstepSound(HitResult.Location, PhysMaterial->SurfaceType);
+			}
+			else
+			{
+				this->PlayFootstepSound(HitResult.Location, PhysMaterial->SurfaceType);
+			}
 		}
 	}
 }
@@ -2632,6 +2654,11 @@ void ABot::ResetOnNewRound()
 
 	AttachHat();
 	ClearDamagedBonesData();
+
+	if (RobotInstance)
+	{
+		RobotInstance->OnNewRound(Team);
+	}
 }
 
 void ABot::OnGameSessionStarted(ESessionMode SessionMode)
@@ -3711,6 +3738,7 @@ ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
 
 	if (IsInRobot())
 	{
+		RobotInstance->OnNewRound(Team);
 		return nullptr;
 	}
 
@@ -3723,7 +3751,7 @@ ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	ARobot* Robot = GetWorld()->SpawnActor<ARobot>(RobotClass, GetActorLocation(), GetActorRotation(), SpawnParams);
-	AttachToComponent(Robot->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	AttachToComponent(Robot->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("body"));
 
 	RobotInstance = Robot;
 
@@ -3742,6 +3770,11 @@ ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
 	WeaponMesh->SetVisibility(false);
 	WeaponMesh->SetHiddenInGame(true, true);
 
+	if (MeleeCollision)
+	{
+		MeleeCollision->SetGenerateOverlapEvents(false);
+	}
+
 	GetCharacterMovement()->bUseRVOAvoidance = false;
 
 	Robot->GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -3758,6 +3791,13 @@ ARobot* ABot::SetRobot(TSubclassOf<ARobot> RobotClass)
 	}
 
 	NameWidgetComponent->SetRelativeLocation(Robot->NicknameOffset);
+
+	Robot->OnNewRound(Team);
+
+	if (Robot->HitBoneRotationCurve)
+	{
+		HitBoneRotationCurve = Robot->HitBoneRotationCurve;
+	}
 
 	return Robot;
 }
@@ -3798,4 +3838,14 @@ void ABot::SetOrientRotationToMovement(bool bNewValue)
 	{
 		GetCharacterMovementComponent()->bOrientRotationToMovement = bNewValue;
 	}
+}
+
+AActor* ABot::GetBotParentActor()
+{
+	if (IsInRobot())
+	{
+		return RobotInstance;
+	}
+
+	return this;
 }

@@ -1032,7 +1032,7 @@ void UChattersGameSession::RespawnBotAfterStuck(ABot* Bot)
 
 	auto SpawnPoint = this->GetAvailableSpawnPoint(false);
 
-	Bot->SetActorLocation(SpawnPoint.GetLocation());
+	Bot->GetBotParentActor()->SetActorLocation(SpawnPoint.GetLocation());
 }
 
 void UChattersGameSession::Tick(float DeltaTime)

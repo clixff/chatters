@@ -577,4 +577,7 @@ public:
 	void MoveToNewLocation(FVector NewLocation);
 
 	void SetOrientRotationToMovement(bool bNewValue);
+
+	/** Returns a robot, a vehicle, or the bot itself */
+	AActor* GetBotParentActor();
 };
