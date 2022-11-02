@@ -139,7 +139,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 	this->SessionWidget = UCustomWidgetBase::CreateUserWidget(this->SessionWidgetClass);
 
-	this->SessionWidget->SetTeamsWrapperVisibility(this->GameModeType == ESessionGameMode::Teams);
+	this->SessionWidget->SetTeamsWrapperVisibility(this->GameModeType == ESessionGameMode::Teams || GameModeType == ESessionGameMode::Zombie);
 	this->SessionWidget->UpdateRoundSeconds(0.0f);
 
 	if (this->GameModeType == ESessionGameMode::Deathmatch)
@@ -249,6 +249,12 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 
 	this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive, this->BlueAliveMax, this->RedAliveMax);
 
+
+	if (GameModeType == ESessionGameMode::Zombie)
+	{
+		SessionWidget->SetTeamAliveNumber(0, 0, 0, 0);
+	}
+
 	auto* PlayerController = World->GetFirstPlayerController();
 	if (PlayerController)
 	{
@@ -311,6 +317,11 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 			DayTimeManagerRef->SetNightTime();
 		}
 
+		if (GameModeType == ESessionGameMode::Zombie)
+		{
+			DayTimeManagerRef->SetupZombieMode();
+		}
+
 	}
 
 	auto* GameInstance = UChattersGameInstance::Get();
@@ -325,6 +336,50 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	if (SocketClient && this->SessionType == ESessionType::Twitch)
 	{
 		SocketClient->OnLevelLoaded();
+	}
+
+	if (GameModeType == ESessionGameMode::Zombie && ZombiePortalActor)
+	{
+		ZombiePortals.Empty();
+
+		for (int32 i = 0; i < 5; i++)
+		{
+			bool bFoundValidSpawn = false;
+
+			while (bFoundValidSpawn == false)
+			{
+				auto* BotSpawnPoint = BotSpawnPoints[FMath::RandRange(0, BotSpawnPoints.Num() - 1)];
+				FVector SpawnPointLocation = BotSpawnPoint->GetActorLocation();
+
+				FVector FoundLocation;
+
+				bool bFound = UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), SpawnPointLocation, FoundLocation, 10000.0f);
+
+				if (bFound)
+				{
+					UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+
+					if (NavSys)
+					{
+						FPathFindingQuery Query;
+						Query.StartLocation = SpawnPointLocation;
+						Query.EndLocation = FoundLocation;
+						FNavAgentProperties Agent = FNavAgentProperties::DefaultProperties;
+						Query.NavData = NavSys->GetNavDataForProps(Agent, SpawnPointLocation);
+						FPathFindingResult PathFindingResult = NavSys->FindPathSync(Query, EPathFindingMode::Type::Regular);
+
+						if (PathFindingResult.IsSuccessful())
+						{
+							bFoundValidSpawn = true;
+							FActorSpawnParameters Params;
+							Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+							auto* ZombiePortal = GetWorld()->SpawnActor<AActor>(ZombiePortalActor, FoundLocation, FRotator::ZeroRotator, Params);
+							ZombiePortals.Add(ZombiePortal);
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -354,6 +409,11 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 				this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive, this->BlueAliveMax, this->RedAliveMax);
 			}
 
+			if (GameModeType == ESessionGameMode::Zombie)
+			{
+				UpdateZombieModeUI();
+			}
+
 			if (this->SessionWidget)
 			{
 				this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->Bots.Num());
@@ -361,7 +421,6 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 
 			if (this->GameModeType == ESessionGameMode::Teams && this->AliveBots.Num() > 1 && (this->BlueAlive == 0 || this->RedAlive == 0))
 			{
-
 				UWorld* World = this->GetWorld();
 
 				for (ABot* Bot : this->AliveBots)
@@ -431,6 +490,18 @@ void UChattersGameSession::Start()
 					Prop->Activate();
 				}
 			}
+		}
+
+		if (GameModeType == ESessionGameMode::Zombie)
+		{
+			ZombieWaveTimer.Current = ZombieWaveTimer.Max;
+
+			for (int32 i = 0; i < 5; i++)
+			{
+				ABot::CreateZombie(GetWorld(), BotSubclass);
+			}
+
+			UpdateZombieModeUI();
 		}
 
 		for (int32 i = 0; i < this->Bots.Num(); i++)
@@ -627,7 +698,14 @@ ABot* UChattersGameSession::OnViewerJoin(FString Name)
 
 		if (this->SessionWidget)
 		{
-			this->SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive, this->BlueAliveMax, this->RedAliveMax);
+			if (GameModeType == ESessionGameMode::Teams)
+			{
+				SessionWidget->SetTeamAliveNumber(this->BlueAlive, this->RedAlive, this->BlueAliveMax, this->RedAliveMax);
+			}
+			else if (GameModeType == ESessionGameMode::Zombie)
+			{
+				UpdateZombieModeUI();
+			}
 			this->SessionWidget->UpdateAliveBotsText(this->AliveBots.Num(), this->MaxPlayers);
 			this->SessionWidget->OnViewerJoined(Bot->DisplayName, Bot->GetTeamColor());
 		}
@@ -1144,6 +1222,35 @@ void UChattersGameSession::Tick(float DeltaTime)
 		{
 			this->SessionWidget->UpdateRoundSeconds(RoundTime);
 		}
+
+		if (!bIsMainGameEnded && GameModeType == ESessionGameMode::Zombie)
+		{
+			ZombieWaveTimer.Add(DeltaTime);
+
+			if (ZombieWaveTimer.IsEnded())
+			{
+				ZombieWaveTimer.Reset();
+
+				int32 MaxZombies = (Bots.Num() * 2);
+
+				if (Zombies.Num() < MaxZombies)
+				{
+					int32 ZombiesToSpawn = FMath::RandRange(1, 3);
+
+					for (int32 i = 0; i < ZombiesToSpawn; i++)
+					{
+						if (Zombies.Num() >= MaxZombies)
+						{
+							break;
+						}
+
+						ABot::CreateZombie(GetWorld(), BotSubclass);
+					}
+
+					UpdateZombieModeUI();
+				}
+			}
+		}
 	}
 }
 
@@ -1231,6 +1338,7 @@ void UChattersGameSession::OnBotKill(ABot* Bot)
 
 void UChattersGameSession::OnGameEnded(ABot* Winner)
 {
+	bIsMainGameEnded = true;
 	this->bDeathmatchRoundEnded = true;
 	bActivateGameEndEffects = true;
 
@@ -1256,6 +1364,25 @@ void UChattersGameSession::OnGameEnded(ABot* Winner)
 			if (Bot)
 			{
 				Bot->StopMovementAfterRound();
+			}
+		}
+	}
+
+	if (GameModeType == ESessionGameMode::Zombie)
+	{
+		FVector WinnerLocation = Winner->GetActorLocation();
+
+		for (auto* Zombie : Zombies)
+		{
+			if (Zombie && Zombie->IsValidLowLevel() && Zombie->GetIsAlive())
+			{
+				FVector DeltaLocation = WinnerLocation - Zombie->GetActorLocation();
+				DeltaLocation.Normalize();
+
+				DeltaLocation *= 100000.0f;
+				DeltaLocation *= -1.0f;
+
+				Zombie->OnDead(Zombie, EWeaponType::Firearm, DeltaLocation, Zombie->GetActorLocation());
 			}
 		}
 	}
@@ -1431,6 +1558,18 @@ void UChattersGameSession::SetSlomoEnabled(bool bEnabled)
 	}
 }
 
+void UChattersGameSession::OnZombieDied(ABot* Zombie)
+{
+	if (bIsMainGameEnded)
+	{
+		return;
+	}
+
+	UpdateZombieModeUI();
+
+	Zombies.Remove(Zombie);
+}
+
 APostProcessVolume* UChattersGameSession::GetPostProcessVolume()
 {
 	if (!PostProcessVolume)
@@ -1519,4 +1658,9 @@ void UChattersGameSession::TransferPlayersStatsToWidget()
 
 		StatsWidgetRef->UpdateStatsType(Result.Key, BotName, ResultString);
 	}
+}
+
+void UChattersGameSession::UpdateZombieModeUI()
+{
+	SessionWidget->SetTeamAliveNumber(AliveBots.Num(), Zombies.Num(), Bots.Num(), Bots.Num() * 2);
 }

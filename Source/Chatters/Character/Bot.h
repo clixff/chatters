@@ -580,4 +580,14 @@ public:
 
 	/** Returns a robot, a vehicle, or the bot itself */
 	AActor* GetBotParentActor();
+public:
+	bool IsZombie();
+
+	static ABot* CreateZombie(UWorld* World, TSubclassOf<ABot> Subclass);
+
+	FManualTimer ZombieDestroyTimer = FManualTimer(10.0f);
+
+	FManualTimer FindNewTargetAliveTimer = FManualTimer(5.0f);
+
+	float GetDefaultSpeed();
 };

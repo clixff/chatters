@@ -95,7 +95,6 @@ public:
 	void OnViewerMessage(FString Name, FString Message);
 
 	void OnViewerTargetCommand(FString ViewerName, FString TargetName);
-
 public:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<ABot> BotSubclass;
@@ -105,6 +104,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 		TArray<ABot*> AliveBots;
+
+	UPROPERTY(VisibleAnywhere)
+		TArray<ABot*> Zombies;
+
+	UPROPERTY()
+		TArray<AActor*> ZombiePortals;
 
 	UPROPERTY(VisibleAnywhere)
 		int32 BlueAlive = 0;
@@ -231,6 +236,8 @@ public:
 
 	bool bGameEnded = false;
 
+	bool bIsMainGameEnded = false;
+
 	UPlayerStatsWidget* GetPlayerStatsWidget();
 
 	UPROPERTY()
@@ -243,6 +250,8 @@ public:
 	void SetSlomoEnabled(bool bEnabled);
 
 	float GameSpeedScale = 1.0f;
+
+	void OnZombieDied(ABot* Zombie);
 private:
 	UPROPERTY()
 		APostProcessVolume* PostProcessVolume = nullptr;
@@ -254,4 +263,12 @@ private:
 	float GameEndBloomMin = -1.0f;
 
 	void TransferPlayersStatsToWidget();
+
+public:
+	FManualTimer ZombieWaveTimer = FManualTimer(0.3f);
+
+	void UpdateZombieModeUI();
+
+	UPROPERTY(EditDefaultsOnly)
+		TSubclassOf<AActor> ZombiePortalActor = nullptr;
 };

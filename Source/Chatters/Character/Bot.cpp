@@ -124,6 +124,26 @@ void ABot::Tick(float DeltaTime)
 				SetActorRelativeLocation(RobotInstance->CharacterTransform.GetLocation());
 			}
 
+			if (GetGameSession()->GameModeType == ESessionGameMode::Zombie && CombatAction == ECombatAction::Moving)
+			{
+				if (!IsZombie())
+				{
+					FindNewTargetAliveTimer.Max = 25.0f;
+				}
+
+				FindNewTargetAliveTimer.Add(DeltaTime);
+
+				if (FindNewTargetAliveTimer.IsEnded())
+				{
+					FindNewTargetAliveTimer.Reset();
+
+					if (IsZombie() || FMath::RandRange(0, 1) == 0)
+					{
+						FindNewEnemyTarget();
+					}
+				}
+			}
+
 			///** Enable collision for revived players after 3 seconds */
 			//if (this->bReviveCollisionTimerActive)
 			//{
@@ -257,6 +277,16 @@ void ABot::Tick(float DeltaTime)
 	else
 	{
 		{
+			if (IsZombie())
+			{
+				ZombieDestroyTimer.Add(DeltaTime);
+
+				if (ZombieDestroyTimer.IsEnded())
+				{
+					Destroy();
+					return;
+				}
+			}
 			SCOPE_CYCLE_COUNTER(STAT_StatsBotDeadTick);
 			if (this->SecondsAfterDeath < 100.0f)
 			{
@@ -441,6 +471,14 @@ void ABot::FindNewEnemyTarget()
 	{
 		auto AliveBots = GameSessionObject->AliveBots;
 
+		if (GetGameSession()->GameModeType == ESessionGameMode::Zombie)
+		{
+			if (IsZombie() == false)
+			{
+				AliveBots = GameSessionObject->Zombies;
+			}
+		}
+
 		for (int32 i = 0; i < AliveBots.Num(); i++)
 		{
 			ABot* Bot = AliveBots[i];
@@ -604,6 +642,12 @@ void ABot::MoveToTarget()
 		UE_LOG(LogTemp, Display, TEXT("[ABot] Moving bot %s to exploding barrel. "), *this->DisplayName);
 	}
 
+	if (GetGameSession()->GameModeType == ESessionGameMode::Zombie && Team == EBotTeam::White && FMath::RandRange(0, 5) != 0)
+	{
+		UNavigationSystemV1::K2_GetRandomReachablePointInRadius(GetWorld(), GetActorLocation(), TargetLocation, 5000.0f);
+		UpdateMovingTargetTimeout = 4.0f;
+	}
+
 	MoveToNewLocation(TargetLocation);
 
 	this->AimingAngle = 50.0f;
@@ -720,7 +764,7 @@ void ABot::CombatTick(float DeltaTime)
 						}
 						else
 						{
-							CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(600.0f);
+							CharacterMovementComponent->MaxWalkSpeed = GetMaxSpeedForBot(GetDefaultSpeed());
 
 							if (this->bShouldApplyGunAnimation)
 							{
@@ -809,6 +853,11 @@ void ABot::FirearmCombatTick(float DeltaTime, float TargetDist)
 
 	/** Temporarily do not find new barrels because of UE5 PhysX no support */
 	bool bFindBarrels = true;
+
+	if (IsZombie())
+	{
+		bFindBarrels = false;
+	}
 
 	if (bFindBarrels && !bReloading)
 	{
@@ -1337,7 +1386,7 @@ void ABot::Shoot(bool bBulletOffset)
 
 			auto* GameSessionRef = GetGameSession();
 
-			if (GameSessionRef)
+			if (GameSessionRef && !IsZombie())
 			{
 				auto& Stat = GameSessionRef->PlayerStats[this->ID];
 				Stat.Shots++;
@@ -1440,7 +1489,7 @@ void ABot::MeleeHit()
 
 		auto* GameSessionRef = GetGameSession();
 
-		if (GameSessionRef)
+		if (GameSessionRef && !IsZombie())
 		{
 			auto& Stat = GameSessionRef->PlayerStats[this->ID];
 			Stat.Shots++;
@@ -1622,7 +1671,7 @@ void ABot::MeleeCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	auto* GameSessionRef = GetGameSession();
 
-	if (GameSessionRef)
+	if (GameSessionRef && !IsZombie())
 	{
 		auto& Stat = GameSessionRef->PlayerStats[this->ID];
 		Stat.Shots++;
@@ -1678,7 +1727,7 @@ bool ABot::TraceToTargetResult(bool bIgnoreBots)
 
 void ABot::CreateFloorBloodDecal()
 {
-	if (!bCanSpawnBlood)
+	if (!bCanSpawnBlood || IsZombie())
 	{
 		return;
 	}
@@ -1812,6 +1861,14 @@ void ABot::OnFootstep()
 	if (!this->bAlive)
 	{
 		return;
+	}
+
+	if (IsZombie())
+	{
+		if (FMath::RandRange(0, 10) != 0)
+		{
+			return;
+		}
 	}
 
 	UWorld* World = this->GetWorld();
@@ -2031,6 +2088,12 @@ void ABot::Init(FString NewName, int32 NewID)
 		NameWidget->UpdateHealth(this->GetHeathValue());
 	}
 
+	if (IsZombie())
+	{
+		NameWidgetComponent->SetHiddenInGame(true);
+		NameWidgetComponent->SetVisibility(false);
+	}
+
 	this->SetEquipment();
 	this->UpdateEquipmentTeamColors();
 }
@@ -2100,6 +2163,11 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		return;
 	}
 
+	if (IsZombie())
+	{
+		Damage *= 5;
+	}
+
 	bool bHeadshot = false;
 
 	if (BoneHit == TEXT("head_") || BoneHit == TEXT("eye_R") || BoneHit == TEXT("eye_L") || BoneHit == TEXT("spine_6"))
@@ -2151,7 +2219,7 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 			}
 		}
 
-		if (ByBot && ByBot != this)
+		if (ByBot && ByBot != this && !ByBot->IsZombie())
 		{
 			GameSessionObject->PlayerStats[ByBot->ID].Damage += Damage;
 		}
@@ -2315,6 +2383,11 @@ bool ABot::IsEnemy(ABot* BotToCheck)
 		return false;
 	}
 
+	if (GetGameSession()->GameModeType == ESessionGameMode::Zombie)
+	{
+		return this->Team != BotToCheck->Team;
+	}
+
 	if (this->Team == EBotTeam::White)
 	{
 		return true;
@@ -2429,12 +2502,12 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 
 	auto* GameSessionObject = this->GetGameSession();
 
-	if (GameSessionObject && GameSessionObject->BotNameDiedFirst.IsEmpty())
+	if (GameSessionObject && GameSessionObject->BotNameDiedFirst.IsEmpty() && !IsZombie())
 	{
 		GameSessionObject->BotNameDiedFirst = this->DisplayName;
 	}
 
-	if (Killer && this->IsEnemy(Killer))
+	if (Killer && this->IsEnemy(Killer) && !GameSessionObject->bGameEnded)
 	{
 		Killer->Kills++;
 		auto* NameWidgetRef = Killer->GetNameWidget();
@@ -2443,14 +2516,14 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 			NameWidgetRef->UpdateKillsNumber(Killer->Kills);
 		}
 
-		if (GameSessionObject)
+		if (GameSessionObject && !Killer->IsZombie())
 		{
 			GameSessionObject->OnBotKill(Killer);
 			GameSessionObject->PlayerStats[Killer->ID].Kills++;
 		}
 	}
 
-	if (bPlayerAttached)
+	if (bPlayerAttached && !Killer->IsZombie())
 	{
 		auto* PlayerPawn = APlayerPawn::Get();
 		if (PlayerPawn)
@@ -2477,8 +2550,13 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 			bShouldReviveBot = true;
 		}
 
+		if (IsZombie())
+		{
+			GameSessionObject->OnZombieDied(this);
+		}
+
 		auto* SessionWidget = GameSessionObject->GetSessionWidget();
-		if (SessionWidget)
+		if (SessionWidget && !IsZombie())
 		{
 			FString KillerName = TEXT("");
 			if (Killer)
@@ -2518,10 +2596,14 @@ void ABot::OnDead(ABot* Killer, EWeaponType WeaponType, FVector ImpulseVector, F
 				break;
 			}
 
-			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon, bHeadshot && WeaponType == EWeaponType::Firearm, Killer == this);
+			SessionWidget->OnKill(KillerName, this->DisplayName, Killer->GetTeamColor(), this->GetTeamColor(), KillFeedIcon, bHeadshot && WeaponType == EWeaponType::Firearm, (Killer == this || Killer->IsZombie()));
 		}
 
-		GameSessionObject->OnBotDied(this->ID);
+
+		if (!IsZombie())
+		{
+			GameSessionObject->OnBotDied(this->ID);
+		}
 	}
 
 	if (RobotInstanceRef)
@@ -3548,7 +3630,7 @@ void ABot::RemoveWallBloodDecal(ABloodDecal* Decal)
 
 void ABot::TryAddWallBloodDecal(FVector StartPoint, FVector EndPoint)
 {
-	if (!bCanSpawnBlood)
+	if (!bCanSpawnBlood || IsZombie())
 	{
 		return;
 	}
@@ -3652,13 +3734,18 @@ bool ABot::IsFalling()
 
 float ABot::GetMaxSpeedForBot(float RequiredSpeed)
 {
+	if (IsZombie())
+	{
+		return FMath::Min(RequiredSpeed, GetDefaultSpeed());
+	}
+
 	/** No legs damaged */
 	if (!DamagedBonesData.bLeftLegDamaged && !DamagedBonesData.bRightLegDamaged)
 	{
 		return RequiredSpeed;
 	}
 
-	float MaxSpeed = 600.0f;
+	float MaxSpeed = GetDefaultSpeed();
 
 	/** Only one leg damaged */
 	if (DamagedBonesData.bLeftLegDamaged || DamagedBonesData.bRightLegDamaged)
@@ -3848,4 +3935,63 @@ AActor* ABot::GetBotParentActor()
 	}
 
 	return this;
+}
+
+bool ABot::IsZombie()
+{
+	return Team == EBotTeam::Zombie;
+}
+
+ABot* ABot::CreateZombie(UWorld* World, TSubclassOf<ABot> Subclass)
+{
+	UChattersGameSession*  GameSessionObject = UChattersGameSession::Get();
+	if (!GameSessionObject)
+	{
+		return nullptr;
+	}
+
+	auto& ZombiePortals = GameSessionObject->ZombiePortals;
+
+	FVector SpawnLocation = FVector(0.0f, 0.0f, 150.0f);
+	
+	if (ZombiePortals.Num())
+	{
+		auto ZombiePortal = ZombiePortals[FMath::RandRange(0, ZombiePortals.Num() - 1)];
+		
+		SpawnLocation = ZombiePortal->GetActorLocation();
+	}
+
+	FActorSpawnParameters SpawnParams;
+	//SpawnParams.Name = FName(*FString::Printf(TEXT("Zombie_"), IDToSet));
+	SpawnParams.bNoFail = true;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	ABot* Bot = World->SpawnActor<ABot>(Subclass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+
+
+	if (Bot)
+	{
+		Bot->bReady = true;
+		Bot->Team = EBotTeam::Zombie;
+		GameSessionObject->Zombies.Add(Bot);
+		Bot->Init(TEXT("Zombie_"), -1);
+		Bot->FindNewEnemyTarget();
+		Bot->bCanSpawnBlood = false;
+	}
+
+	return Bot;
+}
+
+float ABot::GetDefaultSpeed()
+{
+	if (IsZombie())
+	{
+		return 850.0f;
+	}
+
+	if (GetGameSession()->GameModeType == ESessionGameMode::Zombie)
+	{
+		return 450.0f;
+	}
+
+	return 600.0f;
 }

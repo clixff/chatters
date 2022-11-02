@@ -22,6 +22,11 @@ bool UEquipmentList::IsTeamEquipmentSetsExists()
 
 UEquipmentList* UEquipmentList::GetEquipmentSet(EBotTeam Team, TSet<FString> AllowedWeaponsList)
 {
+	if (Team == EBotTeam::Zombie && ZombieSet)
+	{
+		return ZombieSet;
+	}
+
 	if (Team != EBotTeam::White && this->IsTeamEquipmentSetsExists())
 	{
 		TArray<UEquipmentList*> TeamEquipmentArray = Team == EBotTeam::Blue ? this->TeamEquipmentSets.Blue : this->TeamEquipmentSets.Red;

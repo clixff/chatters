@@ -92,7 +92,8 @@ public:
 	float GetDistanceFromCamera(FVector Location);
 
 	/** Get singleton */
-	static APlayerPawn* Get();
+	UFUNCTION(BlueprintCallable)
+		static APlayerPawn* Get();
 
 	void Init();
 

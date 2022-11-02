@@ -70,6 +70,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		FTeamRandomEquipment TeamEquipmentSets;
+
+	UPROPERTY(EditDefaultsOnly)
+		UEquipmentList* ZombieSet;
 	
 	bool IsTeamEquipmentSetsExists();
 

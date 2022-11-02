@@ -121,9 +121,22 @@ TArray<ABot*> AExplodingBarrel::GetBotsInRadius()
 
 	if (GameSession)
 	{
+		TArray<ABot*> BotsList;
+
 		for (int32 i = 0; i < GameSession->AliveBots.Num(); i++)
 		{
-			auto* Bot = GameSession->AliveBots[i];
+			BotsList.Add(GameSession->AliveBots[i]);
+		}
+
+		for (int32 i = 0; i < GameSession->Zombies.Num(); i++)
+		{
+			BotsList.Add(GameSession->Zombies[i]);
+		}
+
+
+		for (int32 i = 0; i < BotsList.Num(); i++)
+		{
+			auto* Bot = BotsList[i];
 
 			if (Bot)
 			{

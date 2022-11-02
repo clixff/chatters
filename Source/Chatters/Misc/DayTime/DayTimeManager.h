@@ -82,4 +82,9 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		AActor* MoonActor = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		UMaterialInterface* ZombiePostProcessMaterial = nullptr;
+
+	void SetupZombieMode();
 };

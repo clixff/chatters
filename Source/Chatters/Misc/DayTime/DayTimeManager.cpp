@@ -168,3 +168,21 @@ void ADayTimeManager::SetNightTime()
 	}
 }
 
+void ADayTimeManager::SetupZombieMode()
+{
+	if (PostProcessVolume)
+	{
+		if (ZombiePostProcessMaterial)
+		{
+			auto& PPSettings = PostProcessVolume->Settings;
+
+			FWeightedBlendable Blendable;
+
+			Blendable.Object = ZombiePostProcessMaterial;
+			Blendable.Weight = 1.0f;
+		
+			PPSettings.WeightedBlendables.Array.Add(Blendable);
+		}
+	}
+}
+
