@@ -142,7 +142,7 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 	this->SessionWidget->SetTeamsWrapperVisibility(this->GameModeType == ESessionGameMode::Teams || GameModeType == ESessionGameMode::Zombie);
 	this->SessionWidget->UpdateRoundSeconds(0.0f);
 
-	if (this->GameModeType == ESessionGameMode::Deathmatch)
+	if (GameModeType == ESessionGameMode::Deathmatch || GameModeType == ESessionGameMode::Zombie)
 	{
 		this->SessionWidget->SetLeaderboardVisibility(true);
 	}
@@ -449,6 +449,26 @@ void UChattersGameSession::OnBotDied(int32 BotID)
 		}
 	}
 
+	if (GameModeType == ESessionGameMode::Zombie)
+	{
+		for (int32 i = 0; i < DeathmatchLeaderboard.Num(); i++)
+		{
+			auto& LeaderboardElement = DeathmatchLeaderboard[i];
+
+			if (LeaderboardElement.ID == BotID)
+			{
+				DeathmatchLeaderboard.RemoveAt(i);
+
+				if (SessionWidget)
+				{
+					SessionWidget->UpdateLeaderboard(DeathmatchLeaderboard);
+				}
+
+				break;
+			}
+		}
+	}
+
 }
 
 void UChattersGameSession::Start()
@@ -515,7 +535,7 @@ void UChattersGameSession::Start()
 					PlayerStats[i].DisplayName = Bot->DisplayName;
 				}
 
-				if (this->GameModeType == ESessionGameMode::Deathmatch)
+				if (GameModeType == ESessionGameMode::Deathmatch || GameModeType == ESessionGameMode::Zombie)
 				{
 					FDeathmatchLeaderboardElement LeaderboardElement;
 					LeaderboardElement.Nickname = Bot->DisplayName;
@@ -544,9 +564,13 @@ void UChattersGameSession::Start()
 			}
 		}
 
-		if (this->GameModeType == ESessionGameMode::Deathmatch)
+		if (GameModeType == ESessionGameMode::Deathmatch)
 		{
-			this->RoundTime = 60.0f * 3.0f;
+			RoundTime = 60.0f * 3.0f;
+		}
+
+		if (GameModeType == ESessionGameMode::Deathmatch || GameModeType == ESessionGameMode::Zombie)
+		{
 			if (this->SessionWidget)
 			{
 				this->SessionWidget->UpdateLeaderboard(this->DeathmatchLeaderboard);
@@ -1303,7 +1327,7 @@ void UChattersGameSession::UpdateBotsByDistance(bool bUpdateHeadAnimationType, b
 
 void UChattersGameSession::OnBotKill(ABot* Bot)
 {
-	if (this->GameModeType == ESessionGameMode::Deathmatch && !bDeathmatchRoundEnded)
+	if ((GameModeType == ESessionGameMode::Deathmatch && !bDeathmatchRoundEnded) || GameModeType == ESessionGameMode::Zombie)
 	{
 		for (auto& LeaderboardElement : this->DeathmatchLeaderboard)
 		{
@@ -1329,7 +1353,7 @@ void UChattersGameSession::OnBotKill(ABot* Bot)
 			this->SessionWidget->UpdateLeaderboard(DeathmatchLeaderboard);
 		}
 
-		if (this->bDeathmatchTimeEnded)
+		if (GameModeType == ESessionGameMode::Deathmatch && this->bDeathmatchTimeEnded)
 		{
 			this->FindDeathmatchWinner();
 		}
@@ -1376,13 +1400,23 @@ void UChattersGameSession::OnGameEnded(ABot* Winner)
 		{
 			if (Zombie && Zombie->IsValidLowLevel() && Zombie->GetIsAlive())
 			{
-				FVector DeltaLocation = WinnerLocation - Zombie->GetActorLocation();
+				FVector ZombieLocation = Zombie->GetActorLocation();
+				FVector DeltaLocation = WinnerLocation - ZombieLocation;
 				DeltaLocation.Normalize();
 
-				DeltaLocation *= 100000.0f;
+				float Dist = FVector::Dist(ZombieLocation, WinnerLocation);
+
+				float MaxMultiplier = 100000.0f;
+				float MaxDist = 5000.0f;
+
+				float DistMultiplier = 1.0f - FMath::Clamp(Dist / MaxDist, 0.0f, 1.0f);
+
+				float Multiplier = DistMultiplier * MaxMultiplier;
+
+				DeltaLocation *= Multiplier;
 				DeltaLocation *= -1.0f;
 
-				Zombie->OnDead(Zombie, EWeaponType::Firearm, DeltaLocation, Zombie->GetActorLocation());
+				Zombie->OnDead(Zombie, EWeaponType::Firearm, DeltaLocation, ZombieLocation);
 			}
 		}
 	}
@@ -1516,6 +1550,16 @@ void UChattersGameSession::AddExplosionAtLocation(FVector Location, UParticleSys
 
 	auto AliveBotsCopy = AliveBots;
 
+	if (GameModeType == ESessionGameMode::Zombie)
+	{
+		AliveBotsCopy.SetNum(AliveBots.Num() + Zombies.Num());
+
+		for (int32 i = 0; i < Zombies.Num(); i++)
+		{
+			AliveBotsCopy[AliveBots.Num() + i] = Zombies[i];
+		}
+	}
+
 	for (auto* Bot : AliveBotsCopy)
 	{
 		if (!Bot->GetIsAlive())
@@ -1527,7 +1571,10 @@ void UChattersGameSession::AddExplosionAtLocation(FVector Location, UParticleSys
 		float Distance = FVector::Dist(BotLocation, Location);
 		if (Distance <= Radius)
 		{
-			FVector ImpulseVector = UKismetMathLibrary::FindLookAtRotation(Location, BotLocation).Vector() * (ImpulseForce);
+			FVector ImpulseVector = BotLocation - Location;
+			ImpulseVector.Normalize();
+
+			ImpulseVector *= ImpulseForce;
 
 			Bot->ApplyDamage(100.0f, Bot, WeaponType, ImpulseVector, BotLocation);
 		}

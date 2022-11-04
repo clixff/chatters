@@ -83,8 +83,59 @@ public:
 	UPROPERTY(EditAnywhere)
 		AActor* MoonActor = nullptr;
 
+	bool bIsNight = false;
+
+public:
 	UPROPERTY(EditAnywhere, Category = "Zombie")
 		UMaterialInterface* ZombiePostProcessMaterial = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		UMaterialInstanceDynamic* ZombiePostProcessMaterialInstance = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie|Fog")
+		FLinearColor ZombieFogColorDay = FLinearColor::White;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie|Fog")
+		FLinearColor ZombieFogColorNight = FLinearColor(0.01f, 0.01f, 0.005f, 1.0f);
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieFogColorScaleDay = 0.9f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieFogColorScaleNight = 0.9f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieTint = -0.25f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieSaturation = 0.75f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieContrast = 0.6f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieGamma = 0.75f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieGammaNight = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie")
+		float ZombieGain = 0.75f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie|Fog")
+		float ZombieFogDensity = 0.05f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie|Fog")
+		float ZombieFogHeightFalloff = 0.001f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie|Fog")
+		float ZombieFogSecondDensity = 0.05f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie|Fog")
+		float ZombieFogSecondHeightFalloff = 0.001f;
+
+	UPROPERTY(EditAnywhere, Category = "Zombie|Fog")
+		float ZombieFogSecondHeightOffset = 125000.0f;
 
 	void SetupZombieMode();
 };

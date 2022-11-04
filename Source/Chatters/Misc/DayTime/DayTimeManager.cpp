@@ -87,6 +87,7 @@ void ADayTimeManager::SetSunRotationAtDay(int32 RoundIndex)
 
 void ADayTimeManager::SetNightTime()
 {
+	bIsNight = true;
 	if (Light)
 	{
 		FRotator Rotation = Light->GetActorRotation();
@@ -174,14 +175,52 @@ void ADayTimeManager::SetupZombieMode()
 	{
 		if (ZombiePostProcessMaterial)
 		{
+			ZombiePostProcessMaterialInstance = UMaterialInstanceDynamic::Create(ZombiePostProcessMaterial, this);
+
+			FLinearColor FogColor = bIsNight ? ZombieFogColorNight : ZombieFogColorDay;
+			float FogScale = bIsNight ? ZombieFogColorScaleNight : ZombieFogColorScaleDay;
+
+			ZombiePostProcessMaterialInstance->SetVectorParameterValue(TEXT("Color"), FogColor);
+			ZombiePostProcessMaterialInstance->SetScalarParameterValue(TEXT("FogScale"), FogScale);
+
 			auto& PPSettings = PostProcessVolume->Settings;
 
 			FWeightedBlendable Blendable;
 
-			Blendable.Object = ZombiePostProcessMaterial;
+			Blendable.Object = ZombiePostProcessMaterialInstance;
 			Blendable.Weight = 1.0f;
 		
-			PPSettings.WeightedBlendables.Array.Add(Blendable);
+			//PPSettings.WeightedBlendables.Array.Add(Blendable);
+
+			PPSettings.WhiteTint = ZombieTint;
+			PPSettings.bOverride_WhiteTint = true;
+
+			PPSettings.ColorSaturation = FVector4(FVector(ZombieSaturation));
+			PPSettings.ColorContrast = FVector4(FVector(ZombieContrast));
+			PPSettings.ColorGamma = FVector4(FVector(bIsNight ? ZombieGammaNight : ZombieGamma));
+			PPSettings.ColorGain = FVector4(FVector(ZombieGain));
+
+			PPSettings.bOverride_ColorSaturation = true;
+			PPSettings.bOverride_ColorContrast = true;
+			PPSettings.bOverride_ColorGamma = true;
+			PPSettings.bOverride_ColorGain = true;
+
+			if (Fog)
+			{
+				auto* FogComponent = Fog->GetComponent();
+
+				if (FogComponent)
+				{
+					FogComponent->SetFogDensity(ZombieFogDensity);
+					FogComponent->SetFogHeightFalloff(ZombieFogHeightFalloff);
+
+					FogComponent->SecondFogData.FogDensity = ZombieFogSecondDensity;
+					FogComponent->SecondFogData.FogHeightFalloff = ZombieFogSecondHeightFalloff;
+					FogComponent->SecondFogData.FogHeightOffset = ZombieFogSecondHeightOffset;
+
+					FogComponent->SetFogInscatteringColor(FogColor);
+				}
+			}
 		}
 	}
 }

@@ -473,7 +473,7 @@ void ABot::FindNewEnemyTarget()
 
 		if (GetGameSession()->GameModeType == ESessionGameMode::Zombie)
 		{
-			if (IsZombie() == false)
+			if (IsZombie() == false && FMath::RandRange(0, 6) != 0)
 			{
 				AliveBots = GameSessionObject->Zombies;
 			}
@@ -2230,9 +2230,9 @@ void ABot::ApplyDamage(int32 Damage, ABot* ByBot, EWeaponType WeaponType, FVecto
 		RobotInstance->LastDamageLocation = ImpulseLocation;
 	}
 
-	if (this->HealthPoints <= 0)
+	if (HealthPoints <= 0)
 	{
-		this->HealthPoints = 0;
+		HealthPoints = 0;
 		this->OnDead(ByBot, WeaponType, ImpulseVector, ImpulseLocation, BoneHit, bHeadshot);
 	}
 	else
@@ -2385,7 +2385,12 @@ bool ABot::IsEnemy(ABot* BotToCheck)
 
 	if (GetGameSession()->GameModeType == ESessionGameMode::Zombie)
 	{
-		return this->Team != BotToCheck->Team;
+		if (Team == EBotTeam::Zombie && BotToCheck->Team == EBotTeam::Zombie)
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 	if (this->Team == EBotTeam::White)
@@ -3959,6 +3964,7 @@ ABot* ABot::CreateZombie(UWorld* World, TSubclassOf<ABot> Subclass)
 		auto ZombiePortal = ZombiePortals[FMath::RandRange(0, ZombiePortals.Num() - 1)];
 		
 		SpawnLocation = ZombiePortal->GetActorLocation();
+		SpawnLocation.Z += 50.0f;
 	}
 
 	FActorSpawnParameters SpawnParams;
@@ -3985,7 +3991,7 @@ float ABot::GetDefaultSpeed()
 {
 	if (IsZombie())
 	{
-		return 850.0f;
+		return 600.0f;
 	}
 
 	if (GetGameSession()->GameModeType == ESessionGameMode::Zombie)

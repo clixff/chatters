@@ -91,14 +91,24 @@ void AScifiWalker::Attack()
 		return;
 	}
 
-	auto& AliveBots = GameSession->AliveBots;
+	auto AliveBotsCopy = GameSession->AliveBots;
 
-	if (!AliveBots.Num())
+	if (GameSession->GameModeType == ESessionGameMode::Zombie)
+	{
+		AliveBotsCopy.SetNum(GameSession->AliveBots.Num() + GameSession->Zombies.Num());
+
+		for (int32 i = 0; i < GameSession->Zombies.Num(); i++)
+		{
+			AliveBotsCopy[GameSession->AliveBots.Num() + i] = GameSession->Zombies[i];
+		}
+	}
+
+	if (!AliveBotsCopy.Num())
 	{
 		return;
 	}
 
-	auto* Bot = AliveBots[FMath::RandRange(0, AliveBots.Num() - 1)];
+	auto* Bot = AliveBotsCopy[FMath::RandRange(0, AliveBotsCopy.Num() - 1)];
 
 	if (!Bot)
 	{

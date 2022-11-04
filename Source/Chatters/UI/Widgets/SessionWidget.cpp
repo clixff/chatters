@@ -85,6 +85,11 @@ void USessionWidget::UpdateSpectatorBotName(FString BotName)
 
 void USessionWidget::UpdateSpectatorBotHealth(int32 HealthPoints)
 {
+	if (HealthPoints < 0)
+	{
+		HealthPoints = 0;
+	}
+
 	FString HealthText = FString::Printf(TEXT("%d"), HealthPoints);
 
 	this->SpectatorBotHealthPoints = FText::FromString(HealthText);

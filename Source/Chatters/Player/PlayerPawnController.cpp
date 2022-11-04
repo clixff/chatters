@@ -582,7 +582,7 @@ void APlayerPawnController::SelectLeaderboardBot(int32 Index)
 
 	if (GameSession)
 	{
-		if (GameSession->GameModeType == ESessionGameMode::Deathmatch)
+		if (GameSession->GameModeType == ESessionGameMode::Deathmatch || GameSession->GameModeType == ESessionGameMode::Zombie)
 		{
 			GameSession->SelectDeathmatchLeader(Index);
 		}
