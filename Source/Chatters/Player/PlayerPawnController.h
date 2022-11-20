@@ -114,4 +114,6 @@ private:
 	void OnCameraButtonPressed();
 
 	void ToggleCinematicCamera();
+
+	void ToggleCinematicUI();
 };

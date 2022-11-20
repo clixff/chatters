@@ -381,6 +381,17 @@ void UChattersGameSession::LevelLoaded(FString LevelName)
 			}
 		}
 	}
+
+	if (CinematicUIWidgetClass)
+	{
+		CinematicUIWidget = UCustomWidgetBase::CreateUserWidget<UCustomWidgetBase>(CinematicUIWidgetClass);
+
+		if (CinematicUIWidget)
+		{
+			CinematicUIWidget->Hide();
+		}
+	}
+
 }
 
 void UChattersGameSession::OnBotDied(int32 BotID)
@@ -1094,6 +1105,11 @@ void UChattersGameSession::PauseGame()
 		{
 			this->SessionWidget->Hide();
 		}
+
+		if (CinematicUIWidget)
+		{
+			CinematicUIWidget->Hide();
+		}
 	}
 }
 
@@ -1118,9 +1134,16 @@ void UChattersGameSession::UnpauseGame()
 
 		GameInstance->SetIsGamePaused(false);
 
-		if (this->SessionWidget && !bGameEnded && !bActivateGameEndEffects)
+		if (SessionWidget && !bGameEnded && !bActivateGameEndEffects)
 		{
-			this->SessionWidget->Show();
+			if (bCinematicUIEnabled)
+			{
+				CinematicUIWidget->Show();
+			}
+			else
+			{
+				SessionWidget->Show();
+			}
 		}
 	}
 }
@@ -1182,6 +1205,11 @@ void UChattersGameSession::Tick(float DeltaTime)
 			if (SessionWidget)
 			{
 				SessionWidget->Hide();
+			}
+
+			if (CinematicUIWidget)
+			{
+				CinematicUIWidget->Hide();
 			}
 
 			bGameEnded = true;
@@ -1436,6 +1464,17 @@ void UChattersGameSession::OnGameEnded(ABot* Winner)
 		StatsWidgetRef->UpdateStatsType(EPlayerStatsType::DiedFirst, BotNameDiedFirst, EmptyStr);
 
 		TransferPlayersStatsToWidget();
+	}
+
+	if (bCinematicUIEnabled)
+	{
+		bCinematicUIEnabled = false;
+
+		if (CinematicUIWidget)
+		{
+			CinematicUIWidget->Hide();
+			SessionWidget->Show();
+		}
 	}
 
 	DeactivateProps();
@@ -1710,4 +1749,28 @@ void UChattersGameSession::TransferPlayersStatsToWidget()
 void UChattersGameSession::UpdateZombieModeUI()
 {
 	SessionWidget->SetTeamAliveNumber(AliveBots.Num(), Zombies.Num(), Bots.Num(), Bots.Num() * 2);
+}
+
+void UChattersGameSession::ToggleCinematicUI()
+{
+	if (bIsMainGameEnded)
+	{
+		return;
+	}
+
+	if (CinematicUIWidget && SessionWidget)
+	{
+		bCinematicUIEnabled = !bCinematicUIEnabled;
+
+		if (bCinematicUIEnabled)
+		{
+			CinematicUIWidget->Show();
+			SessionWidget->Hide();
+		}
+		else
+		{
+			CinematicUIWidget->Hide();
+			SessionWidget->Show();
+		}
+	}
 }

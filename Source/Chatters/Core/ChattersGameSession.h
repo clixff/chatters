@@ -170,6 +170,14 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<UPauseMenuWidget> PauseMenuWidgetClass;
 
+	UPROPERTY(VisibleAnywhere)
+		UCustomWidgetBase* CinematicUIWidget = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+		TSubclassOf<UCustomWidgetBase> CinematicUIWidgetClass;
+
+	bool bCinematicUIEnabled = false;
+
 	int32 RoundNumber = 1;
 
 	FCriticalSection Mutex;
@@ -271,4 +279,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<AActor> ZombiePortalActor = nullptr;
+
+public:
+	void ToggleCinematicUI();
 };

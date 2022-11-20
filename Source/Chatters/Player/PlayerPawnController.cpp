@@ -75,7 +75,7 @@ void APlayerPawnController::SetupInputComponent()
 
 	this->InputComponent->BindAction("CinematicCamera", IE_Pressed, this, &APlayerPawnController::ToggleCinematicCamera);
 
-
+	this->InputComponent->BindAction("CinematicUI", IE_Pressed, this, &APlayerPawnController::ToggleCinematicUI);
 
 	for (int32 i = 0; i < 5; i++)
 	{
@@ -657,6 +657,21 @@ void APlayerPawnController::ToggleCinematicCamera()
 
 			PlayerPawnRef->ActivateCinematicCamera(TargetActor);
 		}
+	}
+}
+
+void APlayerPawnController::ToggleCinematicUI()
+{
+	if (!bCanControl)
+	{
+		return;
+	}
+
+	auto* GameSessionRef = UChattersGameSession::Get();
+
+	if (GameSessionRef)
+	{
+		GameSessionRef->ToggleCinematicUI();
 	}
 }
 
